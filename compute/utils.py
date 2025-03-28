@@ -4,18 +4,16 @@ import logging
 
 def check_sr_format(sr):
     if not isinstance(sr, int):
-        raise TypeError("sr must be of type integer.")
+        raise TypeError("Sample rate must be of type integer.")
     if sr <= 0:
-        raise ValueError("sr must be greater than zero.")
+        raise ValueError("Sample rate must be greater than zero.")
 
 def check_signal_format(data):
     data = np.asarray(data, dtype=np.float64)
-    if not isinstance(data, np.ndarray):
-        raise TypeError("data must be a NumPy array.")
     if data.ndim != 1:
-        raise ValueError("data must be a 1D array.")
+        raise ValueError("Signal must be a 1D array.")
     if not np.issubdtype(data.dtype, np.floating):
-        raise TypeError("data must be of type np.float64.")
+        raise TypeError("Signal must be of type np.float64.")
 
 def exclude_trailing_and_leading_zeros(envelope: NDArray[np.float64]) -> NDArray[np.float64]:
     """

@@ -57,7 +57,7 @@ def amplitude_envelope(data: NDArray[np.float64], kernel_size: Optional[int] = N
     return envelope
 
 
-def duration_s(data: NDArray[np.float64], sr: int, exclude_surrounding_silences: Optional[bool] = True) -> float:
+def duration(data: NDArray[np.float64], sr: int, exclude_surrounding_silences: Optional[bool] = True) -> float:
     """
     Returns the duration in seconds of a signal.
     
@@ -113,6 +113,11 @@ def temporal_quartiles(data: NDArray[np.float64], sr: int, kernel_size: Optional
     """
     check_signal_format(data)
     check_sr_format(sr)
+
+    if len(data) == 0:
+        raise ValueError("Input is empty")
+    if np.all(data == 0):
+        raise ValueError("Signal contains no nonzero values")
     
     # get amplitude envelope and normalize
     envelope = amplitude_envelope(data, kernel_size)

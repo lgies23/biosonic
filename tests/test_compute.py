@@ -29,5 +29,87 @@ def test_amplitude_envelope():
     
     # check invalid input (2D array)
     signal = np.array([[1, 2, 3], [4, 5, 6]], dtype=np.float64)
-    with pytest.raises(ValueError, match="data must be a 1D array"):
+    with pytest.raises(ValueError, match="Signal must be a 1D array"):
         amplitude_envelope(signal)
+
+def test_duration():
+    from ..compute.temporal import duration
+
+    # check basic duration calculation without silence exclusion
+    signal = np.array([1, 2, 3, 4, 5], dtype=np.float64)
+    sr = 10  # Sample rate
+    expected = 0.5  # 5 samples / 10 samples per second
+    assert duration(signal, sr, exclude_surrounding_silences=False) == expected
+    
+    # check duration calculation with leading and trailing zeros (exclude_surrounding_silences=True)
+    signal = np.array([0, 0, 1, 2, 3, 4, 5, 0, 0], dtype=np.float64)
+    expected = 0.5  # only non-zero part -> 5 samples
+    assert duration(signal, sr, exclude_surrounding_silences=True) == expected
+    
+    # check duration with leading and trailing zeros but exclude_surrounding_silences=False
+    expected = 0.9  # 9 samples / 10 samples per second
+    assert duration(signal, sr, exclude_surrounding_silences=False) == expected
+    
+    # check empty signal
+    signal = np.array([], dtype=np.float64)
+    expected = 0.0
+    assert duration(signal, sr, exclude_surrounding_silences=True) == expected
+    assert duration(signal, sr, exclude_surrounding_silences=False) == expected
+    
+    # check all-zero signal
+    signal = np.array([0, 0, 0, 0, 0], dtype=np.float64)
+    expected_trimmed = 0.0
+    expected_full = 0.5  # 5 samples / 10 samples per second
+    assert duration(signal, sr, exclude_surrounding_silences=True) == expected_trimmed
+    assert duration(signal, sr, exclude_surrounding_silences=False) == expected_full
+    
+    # check invalid sample rate
+    with pytest.raises(ValueError, match="Sample rate must be greater than zero"):
+        duration(signal, 0)
+    with pytest.raises(ValueError, match="Sample rate must be greater than zero"):
+        duration(signal, -10)
+    
+    # check invalid input (2D array)
+    signal = np.array([[1, 2, 3], [4, 5, 6]], dtype=np.float64)
+    with pytest.raises(ValueError, match="Signal must be a 1D array"):
+        duration(signal, sr)
+
+
+def test_temporal_quartiles():
+    from ..compute.temporal import temporal_quartiles
+    
+    # check basic case
+    signal = np.array([0, 1, 2, 3, 2, 1, 0], dtype=np.float64)
+    sr = 10
+    q1, median, q3 = temporal_quartiles(signal, sr)
+    assert 0 <= q1 < median < q3 <= len(signal) / sr
+    # TODO check actual values
+    
+    # check with a longer signal
+    signal = np.array([0] * 10 + [1] * 80 + [0] * 10, dtype=np.float64)  # 100 samples
+    sr = 20
+    q1, median, q3 = temporal_quartiles(signal, sr)
+    assert 0 <= q1 < median < q3 <= 5
+    # TODO check actual values
+    
+    # check empty signal
+    signal = np.array([], dtype=np.float64)
+    with pytest.raises(ValueError, match="Input is empty"):
+        temporal_quartiles(signal, sr)
+    
+    # check all-zero signal
+    signal = np.array([0, 0, 0, 0, 0], dtype=np.float64)
+    with pytest.raises(ValueError, match="Signal contains no nonzero values"):
+        temporal_quartiles(signal, sr)
+    
+    # check invalid sample rate
+    with pytest.raises(ValueError, match="Sample rate must be greater than zero"):
+        temporal_quartiles(signal, 0)
+    with pytest.raises(ValueError, match="Sample rate must be greater than zero"):
+        temporal_quartiles(signal, -10)
+    
+    # check 2D input (invalid case)
+    signal = np.array([[1, 2, 3], [4, 5, 6]], dtype=np.float64)
+    with pytest.raises(ValueError, match="Signal must be a 1D array"):
+        temporal_quartiles(signal, sr)
+    

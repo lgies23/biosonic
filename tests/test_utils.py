@@ -9,17 +9,17 @@ def test_check_sr_format():
     check_sr_format(44100)
 
     # check non integer cases
-    with pytest.raises(TypeError, match="sr must be of type integer."):
+    with pytest.raises(TypeError, match="Sample rate must be of type integer."):
         check_sr_format(44100.0)
 
-    with pytest.raises(TypeError, match="sr must be of type integer."):
+    with pytest.raises(TypeError, match="Sample rate must be of type integer."):
         check_sr_format("44100")
 
     # check greater zero cases
-    with pytest.raises(ValueError, match="sr must be greater than zero."):
+    with pytest.raises(ValueError, match="Sample rate must be greater than zero."):
         check_sr_format(0)
 
-    with pytest.raises(ValueError, match="sr must be greater than zero."):
+    with pytest.raises(ValueError, match="Sample rate must be greater than zero."):
         check_sr_format(-16000)
 
 
@@ -40,7 +40,7 @@ def test_check_signal_format():
     check_signal_format(np.array(["1", "2", "3"], dtype=np.int32))
 
     # check wrong dimensions
-    with pytest.raises(ValueError, match="data must be a 1D array."):
+    with pytest.raises(ValueError, match="Signal must be a 1D array."):
         check_signal_format(np.array([[0.1, 0.2], [0.3, 0.4]], dtype=np.float64))
 
 
