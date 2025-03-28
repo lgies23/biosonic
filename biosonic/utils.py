@@ -2,6 +2,21 @@ from numpy.typing import NDArray
 import numpy as np
 import logging
 
+def check_sr_format(sr):
+    if not isinstance(sr, int):
+        raise TypeError("sr must be of type integer.")
+    if sr <= 0:
+        raise ValueError("sr must be greater than zero.")
+
+def check_signal_format(data):
+    data = np.asarray(data, dtype=np.float64)
+    if not isinstance(data, np.ndarray):
+        raise TypeError("data must be a NumPy array.")
+    if data.ndim != 1:
+        raise ValueError("data must be a 1D array.")
+    if not np.issubdtype(data.dtype, np.floating):
+        raise TypeError("data must be of type np.float64.")
+
 def exclude_trailing_and_leading_zeros(envelope: NDArray[np.float64]) -> NDArray[np.float64]:
     """
     Removes leading and trailing zeros from a NumPy array.
@@ -33,6 +48,9 @@ def exclude_trailing_and_leading_zeros(envelope: NDArray[np.float64]) -> NDArray
     """
     if envelope.ndim != 1:
         raise ValueError("Input array must be 1D.")
+    
+    if np.all(envelope == 0):  # check if all zeros and return empty array
+        return np.array([])
 
     try:
         # Exclude trailing zeros (identify last non-zero element)
