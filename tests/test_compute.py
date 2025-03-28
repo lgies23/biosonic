@@ -3,7 +3,7 @@ import pytest
 from numpy.testing import assert_array_almost_equal
 
 def test_amplitude_envelope():
-    from ..compute import amplitude_envelope
+    from ..compute.temporal import amplitude_envelope
     
     # check basic signal without smoothing
     signal = np.array([0, 1, 2, 3, 2, 1, 0], dtype=np.float64)

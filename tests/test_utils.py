@@ -3,7 +3,7 @@ import pytest
 from numpy.testing import assert_array_equal
 
 def test_check_sr_format():
-    from ..utils import check_sr_format
+    from ..compute.utils import check_sr_format
 
     # check valid case
     check_sr_format(44100)
@@ -24,7 +24,7 @@ def test_check_sr_format():
 
 
 def test_check_signal_format():
-    from ..utils import check_signal_format
+    from ..compute.utils import check_signal_format
 
     # check valid case
     signal = np.array([0.1, 0.2, 0.3], dtype=np.float64)
@@ -45,7 +45,7 @@ def test_check_signal_format():
 
 
 def test_exclude_trailing_and_leading_zeros():
-    from ..utils import exclude_trailing_and_leading_zeros
+    from ..compute.utils import exclude_trailing_and_leading_zeros
 
     # check valid case
     arr = np.array([0, 0, 1, 2, 3, 0])
