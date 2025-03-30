@@ -1,9 +1,9 @@
 exceptiongroup>=1.2.2
 iniconfig>=2.1.0
-numpy>=2.2.4
+numpy>=2.0.2
 packaging>=24.2
 pluggy>=1.5.0
 praat-parselmouth>=0.4.5
 pytest>=8.3.5
-scipy>=1.15.2
+scipy>=1.13.2
 tomli>=2.2.1
