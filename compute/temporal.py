@@ -3,7 +3,7 @@ from numpy.typing import NDArray
 from scipy import signal
 from scipy.stats import kurtosis, skew
 from typing import Optional, Tuple
-from .utils import exclude_trailing_and_leading_zeros, check_signal_format, check_sr_format
+from .utils import exclude_trailing_and_leading_zeros, check_signal_format, check_sr_format, cumulative_distribution_function
 
 def amplitude_envelope(data: NDArray[np.float64], kernel_size: Optional[int] = None) -> NDArray[np.float64]:
     """
@@ -119,17 +119,14 @@ def temporal_quartiles(data: NDArray[np.float64], sr: int, kernel_size: Optional
     if np.all(data == 0):
         raise ValueError("Signal contains no nonzero values")
     
-    # get amplitude envelope and normalize
     envelope = amplitude_envelope(data, kernel_size)
-    normalized_env = envelope / np.sum(envelope)
     
-    # cumulative sum of normalized envelope
-    cumulative_amplitude_envelope = np.cumsum(normalized_env)
+    cdf = cumulative_distribution_function(envelope)
 
     # temporal quartiles (Q1, median, Q3)
-    t_q1 = np.searchsorted(cumulative_amplitude_envelope, 0.25) / sr
-    t_median = np.searchsorted(cumulative_amplitude_envelope, 0.5) / sr
-    t_q3 = np.searchsorted(cumulative_amplitude_envelope, 0.75) / sr
+    t_q1 = np.searchsorted(cdf, 0.25) / sr
+    t_median = np.searchsorted(cdf, 0.5) / sr
+    t_q3 = np.searchsorted(cdf, 0.75) / sr
 
     return (t_q1, t_median, t_q3)
 
