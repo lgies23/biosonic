@@ -113,3 +113,60 @@ def test_temporal_quartiles():
     with pytest.raises(ValueError, match="Signal must be a 1D array"):
         temporal_quartiles(signal, sr)
     
+def test_temporal_sd():
+    pass
+
+def test_temporal_skew():
+    pass
+
+def test_temporal_kurtosis():
+    pass
+
+def test_spectrum():
+    import numpy as np
+    import pytest
+    from ..compute.spectral import spectrum
+
+    # basic amplitude spectrum
+    signal = np.array([0, 1, 0, -1], dtype=np.float64)
+    spec = spectrum(signal, mode='amplitude')
+    assert isinstance(spec, np.ndarray)
+    assert spec.shape == signal.shape
+    assert np.all(spec >= 0)
+
+    # basic power spectrum
+    power_spec = spectrum(signal, mode='power')
+    assert np.allclose(power_spec, np.abs(np.fft.fft(signal))**2)
+
+    # check arbitrary exponent
+    spec3 = spectrum(signal, mode=3)
+    assert np.allclose(spec3, np.abs(np.fft.fft(signal))**3)
+
+    # check that amplitude and mode=1 give same result
+    spec1 = spectrum(signal, mode=1)
+    spec_amp = spectrum(signal, mode='amplitude')
+    assert np.allclose(spec1, spec_amp)
+
+    # check that invalid string raises error
+    with pytest.raises(ValueError, match="Invalid string mode"):
+        spectrum(signal, mode='invalid')
+
+    # check that invalid type raises error
+    with pytest.raises(TypeError, match="must be a string, int or float"):
+        spectrum(signal, mode=(1,2))
+
+    # check empty input
+    empty_signal = np.array([], dtype=np.float64)
+    with pytest.warns(RuntimeWarning, match="Input signal is empty"):
+        spec_empty = spectrum(empty_signal, mode='amplitude')
+        assert spec_empty.size == 0
+        assert isinstance(spec_empty, np.ndarray)
+
+
+    # check default = "amplitude"
+    signal = np.array([0, 1, 0, -1], dtype=np.float64)
+    spec = spectrum(signal)
+    assert isinstance(spec, np.ndarray)
+    assert spec.shape == signal.shape
+    assert np.all(spec >= 0)
+    assert np.allclose(spec, np.abs(np.fft.fft(signal)))
