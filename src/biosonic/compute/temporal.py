@@ -1,12 +1,12 @@
 import numpy as np
-from numpy.typing import NDArray
+from numpy.typing import NDArray, ArrayLike
 from scipy import signal
 from scipy.stats import kurtosis, skew
 from typing import Optional, Tuple
 import warnings
 from .utils import exclude_trailing_and_leading_zeros, check_signal_format, check_sr_format, cumulative_distribution_function
 
-def amplitude_envelope(data: NDArray[np.float64], kernel_size: Optional[int] = None) -> NDArray[np.float64]:
+def amplitude_envelope(data: ArrayLike, kernel_size: Optional[int] = None) -> NDArray[np.float64]:
     """
     Computes the amplitude envelope of a signal using the Hilbert transform.
     
@@ -15,12 +15,15 @@ def amplitude_envelope(data: NDArray[np.float64], kernel_size: Optional[int] = N
     a smoothing kernel (Daniell kernel, moving average) can be applied to smooth the envelope.
     
     Args:
-        data (NDArray[np.float64]): A 1D NumPy array of float64 values representing the input signal.
-        kernel_size (Optional[int]): The size of the moving average kernel to smooth the envelope. Must be an uneven number.
-                                      If `None`, no smoothing is applied (default is `None`).
+        data : 
+            A 1D array-like representing the input signal.
+        kernel_size : Optional[int]
+            The size of the moving average kernel to smooth the envelope. Must be an uneven number.
+            If `None`, no smoothing is applied (default is `None`).
     
     Returns:
-        NDArray[np.float64]: A 1D NumPy array of float64 values representing the amplitude envelope of the signal.
+        NDArray[np.float64]
+            A 1D NumPy array of float64 values representing the amplitude envelope of the signal.
     
     Example:
         >>> import numpy as np
@@ -60,20 +63,23 @@ def amplitude_envelope(data: NDArray[np.float64], kernel_size: Optional[int] = N
     return envelope
 
 
-def duration(data: NDArray[np.float64], sr: int, exclude_surrounding_silences: Optional[bool] = True) -> float:
+def duration(data: ArrayLike, sr: int, exclude_surrounding_silences: Optional[bool] = True) -> float:
     """
     Returns the duration in seconds of a signal.
     
     Args:
-        data (NDArray[np.float64]): The audio signal data.
-        sr (int): The sample rate of the audio signal (samples per second).
-        exclude_surrounding_silences (bool, optional): 
+        data : ArrayLike
+            The audio signal data.
+        sr : int
+            The sample rate of the audio signal (samples per second).
+        exclude_surrounding_silences : bool, optional 
             If True, leading and trailing silences (zeros) in the audio 
             signal will be removed before calculating duration. 
             Defaults to False.
 
     Returns:
-        float: Duration of the (possibly trimmed) audio signal in seconds.
+        float
+            Duration of the (possibly trimmed) audio signal in seconds.
     """
     data = check_signal_format(data)
     check_sr_format(sr)
@@ -100,8 +106,9 @@ def temporal_quartiles(data: NDArray[np.float64], sr: int, kernel_size: Optional
         kernel_size (Optional[int]): Optional smoothing kernel applied to the amplitude envelope.
 
     Returns:
-        Tuple[float, float, float]: A tuple containing the temporal quartiles (Q1, median, Q3),
-                                     in seconds.
+        Tuple[float, float, float]: 
+            A tuple containing the temporal quartiles (Q1, median, Q3),
+            in seconds.
 
     Example:
         >>> signal = np.array([0, 1, 2, 3, 2, 1, 0], dtype=np.float64)
@@ -144,7 +151,8 @@ def temporal_sd(data: NDArray[np.float64], sr: int, kernel_size: Optional[int] =
         kernel_size (Optional[int]): Optional smoothing kernel applied to the amplitude envelope.
 
     Returns:
-        float: The temporal standard deviation in seconds
+        float
+            The temporal standard deviation in seconds
     """
     data = check_signal_format(data)
     check_sr_format(sr)
@@ -162,7 +170,8 @@ def temporal_skew(data: NDArray[np.float64], sr: int, kernel_size: Optional[int]
         kernel_size (Optional[int]): Optional smoothing kernel applied to the amplitude envelope.
 
     Returns:
-        float: The temporal skew
+        float
+            The temporal skew
     """
     data = check_signal_format(data)
     check_sr_format(sr)
@@ -180,7 +189,8 @@ def temporal_kurtosis(data: NDArray[np.float64], sr: int, kernel_size: Optional[
         kernel_size (Optional[int]): Optional smoothing kernel applied to the amplitude envelope.
 
     Returns:
-        float: The temporal kurtosis
+        float
+            The temporal kurtosis
     """
     data = check_signal_format(data)
     check_sr_format(sr)

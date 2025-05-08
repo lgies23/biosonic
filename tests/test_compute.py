@@ -210,3 +210,29 @@ def test_peak_frequency():
     signal = np.ones(1024, dtype=np.float64)
     freq_est = peak_frequency(signal, sampling_rate)
     assert freq_est == 0.0
+
+
+def test_spectrogram():
+    from biosonic.compute.spectral import spectrogram
+
+    sr = 44100
+    duration = 1.0
+    t = np.linspace(0, duration, int(sr * duration), endpoint=False)
+    freq = 440.0
+    sine_wave = np.sin(2 * np.pi * freq * t)
+
+    Sx, times, freqs = spectrogram(
+        data=sine_wave,
+        sr=sr,
+        window="hann",
+        window_length=512,
+        overlap=0.5
+    )
+
+    assert isinstance(Sx, np.ndarray)
+    assert np.iscomplexobj(Sx)
+    assert isinstance(times, np.ndarray) and times.ndim == 1, "Times must be 1D array"
+    assert isinstance(freqs, np.ndarray) and freqs.ndim == 1, "Frequencies must be 1D array"
+    assert Sx.shape[0] == len(freqs)
+    assert Sx.shape[1] == len(times)
+

@@ -1,14 +1,13 @@
 import numpy as np
-from numpy.typing import NDArray
+from numpy.typing import NDArray, ArrayLike
 from scipy import fft, signal
 from scipy.stats import gmean
-from typing import Optional, Tuple
-from typing import Union
+from typing import Optional, Tuple, Union
 import warnings
 from .utils import exclude_trailing_and_leading_zeros, check_signal_format, check_sr_format, cumulative_distribution_function
 
 
-def spectrum(data: NDArray[np.float64], 
+def spectrum(data: ArrayLike, 
              mode: Union[str, int, float] = 'amplitude') -> NDArray[np.float64]:
     """
     Computes the magnitude spectrum of a signal, allowing for amplitude, power,
@@ -16,8 +15,8 @@ def spectrum(data: NDArray[np.float64],
 
     Parameters
     ----------
-    data : NDArray[np.float64]
-        The input time-domain signal as a 1D NumPy array of floats.
+    data : ArrayLike
+        The input time-domain signal as a 1D array-like. 
     mode : Union[str, int], default='amplitude'
         Specifies how to compute the spectrum:
         - 'amplitude': return the amplitude spectrum (|FFT|).
@@ -58,14 +57,87 @@ def spectrum(data: NDArray[np.float64],
         raise TypeError(f"'mode' must be a string, int or float, not {type(mode).__name__}.")
 
 
-def spectrogram(data: NDArray[np.float64], sr: int, *args, **kwargs) -> Tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
+def spectrogram(
+        data: ArrayLike, 
+        sr: int, 
+        window: Union[str, NDArray] = "hann", 
+        window_length: int = 1024, 
+        overlap: float = .5, *args, **kwargs
+    ) -> Tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
+    """
+    Compute the spectrogram of a 1D signal using short-time Fourier transform (STFT).
+
+    Parameters
+    ----------
+    data : ArrayLike
+        Input signal as a 1D array-like.
+    sr : int
+        Sampling rate of the signal in Hz.
+    window : Union[str, NDArray], optional
+        Type of window to use (e.g., 'hann', 'hamming' of scipy.signal.windows) or a custom window array.
+        Defaults to 'hann'.
+    window_length : int
+        Length of the analysis window in samples.
+        Defaults to 1024. Ignored if the window is given as a custom array,
+    overlap : float, optional
+        Fractional overlap between adjacent windows (0 < overlap < 1).
+        Defaults to 0.5 (50% overlap).
+    *args : tuple
+        Additional positional arguments to pass to the STFT method.
+    **kwargs : dict
+        Additional keyword arguments to pass to the STFT method.
+
+    Returns
+    -------
+    Sx : NDArray[np.float64]
+        2D array of complex STFT values (frequency x time).
+    t : NDArray[np.float64]
+        Array of time values corresponding to the STFT columns.
+    f : NDArray[np.float64]
+        Array of frequency bins corresponding to the STFT rows.
+
+    Notes
+    -----
+    This function relies on scipy's `ShortTimeFFT` class and the submodule scipy.signal.windows.
+    
+    References:
+    -----
+
+    Pauli Virtanen, Ralf Gommers, Travis E. Oliphant, Matt Haberland, Tyler Reddy, David Cournapeau, 
+    Evgeni Burovski, Pearu Peterson, Warren Weckesser, Jonathan Bright, Stéfan J. van der Walt, 
+    Matthew Brett, Joshua Wilson, K. Jarrod Millman, Nikolay Mayorov, Andrew R. J. Nelson, Eric Jones, 
+    Robert Kern, Eric Larson, CJ Carey, İlhan Polat, Yu Feng, Eric W. Moore, Jake VanderPlas, Denis 
+    Laxalde, Josef Perktold, Robert Cimrman, Ian Henriksen, E.A. Quintero, Charles R Harris, Anne M. 
+    Archibald, Antônio H. Ribeiro, Fabian Pedregosa, Paul van Mulbregt, and SciPy 1.0 Contributors. 
+    (2020) SciPy 1.0: Fundamental Algorithms for Scientific Computing in Python. Nature Methods, 17(3), 
+    261-272. DOI: 10.1038/s41592-019-0686-2.
+    """
     data = check_signal_format(data)
     check_sr_format(sr)
 
-    return signal.spectrogram(data, sr, *args, **kwargs)
+    if 0 > overlap > 1 or not isinstance(overlap, float):
+        raise ValueError("Window overlap must be a float between 0 and 1.")
+
+    if not isinstance(window_length, int) or window_length <= 0:
+        raise ValueError("`window_length` must be a positive integer.")
+
+    if isinstance(window, str):
+        try:
+            window = signal.windows.get_window(window, window_length)
+        except ValueError as e:
+            raise ValueError(f"Invalid window type: {window}") from e
+    elif not isinstance(window, np.ndarray):
+        raise TypeError("`window` must be either a string or a 1D NumPy array.")
+    
+    hop_length = int(window_length * (1 - overlap))
+
+    STFT = signal.ShortTimeFFT(window, hop_length, sr)
+    Sx = STFT.stft(data, *args, **kwargs)
+
+    return Sx, STFT.t(len(data)), STFT.f
 
 
-def spectral_quartiles(data: NDArray[np.float64]) -> Tuple[float, float, float]:
+def spectral_quartiles(data: ArrayLike) -> Tuple[float, float, float]:
     # TODO docs, tests
     data = check_signal_format(data)
     if len(data) == 0:
@@ -78,7 +150,8 @@ def spectral_quartiles(data: NDArray[np.float64]) -> Tuple[float, float, float]:
 
     return (np.searchsorted(cdf, 0.25), np.searchsorted(cdf, 0.5), np.searchsorted(cdf, 0.75))
 
-def flatness(data: NDArray[np.float64]) -> float:
+
+def flatness(data: ArrayLike) -> float:
     # TODO docs, tests
     # Sueur, J. (2018). Sound Analysis and Synthesis with R (Springer International Publishing) https://doi.org/10.1007/978-3-319-77647-7, p. 299
     data = check_signal_format(data)
@@ -87,7 +160,7 @@ def flatness(data: NDArray[np.float64]) -> float:
     return gmean(ps_wo_zeros) / np.mean(ps_wo_zeros)
 
 
-def mean_frequency(data: NDArray[np.float64], sr: int) -> float:
+def mean_frequency(data: ArrayLike, sr: int) -> float:
     # TODO docs, tests
     data = check_signal_format(data)
     check_sr_format(sr)
@@ -97,7 +170,8 @@ def mean_frequency(data: NDArray[np.float64], sr: int) -> float:
 
     return np.average(freqs, weights=ps)
 
-def variance(data: NDArray[np.float64], sr: int) -> float:
+
+def variance(data: ArrayLike, sr: int) -> float:
     # TODO docs, tests
     data = check_signal_format(data)
     check_sr_format(sr)
@@ -110,13 +184,13 @@ def variance(data: NDArray[np.float64], sr: int) -> float:
     return np.sum(ps * (freqs - mean_frequency)**2) / np.sum(ps)
 
 
-def standard_deviation(data: NDArray[np.float64], sr: int) -> float:
+def standard_deviation(data: ArrayLike, sr: int) -> float:
     # TODO docs, tests
     
     return np.sqrt(variance(data, sr))
 
 
-def peak_frequency(data: NDArray[np.float64], sr: int) -> float:
+def peak_frequency(data: ArrayLike, sr: int) -> float:
     """
     Computes the peak frequency of a signal using the Fourier transform.
 
@@ -125,8 +199,10 @@ def peak_frequency(data: NDArray[np.float64], sr: int) -> float:
     or peak frequency of the signal.
 
     Args:
-        data (NDArray[np.float64]): 1D NumPy array representing the input signal.
-        sampling_rate (float): Sampling rate of the signal in Hz.
+        data : ArrayLike
+            1D array-like representing the input signal.
+        sampling_rate : float 
+            Sampling rate of the signal in Hz.
 
     Returns:
         float: The peak frequency in Hz.
@@ -158,9 +234,9 @@ def peak_frequency(data: NDArray[np.float64], sr: int) -> float:
     return freqs[np.argmax(ps)]
 
 
-def dominant_frequencies(data: NDArray[np.float64], sr: int, n_freqs: Optional[int] = 1, *args, **kwargs) -> NDArray[np.float64]:    
+def dominant_frequencies(data: ArrayLike, sr: int, n_freqs: Optional[int] = 1, *args, **kwargs) -> NDArray[np.float64]:    
     # TODO docs, tests, n_freqs, parameters
-    freqs, _, spec = spectrogram(data, sr, *args, **kwargs)
+    spec, _, freqs = spectrogram(data, sr, *args, **kwargs)
     
     dominant_freqs = []
 
@@ -180,7 +256,8 @@ def dominant_frequencies(data: NDArray[np.float64], sr: int, n_freqs: Optional[i
 
     return np.asarray(dominant_freqs)
 
-def spectral_features(data: NDArray[np.float64], 
+
+def spectral_features(data: ArrayLike, 
                       sr: int,
                       n_freqs: Optional[int] = 1) -> dict:
     """
