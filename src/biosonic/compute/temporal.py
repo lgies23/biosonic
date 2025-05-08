@@ -3,6 +3,7 @@ from numpy.typing import NDArray
 from scipy import signal
 from scipy.stats import kurtosis, skew
 from typing import Optional, Tuple
+import warnings
 from .utils import exclude_trailing_and_leading_zeros, check_signal_format, check_sr_format, cumulative_distribution_function
 
 def amplitude_envelope(data: NDArray[np.float64], kernel_size: Optional[int] = None) -> NDArray[np.float64]:
@@ -34,8 +35,10 @@ def amplitude_envelope(data: NDArray[np.float64], kernel_size: Optional[int] = N
         - The envelope is processed to remove any leading or trailing zeros using the `exclude_trailing_and_leading_zeros` function.
     """
     if len(data) == 0:
-        return np.array([])
-    check_signal_format(data)
+        warnings.warn("Input signal is empty; returning an empty array.", RuntimeWarning)
+        return np.array([], dtype=np.float64)
+    
+    data = check_signal_format(data)
     
     # compute the analytic signal using Hilbert transform
     analytic_signal = signal.hilbert(data)
@@ -72,7 +75,7 @@ def duration(data: NDArray[np.float64], sr: int, exclude_surrounding_silences: O
     Returns:
         float: Duration of the (possibly trimmed) audio signal in seconds.
     """
-    check_signal_format(data)
+    data = check_signal_format(data)
     check_sr_format(sr)
 
     if exclude_surrounding_silences:
@@ -111,7 +114,7 @@ def temporal_quartiles(data: NDArray[np.float64], sr: int, kernel_size: Optional
           in the cumulative amplitude envelope. The result is scaled by the sample rate to return
           time values in seconds.
     """
-    check_signal_format(data)
+    data = check_signal_format(data)
     check_sr_format(sr)
 
     if len(data) == 0:
@@ -131,7 +134,7 @@ def temporal_quartiles(data: NDArray[np.float64], sr: int, kernel_size: Optional
     return (t_q1, t_median, t_q3)
 
 
-def temporal_sd(data: NDArray[np.float64], sr: int, kernel_size: Optional[int] = None) -> Tuple[float, float, float]:
+def temporal_sd(data: NDArray[np.float64], sr: int, kernel_size: Optional[int] = None) -> float:
     """
     Computes the temporal standard deviation of the amplitude envelope.
 
@@ -143,13 +146,13 @@ def temporal_sd(data: NDArray[np.float64], sr: int, kernel_size: Optional[int] =
     Returns:
         float: The temporal standard deviation in seconds
     """
-    check_signal_format(data)
+    data = check_signal_format(data)
     check_sr_format(sr)
     
     return np.std(amplitude_envelope(data, kernel_size))
 
 
-def temporal_skew(data: NDArray[np.float64], sr: int, kernel_size: Optional[int] = None) -> Tuple[float, float, float]:
+def temporal_skew(data: NDArray[np.float64], sr: int, kernel_size: Optional[int] = None) -> float:
     """
     Computes the temporal skew of the signal.
 
@@ -161,13 +164,13 @@ def temporal_skew(data: NDArray[np.float64], sr: int, kernel_size: Optional[int]
     Returns:
         float: The temporal skew
     """
-    check_signal_format(data)
+    data = check_signal_format(data)
     check_sr_format(sr)
     
     return skew(amplitude_envelope(data, kernel_size))
 
 
-def temporal_kurtosis(data: NDArray[np.float64], sr: int, kernel_size: Optional[int] = None) -> Tuple[float, float, float]:
+def temporal_kurtosis(data: NDArray[np.float64], sr: int, kernel_size: Optional[int] = None) -> float:
     """
     Computes the temporal kurtosis of the signal.
 
@@ -179,8 +182,39 @@ def temporal_kurtosis(data: NDArray[np.float64], sr: int, kernel_size: Optional[
     Returns:
         float: The temporal kurtosis
     """
-    check_signal_format(data)
+    data = check_signal_format(data)
     check_sr_format(sr)
     
     return kurtosis(amplitude_envelope(data, kernel_size))
 
+
+def temporal_features(data: NDArray[np.float64], sr: int, kernel_size: Optional[int] = None) -> dict:
+    """
+    Extracts a set of temporal features from the amplitude envelope of a signal.
+
+    Returns:
+        dict: {
+            "t_q1": float,
+            "t_median": float,
+            "t_q3": float,
+            "temporal_sd": float,
+            "temporal_skew": float,
+            "temporal_kurtosis": float,
+            "amplitude_envelope": NDArray[np.float64],
+            "duration": float
+        }
+    """
+    t_q1, t_median, t_q3 = temporal_quartiles(data, sr, kernel_size)
+    
+    features = {
+        "t_q1": t_q1,
+        "t_median": t_median,
+        "t_q3": t_q3,
+        "temporal_sd": temporal_sd(data, sr, kernel_size),
+        "temporal_skew": temporal_skew(data, sr, kernel_size),
+        "temporal_kurtosis": temporal_kurtosis(data, sr, kernel_size),
+        "amplitude_envelope": amplitude_envelope(data, kernel_size),
+        "duration": duration(data, sr, exclude_surrounding_silences=True)
+    }
+
+    return features

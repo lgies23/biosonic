@@ -1,19 +1,26 @@
 from numpy.typing import NDArray
 import numpy as np
 import logging
+from typing import Optional
 
 def check_sr_format(sr):
-    if not isinstance(sr, int):
-        raise TypeError("Sample rate must be of type integer.")
+    try:
+        sr = int(sr)
+    except Exception as e:
+        raise TypeError(f"Sample rate not transformable to integer: {e}")
     if sr <= 0:
         raise ValueError("Sample rate must be greater than zero.")
+    return sr
+
 
 def check_signal_format(data):
     data = np.asarray(data, dtype=np.float64)
     if data.ndim != 1:
         raise ValueError("Signal must be a 1D array.")
     if not np.issubdtype(data.dtype, np.floating):
-        raise TypeError("Signal must be of type np.float64.")
+        raise TypeError("Signal must be an array of type float.")
+    return data
+
 
 def exclude_trailing_and_leading_zeros(envelope: NDArray[np.float64]) -> NDArray[np.float64]:
     """
@@ -65,8 +72,40 @@ def exclude_trailing_and_leading_zeros(envelope: NDArray[np.float64]) -> NDArray
     
     return envelope
 
+
 def probability_mass_function(envelope: NDArray[np.float64]) -> NDArray[np.float64]:
     return envelope / np.sum(envelope)
 
+
 def cumulative_distribution_function(envelope: NDArray[np.float64]) -> NDArray[np.float64]:
     return np.cumsum(probability_mass_function(envelope))
+
+
+def extract_all_features(
+    data: NDArray[np.float64], 
+    sr: int, 
+    kernel_size: Optional[int] = None,
+    n_dominant_freqs: int = 1
+) -> dict:
+    """
+    Extracts a comprehensive set of temporal and spectral features from a signal.
+
+    Args:
+        data (NDArray[np.float64]): Input 1D signal.
+        sr (int): Sampling rate in Hz.
+        kernel_size (Optional[int]): Size of smoothing kernel for amplitude envelope.
+        n_dominant_freqs (int): Number of dominant frequencies to extract per frame.
+
+    Returns:
+        dict: Dictionary of extracted features.
+    """
+    from .spectral import spectral_features
+    from .temporal import temporal_features
+    
+    check_signal_format(data)
+    check_sr_format(sr)
+
+    temporal_feats = temporal_features(data, sr, kernel_size)
+    spectral_feats = spectral_features(data, sr, n_dominant_freqs=n_dominant_freqs)
+
+    return {**temporal_feats, **spectral_feats}

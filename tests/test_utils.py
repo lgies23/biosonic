@@ -3,17 +3,18 @@ import pytest
 from numpy.testing import assert_array_equal
 
 def test_check_sr_format():
-    from ..compute.utils import check_sr_format
+    from biosonic.compute.utils import check_sr_format
 
     # check valid case
-    check_sr_format(44100)
+    sr = check_sr_format(44100)
+    assert np.isclose(sr, 44100) and isinstance(sr, int)
+    sr = check_sr_format(44100.0)
+    assert np.isclose(sr, 44100) and isinstance(sr, int)
+    sr = check_sr_format("44100")
+    assert np.isclose(sr, 44100) and isinstance(sr, int)
 
-    # check non integer cases
-    with pytest.raises(TypeError, match="Sample rate must be of type integer."):
-        check_sr_format(44100.0)
-
-    with pytest.raises(TypeError, match="Sample rate must be of type integer."):
-        check_sr_format("44100")
+    with pytest.raises(TypeError, match="Sample rate not transformable to integer."):
+        check_sr_format("string")
 
     # check greater zero cases
     with pytest.raises(ValueError, match="Sample rate must be greater than zero."):
@@ -24,20 +25,27 @@ def test_check_sr_format():
 
 
 def test_check_signal_format():
-    from ..compute.utils import check_signal_format
+    from biosonic.compute.utils import check_signal_format
 
     # check valid case
     signal = np.array([0.1, 0.2, 0.3], dtype=np.float64)
-    check_signal_format(signal)  # Should not raise
+    returned_signal = check_signal_format(signal)
+    assert len(returned_signal) == len(signal)
 
     # check integer array
-    check_signal_format(np.array([1, 2, 3], dtype=np.int32))
+    signal = np.array([1, 2, 3], dtype=np.int32)
+    returned_signal = check_signal_format(signal)
+    assert len(returned_signal) == len(signal)
 
     # check non-numpy array
-    check_signal_format([0.1, 0.2, 0.3])
+    signal = [0.1, 0.2, 0.3]
+    returned_signal = check_signal_format(signal)
+    assert len(returned_signal) == len(signal)
 
     # check string array
-    check_signal_format(np.array(["1", "2", "3"], dtype=np.int32))
+    signal = np.array(["1", "2", "3"])
+    returned_signal = check_signal_format(signal)
+    assert len(returned_signal) == len(signal)
 
     # check wrong dimensions
     with pytest.raises(ValueError, match="Signal must be a 1D array."):
@@ -45,7 +53,7 @@ def test_check_signal_format():
 
 
 def test_exclude_trailing_and_leading_zeros():
-    from ..compute.utils import exclude_trailing_and_leading_zeros
+    from biosonic.compute.utils import exclude_trailing_and_leading_zeros
 
     # check valid case
     arr = np.array([0, 0, 1, 2, 3, 0])

@@ -3,7 +3,7 @@ import pytest
 from numpy.testing import assert_array_almost_equal
 
 def test_amplitude_envelope():
-    from ..compute.temporal import amplitude_envelope
+    from biosonic.compute.temporal import amplitude_envelope
     
     # check basic signal without smoothing
     signal = np.array([0, 1, 2, 3, 2, 1, 0], dtype=np.float64)
@@ -18,9 +18,8 @@ def test_amplitude_envelope():
     # TODO
 
     # check empty signal
-    signal = np.array([], dtype=np.float64)
-    expected = np.array([])
-    assert_array_almost_equal(amplitude_envelope(signal), expected, decimal=5)
+    with pytest.warns(RuntimeWarning, match="Input signal is empty; returning an empty array."):
+        assert len(amplitude_envelope(np.array([]))) == 0
     
     # check signal with all zeros
     signal = np.array([0, 0, 0, 0], dtype=np.float64)
@@ -33,7 +32,7 @@ def test_amplitude_envelope():
         amplitude_envelope(signal)
 
 def test_duration():
-    from ..compute.temporal import duration
+    from biosonic.compute.temporal import duration
 
     # check basic duration calculation without silence exclusion
     signal = np.array([1, 2, 3, 4, 5], dtype=np.float64)
@@ -76,7 +75,7 @@ def test_duration():
 
 
 def test_temporal_quartiles():
-    from ..compute.temporal import temporal_quartiles
+    from biosonic.compute.temporal import temporal_quartiles
     
     # check basic case
     signal = np.array([0, 1, 2, 3, 2, 1, 0], dtype=np.float64)
@@ -125,7 +124,7 @@ def test_temporal_kurtosis():
 def test_spectrum():
     import numpy as np
     import pytest
-    from ..compute.spectral import spectrum
+    from biosonic.compute.spectral import spectrum
 
     # basic amplitude spectrum
     signal = np.array([0, 1, 0, -1], dtype=np.float64)
@@ -170,3 +169,44 @@ def test_spectrum():
     assert spec.shape == signal.shape
     assert np.all(spec >= 0)
     assert np.allclose(spec, np.abs(np.fft.fft(signal)))
+
+
+def test_peak_frequency():
+    from biosonic.compute.spectral import peak_frequency
+    sampling_rate = 1000
+
+    # check single sine wave
+    t = np.linspace(0, 1.0, sampling_rate, endpoint=False)
+    signal = np.sin(2 * np.pi * 50.0 * t)
+    freq_est = peak_frequency(signal, sampling_rate)
+    print(freq_est)
+    assert np.isclose(freq_est, 50)
+
+    # check mixed signal (strongest component is 120 Hz)
+    sampling_rate = 2000
+    t = np.linspace(0, 1.0, sampling_rate, endpoint=False)
+    signal = np.sin(2 * np.pi * 120.0 * t) + 0.5 * np.sin(2 * np.pi * 300.0 * t)
+    freq_est = peak_frequency(signal, sampling_rate)
+    assert np.isclose(freq_est, 120)
+
+    # check sine wave with noise
+    np.random.seed(42)
+    sampling_rate = 1000
+    t = np.linspace(0, 1.0, sampling_rate, endpoint=False)
+    signal = np.sin(2 * np.pi * 80.0 * t) + 0.3 * np.random.randn(len(t))
+    freq_est = peak_frequency(signal, sampling_rate)
+    assert np.isclose(freq_est, 80)
+
+    # check empty signal
+    with pytest.warns(RuntimeWarning, match="Input signal is empty; returning NaN for peak frequency."):
+        assert peak_frequency(np.array([], dtype=np.float64), sampling_rate) is None
+
+
+    # check invalid shape (not 1D)
+    with pytest.raises(ValueError, match="Signal must be a 1D array"):
+        peak_frequency(np.array([[1, 2, 3]]), sampling_rate)
+
+    # check DC signal
+    signal = np.ones(1024, dtype=np.float64)
+    freq_est = peak_frequency(signal, sampling_rate)
+    assert freq_est == 0.0
