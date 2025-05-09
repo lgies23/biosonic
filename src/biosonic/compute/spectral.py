@@ -2,7 +2,7 @@ import numpy as np
 from numpy.typing import NDArray, ArrayLike
 from scipy import fft, signal
 from scipy.stats import gmean
-from typing import Optional, Tuple, Union
+from typing import Optional, Tuple, Union, Literal
 import warnings
 from .utils import exclude_trailing_and_leading_zeros, check_signal_format, check_sr_format, cumulative_distribution_function
 
@@ -62,7 +62,10 @@ def spectrogram(
         sr: int, 
         window: Union[str, NDArray] = "hann", 
         window_length: int = 1024, 
-        overlap: float = .5, *args, **kwargs
+        overlap: float = .5, 
+        scaling: str = "magnitude",
+        *args, 
+        **kwargs
     ) -> Tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
     """
     Compute the spectrogram of a 1D signal using short-time Fourier transform (STFT).
@@ -76,16 +79,19 @@ def spectrogram(
     window : Union[str, NDArray], optional
         Type of window to use (e.g., 'hann', 'hamming' of scipy.signal.windows) or a custom window array.
         Defaults to 'hann'.
-    window_length : int
+    window_length : int, optional
         Length of the analysis window in samples.
         Defaults to 1024. Ignored if the window is given as a custom array,
     overlap : float, optional
         Fractional overlap between adjacent windows (0 < overlap < 1).
         Defaults to 0.5 (50% overlap).
+    scaling : str, optional
+        scaling of the spectrogram, either 'magnitude' or 'psd' for power spectral density. 
+        Defaults to 'magnitude'.
     *args : tuple
-        Additional positional arguments to pass to the STFT method.
+        Additional positional arguments to pass to scipy's ShortTimeFFT class.
     **kwargs : dict
-        Additional keyword arguments to pass to the STFT method.
+        Additional keyword arguments to pass to scipy's ShortTimeFFT class.
 
     Returns
     -------
@@ -112,6 +118,7 @@ def spectrogram(
     (2020) SciPy 1.0: Fundamental Algorithms for Scientific Computing in Python. Nature Methods, 17(3), 
     261-272. DOI: 10.1038/s41592-019-0686-2.
     """
+    # todo more scaling, dynamic range, dB transform, invert, etc 
     data = check_signal_format(data)
     check_sr_format(sr)
 
@@ -119,7 +126,7 @@ def spectrogram(
         raise ValueError("Window overlap must be a float between 0 and 1.")
 
     if not isinstance(window_length, int) or window_length <= 0:
-        raise ValueError("`window_length` must be a positive integer.")
+        raise ValueError("'window_length' must be a positive integer.")
 
     if isinstance(window, str):
         try:
@@ -127,15 +134,70 @@ def spectrogram(
         except ValueError as e:
             raise ValueError(f"Invalid window type: {window}") from e
     elif not isinstance(window, np.ndarray):
-        raise TypeError("`window` must be either a string or a 1D NumPy array.")
+        raise TypeError("'window' must be either a string or a 1D NumPy array.")
     
     hop_length = int(window_length * (1 - overlap))
 
-    STFT = signal.ShortTimeFFT(window, hop_length, sr)
+    STFT = signal.ShortTimeFFT(window, hop_length, sr, scale_to=scaling, *args, **kwargs)
     Sx = STFT.stft(data, *args, **kwargs)
 
     return Sx, STFT.t(len(data)), STFT.f
 
+def transform_spectrogram_for_nn(
+        spectrogram: ArrayLike,
+        values_type: str = 'float32', 
+        add_channel: bool = True,
+        data_format: Literal['channels_last', 'channels_first'] = 'channels_first'
+    ) -> ArrayLike:
+    """
+    Prepares a spectrogram for input into a neural network by normalizing, casting type,
+    and optionally adding a channel dimension.
+
+    Parameters:
+        spectrogram : ArrayLike 
+            The input spectrogram as a 2D array (frequency x time).
+        values_type : str
+            Data type to cast the spectrogram to (e.g., 'float32', 'float64'). Defaults to 'float32'
+        add_channel : bool
+            Whether to add a greyscale channel dimension.
+        data_format : Literal['channels_last', 'channels_first']
+            Specifies channel dimension placement when `add_channel` is True. 
+            - 'channels_last' results in shape (H, W, 1) - e.g. for TensorFlow/Keras
+            - 'channels_first' results in shape (1, H, W) - e.g. for PyTorch
+
+    Returns:
+        ArrayLike : 
+            The transformed spectrogram, normalized to [0, 1], cast to the specified
+            data type, and optionally with a channel dimension added.
+    
+    Example:
+        >>> import numpy as np
+        >>> spec = np.random.rand(128, 128) * 255  # Example spectrogram
+        >>> processed = transform_spectrogram_for_nn(spec, values_type='float32',
+        ...                                          add_channel=True, data_format='channels_last')
+        >>> processed.shape
+        (128, 128, 1)
+        >>> processed.dtype
+        dtype('float32')
+    """
+    # Todo Error handling, type checks
+    if spectrogram.max() - spectrogram.min() == 0:
+        warnings.warn(f"Spectrogram contains no information (values in range [{spectrogram.min()}, {spectrogram.max()}]).", RuntimeWarning)
+    else:
+        # min-max-scale to range [0, 1]
+        spectrogram = (spectrogram - spectrogram.min()) / (spectrogram.max() - spectrogram.min())
+
+    # Convert to desired bit depth
+    spectrogram = spectrogram.astype(values_type)
+    
+    # Add channel dimension (e.g., grayscale)
+    if add_channel:
+        if data_format == 'channels_last':
+            spectrogram = np.expand_dims(spectrogram, axis=-1)  # (H, W, 1)
+        else:
+            spectrogram = np.expand_dims(spectrogram, axis=0)   # (1, H, W)
+
+    return spectrogram.astype(values_type)
 
 def spectral_quartiles(data: ArrayLike) -> Tuple[float, float, float]:
     # TODO docs, tests
