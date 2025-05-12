@@ -2,7 +2,7 @@ import numpy as np
 from numpy.typing import NDArray, ArrayLike
 from scipy import signal
 from scipy.stats import kurtosis, skew
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Union, Dict
 import warnings
 from .utils import exclude_trailing_and_leading_zeros, check_signal_format, check_sr_format, cumulative_distribution_function
 
@@ -134,9 +134,9 @@ def temporal_quartiles(data: NDArray[np.float64], sr: int, kernel_size: Optional
     cdf = cumulative_distribution_function(envelope)
 
     # temporal quartiles (Q1, median, Q3)
-    t_q1 = np.searchsorted(cdf, 0.25) / sr
-    t_median = np.searchsorted(cdf, 0.5) / sr
-    t_q3 = np.searchsorted(cdf, 0.75) / sr
+    t_q1 = float(np.searchsorted(cdf, 0.25) / sr)
+    t_median = float(np.searchsorted(cdf, 0.5) / sr)
+    t_q3 = float(np.searchsorted(cdf, 0.75) / sr)
 
     return (t_q1, t_median, t_q3)
 
@@ -152,15 +152,16 @@ def temporal_sd(data: NDArray[np.float64], sr: int, kernel_size: Optional[int] =
 
     Returns:
         float
-            The temporal standard deviation in seconds
+            The standard deviation of the amplitude envelope
     """
+    # TODO check calculation from scratch
     data = check_signal_format(data)
     check_sr_format(sr)
     
-    return np.std(amplitude_envelope(data, kernel_size))
+    return float(np.std(amplitude_envelope(data, kernel_size)))
 
 
-def temporal_skew(data: NDArray[np.float64], sr: int, kernel_size: Optional[int] = None) -> float:
+def temporal_skew(data: NDArray[np.float64], sr: int, kernel_size: Optional[int] = None) -> Optional[float]:
     """
     Computes the temporal skew of the signal.
 
@@ -176,10 +177,14 @@ def temporal_skew(data: NDArray[np.float64], sr: int, kernel_size: Optional[int]
     data = check_signal_format(data)
     check_sr_format(sr)
     
-    return skew(amplitude_envelope(data, kernel_size))
+    skew_ = skew(amplitude_envelope(data, kernel_size))
+    if skew_ == None:
+        warnings.warn("All values are equal, returning None for skew.")
+
+    return float(skew_)
 
 
-def temporal_kurtosis(data: NDArray[np.float64], sr: int, kernel_size: Optional[int] = None) -> float:
+def temporal_kurtosis(data: NDArray[np.float64], sr: int, kernel_size: Optional[int] = None) -> Optional[float]:
     """
     Computes the temporal kurtosis of the signal.
 
@@ -195,10 +200,19 @@ def temporal_kurtosis(data: NDArray[np.float64], sr: int, kernel_size: Optional[
     data = check_signal_format(data)
     check_sr_format(sr)
     
-    return kurtosis(amplitude_envelope(data, kernel_size))
+    kurtosis_ = kurtosis(amplitude_envelope(data, kernel_size))
+
+    if kurtosis_ == None:
+        warnings.warn("All values are equal, returning None for kurtosis.")
+
+    return float(kurtosis_)
 
 
-def temporal_features(data: NDArray[np.float64], sr: int, kernel_size: Optional[int] = None) -> dict:
+def temporal_features(
+        data: NDArray[np.float64], 
+        sr: int, 
+        kernel_size: Optional[int] = None
+        ) -> Dict[str, Union[float, NDArray[np.float64]]]:
     """
     Extracts a set of temporal features from the amplitude envelope of a signal.
 

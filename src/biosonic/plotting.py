@@ -1,21 +1,30 @@
 import matplotlib.pyplot as plt
 import numpy as np
+from numpy.typing import ArrayLike, NDArray
+from typing import Union, Dict
 from compute.spectral import spectrogram
-from compute.utils import extract_all_features
+from compute.utils import extract_all_features, check_signal_format, check_sr_format
 
-def plot_features(data, sr, features):
+def plot_features(
+        data: ArrayLike, 
+        sr: int, 
+        features: Dict[str, Union[float, NDArray[np.float64]]]
+    ) -> None:
     """
     Plot audio signal features using precomputed feature dictionary.
     """
+    data = check_signal_format(data)
+    sr = check_sr_format(sr)
     features = extract_all_features(data, sr)
-    spectrogram_db = 20 * np.log10(np.abs(spectrogram(data)))
+    spec, times, freqs = spectrogram(data, sr)
+    spectrogram_db = 20 * np.log10(np.abs(spec))
 
     # Spectrogram with Dominant Frequencies
     plt.figure(figsize=(12, 12))
     plt.subplot(3, 1, 1)
     plt.title("Spectrogram with Dominant Frequencies")
-    plt.pcolormesh(features["spectrogram_times"], features["spectrogram_freqs"], spectrogram_db, shading='gouraud', cmap='viridis')
-    plt.scatter(features["spectrogram_times"], features["dominant_freqs"], color=(0.7, 0.1, 0.1, 0.3), marker="o", label='Dominant Frequency')
+    plt.pcolormesh(times, freqs, spectrogram_db, shading='gouraud', cmap='viridis')
+    plt.scatter(times, features["dominant_freqs"], color=(0.7, 0.1, 0.1, 0.3), marker="o", label='Dominant Frequency')
     plt.colorbar(label="Amplitude (dB)")
     plt.xlabel("Time (s)")
     plt.ylabel("Frequency (Hz)")
@@ -24,8 +33,15 @@ def plot_features(data, sr, features):
     # Power Spectrum
     plt.subplot(3, 1, 2)
     plt.title("Power Spectrum with Spectral Features")
-    cutoff = len(features["freqs_ps"]) - len(features["freqs_ps"]) // 3
-    plt.plot(features["freqs_ps"][:cutoff], features["filtered_pow_spectrum"][:cutoff], label="Power Spectrum", color='blue')
+    freq_ps = features["freqs_ps"]
+    filtered_ps = features["filtered_pow_spectrum"]
+    if not isinstance(freq_ps, np.ndarray):
+        raise TypeError("Expected 'freqs_ps' to be an ndarray.")
+    if not isinstance(filtered_ps, np.ndarray):
+        raise TypeError("Expected 'freqs_ps' to be an ndarray.")
+    cutoff = len(freq_ps) - len(freq_ps) // 3
+    plt.plot(freq_ps[:cutoff], filtered_ps[:cutoff], label="Power Spectrum", color='blue')
+    
     plt.axvline(features["mean_f"] * 1000, color='green', linestyle="--", label="Mean Frequency (kHz)")
     plt.axvline(features["mean_peak_f"] * 1000, color='orange', linestyle="-", label="Peak Frequency (kHz)")
     plt.axvline(features["f_median"], color='red', linestyle="--", label="Median")

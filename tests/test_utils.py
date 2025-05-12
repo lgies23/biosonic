@@ -89,3 +89,47 @@ def test_exclude_trailing_and_leading_zeros():
     arr = np.array([[0, 1, 2], [0, 0, 3]])
     with pytest.raises(ValueError, match="Input array must be 1D."):
         exclude_trailing_and_leading_zeros(arr)
+
+
+def test_transform_spectrogram_for_nn():
+    from biosonic.compute.utils import transform_spectrogram_for_nn
+
+    # test normalization
+    spectrogram = np.array(np.random.rand(32, 32) * 255, dtype='float32')
+    transformed = transform_spectrogram_for_nn(spectrogram, add_channel=False)
+    assert np.isclose(transformed.max(), 1.0)
+    assert np.isclose(transformed.min(), 0.0)
+    assert transformed.shape == (32, 32)
+
+    # test type casting   
+    spectrogram = np.array(np.random.rand(64, 64) * 255, dtype = 'uint8')
+    transformed = transform_spectrogram_for_nn(spectrogram, values_type='float64', add_channel=False)
+    assert transformed.dtype == np.float64
+    
+    spectrogram = np.array(np.random.rand(64, 64) * 255, dtype = 'float32')
+    transformed = transform_spectrogram_for_nn(spectrogram, values_type='float64', add_channel=False)
+    assert transformed.dtype == np.float64
+
+    # test channel addition (first)
+    spectrogram = np.array(np.random.rand(32, 32) * 255)
+    transformed = transform_spectrogram_for_nn(spectrogram, add_channel=True, data_format='channels_first')
+    assert transformed.shape == (1, 32, 32)
+
+    # test channel addition (last)
+    spectrogram = np.array(np.random.rand(32, 32) * 255)
+    transformed = transform_spectrogram_for_nn(spectrogram, add_channel=True, data_format='channels_last')
+    assert transformed.shape == (32, 32, 1)
+
+    # test no channel addition
+    spectrogram = np.array(np.random.rand(32, 32) * 255)
+    transformed = transform_spectrogram_for_nn(spectrogram, add_channel=False)
+    assert transformed.shape == (32, 32)
+
+    # test zero (information) input
+    spectrogram = np.zeros((16, 16))
+    with pytest.warns(RuntimeWarning, match="Spectrogram contains no information"):
+        transformed = transform_spectrogram_for_nn(spectrogram)
+
+    spectrogram = np.full((10, 10), fill_value=5)
+    with pytest.warns(RuntimeWarning, match="Spectrogram contains no information"):
+        transformed = transform_spectrogram_for_nn(spectrogram)

@@ -128,23 +128,24 @@ def test_spectrum():
 
     # basic amplitude spectrum
     signal = np.array([0, 1, 0, -1], dtype=np.float64)
-    spec = spectrum(signal, mode='amplitude')
+    freqs, spec = spectrum(signal, mode='amplitude')
+    assert freqs is None
     assert isinstance(spec, np.ndarray)
     assert spec.shape == signal.shape
     assert np.all(spec >= 0)
 
     # basic power spectrum
-    power_spec = spectrum(signal, mode='power')
+    _, power_spec = spectrum(signal, mode='power')
     assert np.allclose(power_spec, np.abs(np.fft.fft(signal))**2)
 
     # check arbitrary exponent
-    spec3 = spectrum(signal, mode=3)
-    assert np.allclose(spec3, np.abs(np.fft.fft(signal))**3)
+    _, spec = spectrum(signal, mode=3)
+    assert np.allclose(spec, np.abs(np.fft.fft(signal))**3)
 
     # check that amplitude and mode=1 give same result
-    spec1 = spectrum(signal, mode=1)
-    spec_amp = spectrum(signal, mode='amplitude')
-    assert np.allclose(spec1, spec_amp)
+    _, spec = spectrum(signal, mode=1)
+    _, spec_amp = spectrum(signal, mode='amplitude')
+    assert np.allclose(spec, spec_amp)
 
     # check that invalid string raises error
     with pytest.raises(ValueError, match="Invalid string mode"):
@@ -157,18 +158,19 @@ def test_spectrum():
     # check empty input
     empty_signal = np.array([], dtype=np.float64)
     with pytest.warns(RuntimeWarning, match="Input signal is empty"):
-        spec_empty = spectrum(empty_signal, mode='amplitude')
+        freqs_empty, spec_empty = spectrum(empty_signal, mode='amplitude')
         assert spec_empty.size == 0
         assert isinstance(spec_empty, np.ndarray)
-
+        assert freqs_empty == None
 
     # check default = "amplitude"
     signal = np.array([0, 1, 0, -1], dtype=np.float64)
-    spec = spectrum(signal)
+    freqs, spec = spectrum(signal, sr=4)
     assert isinstance(spec, np.ndarray)
     assert spec.shape == signal.shape
     assert np.all(spec >= 0)
     assert np.allclose(spec, np.abs(np.fft.fft(signal)))
+    assert freqs.shape == spec.shape
 
 
 def test_peak_frequency():
@@ -198,9 +200,8 @@ def test_peak_frequency():
     assert np.isclose(freq_est, 80)
 
     # check empty signal
-    with pytest.warns(RuntimeWarning, match="Input signal is empty; returning NaN for peak frequency."):
+    with pytest.raises(ValueError, match="Input signal is empty; could not determine peak frequency."):
         assert peak_frequency(np.array([], dtype=np.float64), sampling_rate) is None
-
 
     # check invalid shape (not 1D)
     with pytest.raises(ValueError, match="Signal must be a 1D array"):
@@ -235,50 +236,3 @@ def test_spectrogram():
     assert isinstance(freqs, np.ndarray) and freqs.ndim == 1, "Frequencies must be 1D array"
     assert Sx.shape[0] == len(freqs)
     assert Sx.shape[1] == len(times)
-
-
-
-
-def test_transform_spectrogram_for_nn():
-    from biosonic.compute.spectral import transform_spectrogram_for_nn
-    from typing import Literal
-
-    # test normalization
-    spectrogram = np.array(np.random.rand(32, 32) * 255, dtype='float32')
-    transformed = transform_spectrogram_for_nn(spectrogram, add_channel=False)
-    assert np.isclose(transformed.max(), 1.0)
-    assert np.isclose(transformed.min(), 0.0)
-    assert transformed.shape == (32, 32)
-
-    # test type casting   
-    spectrogram = np.array(np.random.rand(64, 64) * 255, dtype = 'uint8')
-    transformed = transform_spectrogram_for_nn(spectrogram, values_type='float64', add_channel=False)
-    assert transformed.dtype == np.float64
-    
-    spectrogram = np.array(np.random.rand(64, 64) * 255, dtype = 'float32')
-    transformed = transform_spectrogram_for_nn(spectrogram, values_type='float64', add_channel=False)
-    assert transformed.dtype == np.float64
-
-    # test channel addition (first)
-    spectrogram = np.array(np.random.rand(32, 32) * 255)
-    transformed = transform_spectrogram_for_nn(spectrogram, add_channel=True, data_format='channels_first')
-    assert transformed.shape == (1, 32, 32)
-
-    # test channel addition (last)
-    spectrogram = np.array(np.random.rand(32, 32) * 255)
-    transformed = transform_spectrogram_for_nn(spectrogram, add_channel=True, data_format='channels_last')
-    assert transformed.shape == (32, 32, 1)
-
-    # test no channel addition
-    spectrogram = np.array(np.random.rand(32, 32) * 255)
-    transformed = transform_spectrogram_for_nn(spectrogram, add_channel=False)
-    assert transformed.shape == (32, 32)
-
-    # test zero (information) input
-    spectrogram = np.zeros((16, 16))
-    with pytest.warns(RuntimeWarning, match="Spectrogram contains no information"):
-        transformed = transform_spectrogram_for_nn(spectrogram)
-
-    spectrogram = np.full((10, 10), fill_value=5)
-    with pytest.warns(RuntimeWarning, match="Spectrogram contains no information"):
-        transformed = transform_spectrogram_for_nn(spectrogram)
