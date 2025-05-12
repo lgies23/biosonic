@@ -24,7 +24,6 @@ name = "biosonic"
 version = "0.0"
 dependencies = [
   "numpy>=1.26.4",
-  "praat-parselmouth>=0.4.5",
   "scipy>=1.12",
 ]
 
