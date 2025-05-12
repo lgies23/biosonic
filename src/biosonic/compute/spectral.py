@@ -71,7 +71,7 @@ def spectrum(data: ArrayLike,
 def spectrogram(
         data: ArrayLike, 
         sr: int, 
-        window: Union[str, NDArray] = "hann", 
+        window: Union[str, ArrayLike] = "hann", 
         window_length: int = 1024, 
         overlap: float = .5, 
         scaling: str = "magnitude",
