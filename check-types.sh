@@ -16,4 +16,7 @@ else
   source .venv-py39/bin/activate
 fi
 
+echo "Python version in use: $(python --version)"
+echo "mypy path: $(which mypy)"
+
 mypy src/

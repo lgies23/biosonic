@@ -40,4 +40,4 @@ jobs:
         pytest
     - name: Test typing with mypy
       run: |
-        mypy src
+        mypy --config-file pyproject.toml src

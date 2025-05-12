@@ -11,6 +11,14 @@ package-dir = {"" = "src"}
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.mypy]
+python_version = "3.9"
+ignore_missing_imports = true
+strict = true
+show_error_codes = true
+pretty = true
+exclude = ["tests/", "build/", "dist/"]
+
 [project]
 name = "biosonic"
 version = "0.0"
