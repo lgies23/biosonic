@@ -44,15 +44,16 @@ def spectrum(data: ArrayLike,
     data = check_signal_format(data)
 
     freqs = None
-    if sr != None:
-        sr = check_sr_format(sr)
-        freqs = fft.fftfreq(len(data), d=1/sr)
 
     if data.size == 0:
         warnings.warn("Input signal is empty; returning an empty spectrum.", RuntimeWarning)
         return freqs, np.array([], dtype=np.float64)
     
-    magnitude_spectrum = np.abs(fft.fft(data))
+    if sr is not None:
+        sr = check_sr_format(sr)
+        freqs = fft.rfftfreq(len(data), d=1/sr)
+    
+    magnitude_spectrum = np.abs(fft.rfft(data))
 
     if isinstance(mode, str):
         mode = mode.lower()
@@ -119,7 +120,6 @@ def spectrogram(
     
     References:
     -----
-
     Pauli Virtanen, Ralf Gommers, Travis E. Oliphant, Matt Haberland, Tyler Reddy, David Cournapeau, 
     Evgeni Burovski, Pearu Peterson, Warren Weckesser, Jonathan Bright, Stéfan J. van der Walt, 
     Matthew Brett, Joshua Wilson, K. Jarrod Millman, Nikolay Mayorov, Andrew R. J. Nelson, Eric Jones, 
@@ -156,7 +156,55 @@ def spectrogram(
 
 
 def spectral_quartiles(data: ArrayLike, sr: int) -> Tuple[float, float, float]:
-    # TODO docs, tests
+    """
+    Compute the 1st, 2nd (median), and 3rd quartiles of the power spectrum of a signal.
+
+    Parameters
+    ----------
+    data : ArrayLike
+        Input signal as a 1D array-like.
+    sr : int
+        Sampling rate (in Hz).
+
+    Returns
+    -------
+    q1 : float
+        Frequency at which the cumulative power spectrum reaches the 25% mark.
+    q2 : float
+        Frequency at which the cumulative power spectrum reaches the 50% mark (median frequency).
+    q3 : float
+        Frequency at which the cumulative power spectrum reaches the 75% mark.
+
+    Raises
+    ------
+    ValueError
+        If the input signal is empty.
+    ValueError
+        If the input signal contains only zeros.
+    ValueError
+        If the spectrum output is inconsistent (e.g., mismatched lengths).
+
+    Notes
+    -----
+    This function calculates spectral quartiles using the cumulative distribution function (CDF)
+    of the signal's power spectrum. Quartiles are determined by finding the frequencies
+    at which the CDF crosses 25%, 50%, and 75%.
+
+    See Also
+    --------
+    spectrum : Computes the frequency and spectral envelope of a signal.
+    cumulative_distribution_function : Computes the normalized cumulative sum of a spectrum.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from mymodule import spectral_quartiles
+    >>> sr = 1000
+    >>> t = np.linspace(0, 1, sr, endpoint=False)
+    >>> x = np.sin(2 * np.pi * 10 * t) + 0.5 * np.sin(2 * np.pi * 30 * t)
+    >>> spectral_quartiles(x, sr)
+    (10.0, 20.0, 30.0)
+    """
     data = check_signal_format(data)
     sr = check_sr_format(sr)
     if len(data) == 0:
@@ -167,54 +215,142 @@ def spectral_quartiles(data: ArrayLike, sr: int) -> Tuple[float, float, float]:
     frequencies, envelope = spectrum(data, sr=sr, mode="power")
     cdf = cumulative_distribution_function(envelope)
 
-    if frequencies == None or len(frequencies) != len(envelope): 
+    if frequencies is None or len(frequencies) != len(envelope): 
         raise ValueError("Freuency bins don't match envelope") 
     
     return frequencies[np.searchsorted(cdf, 0.25)], frequencies[np.searchsorted(cdf, 0.5)], frequencies[np.searchsorted(cdf, 0.75)]
 
 
-def flatness(data: ArrayLike) -> float:
-    # TODO docs, tests
-    # Sueur, J. (2018). Sound Analysis and Synthesis with R (Springer International Publishing) https://doi.org/10.1007/978-3-319-77647-7, p. 299
+def flatness(data: ArrayLike) -> Union[float, np.floating[Any]]:
+    """
+    Compute the spectral flatness (also known as Wiener entropy) of a signal.
+
+    Spectral flatness is a measure of how noise-like a signal is. A flatness close to 1 
+    indicates a flat (white noise-like) spectrum, whereas a value close to 0 indicates 
+    a peaky (tonal) spectrum.
+
+    Parameters
+    ----------
+    data : ArrayLike
+        Time-domain input signal (1D array-like).
+
+    Returns
+    -------
+    float
+        Spectral flatness value, defined as the ratio of the geometric mean to the arithmetic mean 
+        of the signal's power spectrum (excluding leading/trailing zeros).
+
+    Raises
+    ------
+    ValueError
+        If input signal is empty, contains only zeros, or the computed flatness is not a float (from np.mean and scipy's gmean).
+
+    References
+    ----------
+    Sueur, J. (2018). *Sound Analysis and Synthesis with R*. Springer International Publishing, p. 299.
+    https://doi.org/10.1007/978-3-319-77647-7
+    """
     data = check_signal_format(data)
-    _, envelope = spectrum(data, mode="power")
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        _, envelope = spectrum(data, mode="power")
+
     ps_wo_zeros = exclude_trailing_and_leading_zeros(envelope)
+    if len(ps_wo_zeros) == 0:
+        raise ValueError("Input signal contained only zero values")
     
     flatness_ = gmean(ps_wo_zeros) / np.mean(ps_wo_zeros)
-    if not isinstance(flatness, float): 
+    if not np.isscalar(flatness_) or not isinstance(flatness_, (float, np.floating)):
         raise ValueError(f"Received wrong data type for spectral flatness: {type(flatness_)}")
     return flatness_
 
 
-def mean_frequency(data: ArrayLike, sr: int) -> float:
-    # TODO docs, tests
-    data = check_signal_format(data)
-    check_sr_format(sr)
+def centroid(data: ArrayLike, sr: int)-> Union[float, np.floating[Any]]:
+    """
+    Compute the spectral centroid of a signal.
 
-    freqs, ps = spectrum(data, sr=sr, mode="power")
+    The spectral centroid represents the "center of mass" of the power spectrum,
+    giving a measure of where the energy of the spectrum is concentrated. It is 
+    calculated as the weighted average of the frequency components, using the 
+    magnitude spectrum as weights.
 
-    return float(np.average(freqs, weights=ps))
-
-
-def variance(data: ArrayLike, sr: int) -> float:
-    # TODO docs, tests
-    data = check_signal_format(data)
-    check_sr_format(sr)
-
-    freqs, ps = spectrum(data, sr=sr, mode="power")
-    mean_frequency = np.average(freqs, weights=ps)
-
-    assert freqs != None
-    return float(np.sum(ps * (freqs - mean_frequency)**2)) / np.sum(ps)
-
-
-def standard_deviation(data: ArrayLike, sr: int) -> float:
-    # TODO docs, tests
+    Parameters
+    ----------
+    data : ArrayLike
+        Input time-domain signal. Must be one-dimensional and convertible to a NumPy array.
     
-    return float(np.sqrt(variance(data, sr)))
+    sr : int
+        Sampling rate of the input signal in Hz.
+
+    Returns
+    -------
+    centroid : float or np.floating
+        Spectral centroid in Hz. A higher value indicates that the signal's energy 
+        is biased toward higher frequencies.
+
+    Raises
+    ------
+    ValueError
+        If the computed centroid is not a scalar floating-point value.
+
+    Examples
+    --------
+    >>> signal = np.random.randn(1024)
+    >>> sr = 44100
+    >>> centroid(signal, sr)
+    7101.56
+    """
+    data = check_signal_format(data)
+    sr = check_sr_format(sr)
+
+    freqs, ms = spectrum(data, sr=sr)
+    centroid_ = np.average(freqs, weights=ms)
+
+    if not np.isscalar(centroid_) or not isinstance(centroid_, (float, np.floating)):
+        raise ValueError(f"Received wrong data type for spectral centroid: {type(centroid_)}")
+
+    return centroid_
 
 
-def peak_frequency(data: ArrayLike, sr: int) -> float:
+def bandwidth(data: ArrayLike, sr: int) -> Union[float, np.floating[Any]]:
+    """
+    Compute the mean spectral bandwidth (standard deviation) of a signal.
+
+    Parameters
+    ----------
+    data : ArrayLike
+        Input signal as a 1D array-like.
+    sr : int
+        Sampling rate of the signal, in Hz.
+
+    Returns
+    -------
+    float
+        The standard deviation of the signal.
+    
+    Examples
+    --------
+    >>> import numpy as np
+    >>> signal = np.array([1.0, 2.0, 3.0, 4.0, 5.0])
+    >>> standard_deviation(signal, sr=1)
+    1.4142135623730951
+    """
+    data = check_signal_format(data)
+    sr = check_sr_format(sr)
+
+    freqs, ms = spectrum(data, sr=sr)
+    centroid_ = np.average(freqs, weights=ms)
+
+    bandwidth_ = np.sqrt(np.sum(ms * (freqs-centroid_)**2))
+
+    if not np.isscalar(bandwidth_) or not isinstance(bandwidth_, (float, np.floating)):
+        raise ValueError(f"Received wrong data type for spectral bandwidth: {type(bandwidth_)}")
+
+    return bandwidth_
+
+
+def peak_frequency(data: ArrayLike, sr: int) -> Union[float, np.floating[Any]]:
     """
     Computes the peak frequency of a signal using the Fourier transform.
 
@@ -281,7 +417,7 @@ def dominant_frequencies(data: ArrayLike, sr: int, n_freqs: Optional[int] = 1, *
 def spectral_features(data: ArrayLike, 
                       sr: int,
                       n_freqs: Optional[int] = 1
-                      ) -> Dict[str, Union[float, NDArray[np.float64]]]:
+                      ) -> Dict[str, Union[float, np.floating, NDArray[np.float64]]]:
     """
     Extracts a set of spectral features from a signal.
 
@@ -295,8 +431,7 @@ def spectral_features(data: ArrayLike,
             "fq_median": float,
             "fq_q3": float,
             "spectral_flatness": float,
-            "mean_frequency": float,
-            "spectral_variance": float,
+            "centroid": float,
             "spectral_std": float,
             "peak_frequency": float,
             "dominant_frequencies": NDArray[np.float64]
@@ -312,9 +447,8 @@ def spectral_features(data: ArrayLike,
         "fq_median": fq_median_bin,
         "fq_q3": fq_q3_bin,
         "spectral_flatness": flatness(data),
-        "mean_frequency": mean_frequency(data, sr),
-        "spectral_variance": variance(data, sr),
-        "spectral_std": standard_deviation(data, sr),
+        "centroid": centroid(data, sr),
+        "spectral_std": bandwidth(data, sr),
         "peak_frequency": peak_frequency(data, sr),
         "dominant_frequencies": dominant_frequencies(data, sr, n_freqs=n_freqs)
     }

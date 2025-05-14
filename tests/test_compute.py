@@ -127,20 +127,21 @@ def test_spectrum():
     from biosonic.compute.spectral import spectrum
 
     # basic amplitude spectrum
-    signal = np.array([0, 1, 0, -1], dtype=np.float64)
+    t = np.linspace(0, 1.0, 100, endpoint=False)
+    signal = np.sin(2 * np.pi * 50.0 * t)
     freqs, spec = spectrum(signal, mode='amplitude')
     assert freqs is None
     assert isinstance(spec, np.ndarray)
-    assert spec.shape == signal.shape
+    assert len(spec) == (len(signal) // 2 +1)
     assert np.all(spec >= 0)
 
     # basic power spectrum
     _, power_spec = spectrum(signal, mode='power')
-    assert np.allclose(power_spec, np.abs(np.fft.fft(signal))**2)
+    assert np.allclose(power_spec, np.abs(np.fft.rfft(signal))**2)
 
     # check arbitrary exponent
     _, spec = spectrum(signal, mode=3)
-    assert np.allclose(spec, np.abs(np.fft.fft(signal))**3)
+    assert np.allclose(spec, np.abs(np.fft.rfft(signal))**3)
 
     # check that amplitude and mode=1 give same result
     _, spec = spectrum(signal, mode=1)
@@ -167,9 +168,9 @@ def test_spectrum():
     signal = np.array([0, 1, 0, -1], dtype=np.float64)
     freqs, spec = spectrum(signal, sr=4)
     assert isinstance(spec, np.ndarray)
-    assert spec.shape == signal.shape
+    assert len(spec) == (len(signal) // 2 + 1)
     assert np.all(spec >= 0)
-    assert np.allclose(spec, np.abs(np.fft.fft(signal)))
+    assert np.allclose(spec, np.abs(np.fft.rfft(signal)))
     assert freqs.shape == spec.shape
 
 
@@ -236,3 +237,105 @@ def test_spectrogram():
     assert isinstance(freqs, np.ndarray) and freqs.ndim == 1, "Frequencies must be 1D array"
     assert Sx.shape[0] == len(freqs)
     assert Sx.shape[1] == len(times)
+
+def test_spectral_quartiles(monkeypatch):
+    from biosonic.compute.spectral import spectral_quartiles
+    
+    # basic sinosoid
+    sr = 1000
+    t = np.linspace(0, 1, sr, endpoint=False)
+    x = np.sin(2 * np.pi * 20 * t)
+    q1, q2, q3 = spectral_quartiles(x, sr)
+    assert q1 <= q2 <= q3
+    assert np.isclose(q2, 20, atol=5)
+
+    # empty input
+    with pytest.raises(ValueError, match="Input is empty"):
+        spectral_quartiles([], 1000)
+
+    # zero signal
+    with pytest.raises(ValueError, match="Signal contains no nonzero values"):
+        spectral_quartiles(np.zeros(1000), 1000)
+
+    # mismatched frequencies
+    def fake_spectrum(*args, **kwargs):
+        return np.array([0, 1, 2]), np.array([1.0])  # Mismatched lengths
+    monkeypatch.setattr("biosonic.compute.spectral.spectrum", fake_spectrum)
+
+    with pytest.raises(ValueError, match="Freuency bins don't match envelope"):
+        spectral_quartiles(np.ones(100), 1000)
+
+def test_flatness():
+    from biosonic.compute.spectral import flatness
+
+    # basic sinusoid
+    sr = 1000
+    t = np.linspace(0, 1, sr, endpoint=False)
+    x = np.sin(2 * np.pi * 100 * t)
+    f = flatness(x)
+    assert 0 <= f < 0.5, f"Expected low flatness for a tone, got {f}"
+
+    # white noise
+    np.random.seed(0)
+    noise = np.random.randn(sr)
+    f_noise = flatness(noise)
+    assert 0.5 < f_noise <= 1.0, f"Expected high flatness for noise, got {f_noise}"
+
+    # all zeros
+    with pytest.raises(ValueError, match="Input signal contained only zero values"):
+        flatness(np.zeros(1000))
+
+    # empty input
+    with pytest.raises(ValueError, match="Input signal contained only zero values"):
+        flatness([])
+        
+    # check output type
+    y = flatness(np.random.randn(1024))
+    assert isinstance(y, float) or isinstance(y, np.floating), f"Expected float output, got {type(y)}"
+
+
+def test_bandwidth():
+    #TODO
+    from biosonic.compute.spectral import bandwidth
+
+    # basic case
+    # data = [1, 2, 3, 4, 5]
+    # expected_std = np.std(np.abs(fft.rfft(data))**2, ddof=0)
+    # assert np.isclose(standard_deviation(data, sr=1), expected_std)
+
+    # constant signal
+    data = [3, 3, 3, 3]
+    expected_std = 0.0
+    assert np.isclose(bandwidth(data, sr=1), expected_std)
+
+    # single sample
+    data = [7]
+    expected_std = 0.0
+    assert np.isclose(bandwidth(data, sr=1), expected_std)
+
+    # # with numpy array input
+    # t = np.linspace(0, 1, 1000, endpoint=False)
+    # data = np.sin(2 * np.pi * 100 * t)
+    # expected_std = 63.61767414
+    # assert np.isclose(bandwidth(data, sr=1000), expected_std)
+
+    # return type
+    assert isinstance(bandwidth([1, 2, 3], sr=1), float)
+
+    # # check if sr is actually unused or affects the result
+    # result_1 = standard_deviation([1, 2, 3], sr=1)
+    # result_2 = standard_deviation([1, 2, 3], sr=48000)
+    # assert np.isclose(result_1, result_2)
+
+def test_centroid():
+    from biosonic.compute.spectral import centroid
+
+    t = np.linspace(0, 1, 1000, endpoint=False)
+    data = np.sin(2 * np.pi * 100 * t)
+    expected = 100
+    assert np.isclose(centroid(data, sr=1000), expected)
+
+    t = np.linspace(0, 1, 1000, endpoint=False)
+    data = np.sin(2 * np.pi * 40 * t)
+    expected = 40
+    assert np.isclose(centroid(data, sr=1000), expected)
