@@ -24,7 +24,7 @@ def check_signal_format(data: ArrayLike) -> NDArray[np.float32]:
     return data
 
 
-def exclude_trailing_and_leading_zeros(envelope: NDArray[np.float32]) -> NDArray[np.float32]:
+def exclude_trailing_and_leading_zeros(envelope: ArrayLike) -> NDArray[np.float32]:
     """
     Removes leading and trailing zeros from a NumPy array.
 
@@ -34,13 +34,15 @@ def exclude_trailing_and_leading_zeros(envelope: NDArray[np.float32]) -> NDArray
     and ends at the last non-zero value.
 
     Args:
-        envelope (np.ndarray): A 1D NumPy array containing numerical values, 
-                                potentially with leading and/or trailing zeros.
+        envelope : ArrayLike
+            A 1D NumPy array containing numerical values, 
+            potentially with leading and/or trailing zeros.
 
     Returns:
-        np.ndarray: A 1D NumPy array with leading and trailing zeros excluded. 
-                    The returned array will only contain values between the first 
-                    and last non-zero elements from the original array.
+        np.ndarray
+            A 1D NumPy array with leading and trailing zeros excluded. 
+            The returned array will only contain values between the first 
+            and last non-zero elements from the original array.
 
     Example:
         >>> import numpy as np
@@ -84,7 +86,7 @@ def cumulative_distribution_function(envelope: NDArray[np.float32]) -> NDArray[n
 
 
 def extract_all_features(
-    data: NDArray[np.float32], 
+    data: ArrayLike, 
     sr: int, 
     kernel_size: Optional[int] = None,
     n_dominant_freqs: int = 1
@@ -93,7 +95,7 @@ def extract_all_features(
     Extracts a comprehensive set of temporal and spectral features from a signal.
 
     Args:
-        data (NDArray[np.float32]): Input 1D signal.
+        data (ArrayLike): Input 1D signal.
         sr (int): Sampling rate in Hz.
         kernel_size (Optional[int]): Size of smoothing kernel for amplitude envelope.
         n_dominant_freqs (int): Number of dominant frequencies to extract per frame.
@@ -104,8 +106,8 @@ def extract_all_features(
     from .spectral import spectral_features
     from .temporal import temporal_features
     
-    check_signal_format(data)
-    check_sr_format(sr)
+    data = check_signal_format(data)
+    sr = check_sr_format(sr)
 
     temporal_feats = temporal_features(data, sr, kernel_size)
     spectral_feats = spectral_features(data, sr, n_freqs=n_dominant_freqs)

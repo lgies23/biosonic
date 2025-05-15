@@ -6,6 +6,7 @@ from typing import Optional, Tuple, Union, Dict
 import warnings
 from .utils import exclude_trailing_and_leading_zeros, check_signal_format, check_sr_format, cumulative_distribution_function
 
+
 def amplitude_envelope(data: ArrayLike, kernel_size: Optional[int] = None) -> NDArray[np.float64]:
     """
     Computes the amplitude envelope of a signal using the Hilbert transform.
@@ -91,6 +92,7 @@ def duration(data: ArrayLike, sr: int, exclude_surrounding_silences: Optional[bo
 
 
 def temporal_quartiles(data: ArrayLike, sr: int, kernel_size: Optional[int] = None) -> Tuple[float, float, float]:
+    # TODO source, check
     """
     Computes the temporal quartiles (Q1, median, Q3) of the amplitude envelope.
 
@@ -145,6 +147,7 @@ def temporal_quartiles(data: ArrayLike, sr: int, kernel_size: Optional[int] = No
 
 
 def temporal_sd(data: ArrayLike, sr: int, kernel_size: Optional[int] = None) -> float:
+    # TODO source, check
     """
     Computes the temporal standard deviation of the amplitude envelope.
 
@@ -167,7 +170,8 @@ def temporal_sd(data: ArrayLike, sr: int, kernel_size: Optional[int] = None) -> 
     return float(np.std(amplitude_envelope(data, kernel_size)))
 
 
-def temporal_skew(data: ArrayLike, sr: int, kernel_size: Optional[int] = None) -> Optional[float]:
+def skewness(data: ArrayLike, sr: int, kernel_size: Optional[int] = None) -> Optional[float]:
+    # TODO source, check
     """
     Computes the temporal skew of the signal.
 
@@ -225,6 +229,7 @@ def temporal_features(
         sr: int, 
         kernel_size: Optional[int] = None
         ) -> Dict[str, Union[float, NDArray[np.float64]]]:
+    # TODO adjust for new functions
     """
     Extracts a set of temporal features from the amplitude envelope of a signal.
 
@@ -247,7 +252,7 @@ def temporal_features(
         "t_median": t_median,
         "t_q3": t_q3,
         "temporal_sd": temporal_sd(data, sr, kernel_size),
-        "temporal_skew": temporal_skew(data, sr, kernel_size),
+        "temporal_skew": skewness(data, sr, kernel_size),
         "temporal_kurtosis": temporal_kurtosis(data, sr, kernel_size),
         "amplitude_envelope": amplitude_envelope(data, kernel_size),
         "duration": duration(data, sr, exclude_surrounding_silences=True)

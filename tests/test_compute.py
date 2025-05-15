@@ -306,12 +306,14 @@ def test_bandwidth():
     # constant signal
     data = [3, 3, 3, 3]
     expected_std = 0.0
-    assert np.isclose(bandwidth(data, sr=1), expected_std)
+    with pytest.warns(RuntimeWarning, match="Bandwidth of signal is 0, returning NaN for skewness and kurtosis"):
+        assert np.isclose(bandwidth(data, sr=1), expected_std)
 
     # single sample
     data = [7]
     expected_std = 0.0
-    assert np.isclose(bandwidth(data, sr=1), expected_std)
+    with pytest.warns(RuntimeWarning, match="Bandwidth of signal is 0, returning NaN for skewness and kurtosis"):
+        assert np.isclose(bandwidth(data, sr=1), expected_std)
 
     # # with numpy array input
     # t = np.linspace(0, 1, 1000, endpoint=False)
@@ -322,10 +324,6 @@ def test_bandwidth():
     # return type
     assert isinstance(bandwidth([1, 2, 3], sr=1), float)
 
-    # # check if sr is actually unused or affects the result
-    # result_1 = standard_deviation([1, 2, 3], sr=1)
-    # result_2 = standard_deviation([1, 2, 3], sr=48000)
-    # assert np.isclose(result_1, result_2)
 
 def test_centroid():
     from biosonic.compute.spectral import centroid
