@@ -2,7 +2,7 @@ import numpy as np
 from numpy.typing import NDArray, ArrayLike
 from scipy import fft, signal
 from scipy.stats import gmean
-from typing import Optional, Tuple, Union, Any, Dict
+from typing import Optional, Tuple, Union, Any, Dict, Literal
 import warnings
 from .utils import exclude_trailing_and_leading_zeros, check_signal_format, check_sr_format, cumulative_distribution_function
 
@@ -479,7 +479,7 @@ def peak_frequency(data: ArrayLike, sr: int) -> Union[float, np.floating[Any]]:
 def dominant_frequencies(
         data: ArrayLike, 
         sr: int, 
-        n_freqs: int = 3, 
+        n_freqs: int = 1, 
         min_height: float = 0.05,
         min_distance: float = 0.05,
         min_prominence: float = 0.05,
@@ -609,3 +609,69 @@ def spectral_features(data: ArrayLike,
     }
 
     return features
+
+
+def hz_to_mel(
+        f : Union[ArrayLike, np.floating], 
+        a : Optional[np.floating], 
+        b : Optional[np.floating], 
+        corner_frequency : Optional[np.floating],
+        after : Literal["fant", "koenig", "oshaughnessy", "umesh"] = "oshaughnessy"
+    ) -> np.floating:
+    """
+    Converts a frequency or array of frequencies in Hertz to the Mel scale
+    using one of several proposed formulas.
+
+    Parameters:
+        f : Union[ArrayLike, np.floating])
+            Frequency or array of frequencies in Hz.
+        a : Optional[float])
+            Scaling factor for the selected formula. Default depends on `after`.
+        b : Optional[float]
+            Denominator or offset parameter. Default depends on `after`.
+        corner_frequency : Optional[float]
+            If corner frequency other than 1000 Hz is desired, given in Hz. If provided, calculations are based on Fant (1970).
+        after (Literal): Choice of Mel scale formula to use.
+            - 'fant': Classic formula with `a=b=1000`: `F_m = a * np.log(1 + f / b)`
+            - 'koenig': (Not yet implemented)
+            - 'oshaughnessy': Commonly used formula as fant, but with `a=2595`, `b=700`
+            - 'umesh': Formula using rational function with `a=0.0004`, `b=0.603`.
+
+    Returns:
+        np.ndarray: Frequencies mapped to the Mel scale.
+
+
+    References:
+        1. Fant G. 1970 Acoustic Theory of Speech Production. The Hague: Mouton & Co. 
+        2. Umesh S, Cohen L, Nelson D. 1999 Fitting the Mel scale. In 1999 IEEE International 
+           Conference on Acoustics, Speech, and Signal Processing. Proceedings. ICASSP99 (Cat. No.99CH36258), 
+           pp. 217–220 vol.1. Phoenix, AZ, USA: IEEE. (doi:10.1109/ICASSP.1999.758101)
+    """
+    f = np.asarray(f)
+
+    if corner_frequency is not None:
+        a, b = corner_frequency
+        after = "fant"
+
+    if after == "fant":
+        a = 1000 if a is None else a
+        b = 1000 if b is None else b
+    elif after == "oshaughnessy":
+        a = 2595 if a is None else a
+        b = 700 if b is None else b
+    elif after == "umesh":
+        a = 0.0004 if a is None else a
+        b = 0.603 if b is None else b
+
+    match after:
+        case "fant" | "oshaughnessy":
+            F_m = a * np.log(1 + f / b)
+        case "umesh":
+            F_m = f / (a * f + b)
+        case "koenig":
+            raise NotImplementedError("The 'koenig' Mel scale formula is not yet implemented.")
+        case _:
+            raise ValueError(f"Unknown Mel scale method: '{after}'")
+
+    return F_m
+    

@@ -21,6 +21,9 @@ def check_signal_format(data: ArrayLike) -> NDArray[np.float32]:
         raise ValueError("Signal must be a 1D array.")
     if not np.issubdtype(data.dtype, np.floating):
         raise TypeError("Signal must be an array of type float.")
+    # if np.max(data) > 1:
+        # scale to -1 to 1
+        # TODO
     return data
 
 
