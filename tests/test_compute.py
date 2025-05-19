@@ -337,3 +337,71 @@ def test_centroid():
     data = np.sin(2 * np.pi * 40 * t)
     expected = 40
     assert np.isclose(centroid(data, sr=1000), expected)
+
+
+# for fixtures, using multiple test functions
+from biosonic.compute.spectral import dominant_frequencies
+from scipy.signal import chirp
+
+@pytest.fixture
+def sample_rate():
+    return 1000  # Hz
+
+@pytest.fixture
+def sine_wave(sample_rate):
+    t = np.linspace(0, 1.0, sample_rate, endpoint=False)
+    freq = 50  # Hz
+    signal = np.sin(2 * np.pi * freq * t)
+    return signal
+
+@pytest.fixture
+def multi_tone_signal(sample_rate):
+    t = np.linspace(0, 1.0, sample_rate, endpoint=False)
+    signal = (
+        np.sin(2 * np.pi * 100 * t) +
+        0.5 * np.sin(2 * np.pi * 200 * t) +
+        0.3 * np.sin(2 * np.pi * 300 * t)
+    )
+    return signal
+
+def test_dominant_frequency_single(sine_wave, sample_rate):
+    freqs = dominant_frequencies(sine_wave, sample_rate, n_freqs=1)
+    assert freqs.ndim == 1
+    assert np.all(np.isfinite(freqs[np.isfinite(freqs)]))
+    assert np.all((freqs[np.isfinite(freqs)] > 40) & (freqs[np.isfinite(freqs)] < 60))  # Expect around 50 Hz
+
+def test_dominant_frequencies_multiple(multi_tone_signal, sample_rate):
+    freqs = dominant_frequencies(multi_tone_signal, sample_rate)
+    assert freqs.ndim == 2
+    assert freqs.shape[1] == 3
+    # Frequencies should include around 100, 200, 300 Hz
+    assert np.any(np.abs(freqs - 100) < 10)
+    assert np.any(np.abs(freqs - 200) < 10)
+    assert np.any(np.abs(freqs - 300) < 10)
+
+def test_dominant_frequencies_multiple(multi_tone_signal, sample_rate):
+    freqs = dominant_frequencies(multi_tone_signal, sample_rate, n_freqs=5)
+    assert freqs.ndim == 2
+    assert freqs.shape[1] == 5
+    # Frequencies should include around 100, 200, 300 Hz
+    assert np.any(np.abs(freqs - 100) < 10)
+    assert np.any(np.abs(freqs - 200) < 10)
+    assert np.any(np.abs(freqs - 300) < 10)
+
+def test_handles_no_peaks(sample_rate):
+    flat_signal = np.zeros(sample_rate)
+    freqs = dominant_frequencies(flat_signal, sample_rate, n_freqs=2)
+    assert np.all(np.isnan(freqs))
+
+def test_output_shapes(sine_wave, sample_rate):
+    freqs_1 = dominant_frequencies(sine_wave, sample_rate, n_freqs=1)
+    freqs_3 = dominant_frequencies(sine_wave, sample_rate, n_freqs=3)
+    assert freqs_1.ndim == 1
+    assert freqs_3.ndim == 2
+    assert freqs_3.shape[0] == freqs_1.shape[0]
+    assert freqs_3.shape[1] == 3
+
+def test_value_checks():
+    with pytest.raises(ValueError, match="must be between 0 and 1"):
+        dominant_frequencies(sine_wave, sample_rate, n_freqs=3, min_height=2, min_distance=4, min_prominence=5)
+        dominant_frequencies(sine_wave, sample_rate, n_freqs=3, min_height=-2, min_distance=-4, min_prominence=-5)
