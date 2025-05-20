@@ -148,7 +148,7 @@ def spectrogram(
     return Sx, STFT.t(len(data)), STFT.f
 
 
-def spectral_quartiles(data: ArrayLike, sr: int) -> Tuple[float, float, float]:
+def quartiles(data: ArrayLike, sr: int) -> Tuple[float, float, float]:
     """
     Compute the 1st, 2nd (median), and 3rd quartiles of the power spectrum of a signal.
 
@@ -466,7 +466,7 @@ def peak_frequency(data: ArrayLike, sr: int) -> Union[float, np.floating[Any]]:
         - The function assumes the input signal is real-valued and uniformly sampled.
     """
     data = check_signal_format(data)
-    check_sr_format(sr)
+    sr = check_sr_format(sr)
 
     if data.size == 0:
         raise ValueError("Input signal is empty; could not determine peak frequency.")
@@ -474,6 +474,60 @@ def peak_frequency(data: ArrayLike, sr: int) -> Union[float, np.floating[Any]]:
     freqs, ps = spectrum(data, sr=sr, mode="power")
     assert freqs is not None
     return float(freqs[np.argmax(ps)])
+
+def power_spectral_entropy(
+        data: ArrayLike, 
+        sr: int, 
+        unit: Literal["bits", "nat", "dits", "bans", "hartleys"] = "bits"
+        ) -> float:
+    """
+    Calculates the power spectral entropy as follows:
+    1. Compute power spectral density (PSD)
+    2. Normalize PSD (interpreted as a probability distribution)
+    3. Calculate Shannon-Wiener entropy of normalized PSD
+
+    Args:
+        data : ArrayLike
+            Input signal as a 1D ArrayLike
+        sr : int
+            Sampling rate in Hz.
+        unit : str, optional
+            Desired unit of the entropy, determines the logarithmic base used for calculatein. 
+            Choose from "bits" (log2), "nat" (ln), or "dits"/"bans"/"hartleys" (log10).
+            Defaults to "bits".
+
+    Returns:
+        float 
+            Power spectral entropy.
+    References:
+        1. https://de.mathworks.com/help/signal/ref/spectralentropy.html accessed January 13th, 2025. 18:34 pm
+        2. https://docs.scipy.org/doc/scipy-1.15.2/reference/generated/scipy.stats.entropy.html accessed May 20th 2025, 11:32 am
+        3. Shannon C. E. 1948 A mathematical theory of communication. The Bell System Technical Journal XXVII.
+
+    """
+    data = check_signal_format(data)
+    sr = check_sr_format(sr)
+
+    # _, psd = signal.welch(data, sr, nperseg=N_FFT, noverlap=N_FFT//HOP_OVERLAP) # would return psd - frequency spectrum squared and scaled by sum - 
+    _, psd = spectrum(data, sr, mode="power")
+    psd = exclude_trailing_and_leading_zeros(psd)
+    psd_sum : float = np.sum(psd)
+    if psd_sum == 0:
+        return 0.0
+    
+    psd_norm = psd / psd_sum
+    # Ensure no zero values in normalized power distribution for log calculation
+    psd_norm = np.clip(psd_norm, 1e-12, 1.0)
+
+    if unit == "bits":
+        H = np.negative(np.sum(psd_norm * np.log2(psd_norm)))
+    elif unit == "nat":
+        H = np.negative(np.sum(psd_norm * np.log(psd_norm)))
+    elif unit in ["dits", "bans", "hartleys"]:
+        H = np.negative(np.sum(psd_norm * np.log10(psd_norm)))
+    else:
+        raise ValueError(f'Invalid unit for power spectral entropy: {unit} Must be in ["bits", "nat", "dits", "bans", "hartleys"]')
+    return float(H)
 
 
 def dominant_frequencies(
@@ -595,7 +649,7 @@ def spectral_features(data: ArrayLike,
     data = check_signal_format(data)
     check_sr_format(sr)
 
-    fq_q1_bin, fq_median_bin, fq_q3_bin = spectral_quartiles(data, sr)
+    fq_q1_bin, fq_median_bin, fq_q3_bin = quartiles(data, sr)
     
     features = {
         "fq_q1": fq_q1_bin,
@@ -612,12 +666,12 @@ def spectral_features(data: ArrayLike,
 
 
 def hz_to_mel(
-        f : Union[ArrayLike, np.floating], 
-        a : Optional[np.floating], 
-        b : Optional[np.floating], 
-        corner_frequency : Optional[np.floating],
+        f: Union[ArrayLike, float],
+        a: Optional[float] = None,
+        b: Optional[float] = None,
+        corner_frequency: Optional[float] = None,
         after : Literal["fant", "koenig", "oshaughnessy", "umesh"] = "oshaughnessy"
-    ) -> np.floating:
+    ) -> Union[ArrayLike, float]:
     """
     Converts a frequency or array of frequencies in Hertz to the Mel scale
     using one of several proposed formulas.
@@ -634,7 +688,7 @@ def hz_to_mel(
         after (Literal): Choice of Mel scale formula to use.
             - 'fant': Classic formula with `a=b=1000`: `F_m = a * np.log(1 + f / b)`
             - 'koenig': (Not yet implemented)
-            - 'oshaughnessy': Commonly used formula as fant, but with `a=2595`, `b=700`
+            - 'oshaughnessy' or 'beranek': Commonly used formula as fant, but with `a=2595`, `b=700`
             - 'umesh': Formula using rational function with `a=0.0004`, `b=0.603`.
 
     Returns:
@@ -646,32 +700,30 @@ def hz_to_mel(
         2. Umesh S, Cohen L, Nelson D. 1999 Fitting the Mel scale. In 1999 IEEE International 
            Conference on Acoustics, Speech, and Signal Processing. Proceedings. ICASSP99 (Cat. No.99CH36258), 
            pp. 217–220 vol.1. Phoenix, AZ, USA: IEEE. (doi:10.1109/ICASSP.1999.758101)
+        3. D. O'Shaughnessy, ”Speech Communication - Human and Machine” Addison- Wesley, New York, 1987. As cited in [2]
+
     """
-    f = np.asarray(f)
+    f_arr = np.asarray(f, dtype=np.float64)
 
     if corner_frequency is not None:
-        a, b = corner_frequency
+        a, b = corner_frequency, corner_frequency
         after = "fant"
 
     if after == "fant":
-        a = 1000 if a is None else a
-        b = 1000 if b is None else b
-    elif after == "oshaughnessy":
-        a = 2595 if a is None else a
-        b = 700 if b is None else b
+        a = 1000.0 if a is None else a
+        b = 1000.0 if b is None else b
+        F_m = a * np.log(1 + f_arr / b)
+    elif after in ["oshaughnessy", "beranek"]:
+        a = 2595.0 if a is None else a
+        b = 700.0 if b is None else b
+        F_m = a * np.log(1 + f_arr / b)
     elif after == "umesh":
         a = 0.0004 if a is None else a
         b = 0.603 if b is None else b
-
-    match after:
-        case "fant" | "oshaughnessy":
-            F_m = a * np.log(1 + f / b)
-        case "umesh":
-            F_m = f / (a * f + b)
-        case "koenig":
-            raise NotImplementedError("The 'koenig' Mel scale formula is not yet implemented.")
-        case _:
-            raise ValueError(f"Unknown Mel scale method: '{after}'")
+        F_m = f_arr / (a * f_arr + b)
+    elif after == "koenig":
+        raise NotImplementedError("The 'koenig' Mel scale formula is not yet implemented.")
+    else:
+        raise ValueError(f"Unknown Mel scale method: '{after}'")
 
     return F_m
-    

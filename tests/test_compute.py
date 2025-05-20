@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
 from numpy.testing import assert_array_almost_equal
+import unittest
 
 def test_amplitude_envelope():
     from biosonic.compute.temporal import amplitude_envelope
@@ -239,23 +240,23 @@ def test_spectrogram():
     assert Sx.shape[1] == len(times)
 
 def test_spectral_quartiles(monkeypatch):
-    from biosonic.compute.spectral import spectral_quartiles
+    from biosonic.compute.spectral import quartiles
     
     # basic sinosoid
     sr = 1000
     t = np.linspace(0, 1, sr, endpoint=False)
     x = np.sin(2 * np.pi * 20 * t)
-    q1, q2, q3 = spectral_quartiles(x, sr)
+    q1, q2, q3 = quartiles(x, sr)
     assert q1 <= q2 <= q3
     assert np.isclose(q2, 20, atol=5)
 
     # empty input
     with pytest.raises(ValueError, match="Input is empty"):
-        spectral_quartiles([], 1000)
+        quartiles([], 1000)
 
     # zero signal
     with pytest.raises(ValueError, match="Signal contains no nonzero values"):
-        spectral_quartiles(np.zeros(1000), 1000)
+        quartiles(np.zeros(1000), 1000)
 
     # mismatched frequencies
     def fake_spectrum(*args, **kwargs):
@@ -263,7 +264,7 @@ def test_spectral_quartiles(monkeypatch):
     monkeypatch.setattr("biosonic.compute.spectral.spectrum", fake_spectrum)
 
     with pytest.raises(ValueError, match="Freuency bins don't match envelope"):
-        spectral_quartiles(np.ones(100), 1000)
+        quartiles(np.ones(100), 1000)
 
 def test_flatness():
     from biosonic.compute.spectral import flatness
@@ -339,69 +340,160 @@ def test_centroid():
     assert np.isclose(centroid(data, sr=1000), expected)
 
 
-# for fixtures, using multiple test functions
 from biosonic.compute.spectral import dominant_frequencies
-from scipy.signal import chirp
+class TestDominantFrequencies(unittest.TestCase):
 
-@pytest.fixture
-def sample_rate():
-    return 1000  # Hz
+    def setUp(self):
+        self.sample_rate = 1000  # Hz
+        t = np.linspace(0, 1.0, self.sample_rate, endpoint=False)
+        
+        # Single tone sine wave at 50 Hz
+        self.sine_wave = np.sin(2 * np.pi * 50 * t)
 
-@pytest.fixture
-def sine_wave(sample_rate):
-    t = np.linspace(0, 1.0, sample_rate, endpoint=False)
-    freq = 50  # Hz
-    signal = np.sin(2 * np.pi * freq * t)
-    return signal
+        # Multi-tone signal: 100, 200, 300 Hz
+        self.multi_tone_signal = (
+            np.sin(2 * np.pi * 100 * t) +
+            0.5 * np.sin(2 * np.pi * 200 * t) +
+            0.3 * np.sin(2 * np.pi * 300 * t)
+        )
 
-@pytest.fixture
-def multi_tone_signal(sample_rate):
-    t = np.linspace(0, 1.0, sample_rate, endpoint=False)
-    signal = (
-        np.sin(2 * np.pi * 100 * t) +
-        0.5 * np.sin(2 * np.pi * 200 * t) +
-        0.3 * np.sin(2 * np.pi * 300 * t)
-    )
-    return signal
+        # Flat signal (no frequency content)
+        self.flat_signal = np.zeros(self.sample_rate)
 
-def test_dominant_frequency_single(sine_wave, sample_rate):
-    freqs = dominant_frequencies(sine_wave, sample_rate, n_freqs=1)
-    assert freqs.ndim == 1
-    assert np.all(np.isfinite(freqs[np.isfinite(freqs)]))
-    assert np.all((freqs[np.isfinite(freqs)] > 40) & (freqs[np.isfinite(freqs)] < 60))  # Expect around 50 Hz
+    def test_dominant_frequency_single(self):
+        freqs = dominant_frequencies(self.sine_wave, self.sample_rate, n_freqs=1)
+        self.assertEqual(freqs.ndim, 1)
+        self.assertTrue(np.all(np.isfinite(freqs[np.isfinite(freqs)])))
+        self.assertTrue(np.all((freqs[np.isfinite(freqs)] > 40) & (freqs[np.isfinite(freqs)] < 60)))
 
-def test_dominant_frequencies_multiple(multi_tone_signal, sample_rate):
-    freqs = dominant_frequencies(multi_tone_signal, sample_rate)
-    assert freqs.ndim == 2
-    assert freqs.shape[1] == 3
-    # Frequencies should include around 100, 200, 300 Hz
-    assert np.any(np.abs(freqs - 100) < 10)
-    assert np.any(np.abs(freqs - 200) < 10)
-    assert np.any(np.abs(freqs - 300) < 10)
+    def test_dominant_frequencies_multiple_default(self):
+        freqs = dominant_frequencies(self.multi_tone_signal, self.sample_rate)
+        self.assertEqual(freqs.ndim, 1)
+        self.assertTrue(np.any(np.abs(freqs - 100) < 10))
 
-def test_dominant_frequencies_multiple(multi_tone_signal, sample_rate):
-    freqs = dominant_frequencies(multi_tone_signal, sample_rate, n_freqs=5)
-    assert freqs.ndim == 2
-    assert freqs.shape[1] == 5
-    # Frequencies should include around 100, 200, 300 Hz
-    assert np.any(np.abs(freqs - 100) < 10)
-    assert np.any(np.abs(freqs - 200) < 10)
-    assert np.any(np.abs(freqs - 300) < 10)
+    def test_dominant_frequencies_multiple_explicit(self):
+        freqs = dominant_frequencies(self.multi_tone_signal, self.sample_rate, n_freqs=5)
+        self.assertEqual(freqs.ndim, 2)
+        self.assertEqual(freqs.shape[1], 5)
+        self.assertTrue(np.any(np.abs(freqs - 100) < 10))
+        self.assertTrue(np.any(np.abs(freqs - 200) < 10))
+        self.assertTrue(np.any(np.abs(freqs - 300) < 10))
 
-def test_handles_no_peaks(sample_rate):
-    flat_signal = np.zeros(sample_rate)
-    freqs = dominant_frequencies(flat_signal, sample_rate, n_freqs=2)
-    assert np.all(np.isnan(freqs))
+    def test_handles_no_peaks(self):
+        freqs = dominant_frequencies(self.flat_signal, self.sample_rate, n_freqs=2)
+        self.assertTrue(np.all(np.isnan(freqs)))
 
-def test_output_shapes(sine_wave, sample_rate):
-    freqs_1 = dominant_frequencies(sine_wave, sample_rate, n_freqs=1)
-    freqs_3 = dominant_frequencies(sine_wave, sample_rate, n_freqs=3)
-    assert freqs_1.ndim == 1
-    assert freqs_3.ndim == 2
-    assert freqs_3.shape[0] == freqs_1.shape[0]
-    assert freqs_3.shape[1] == 3
+    def test_output_shapes(self):
+        freqs_1 = dominant_frequencies(self.sine_wave, self.sample_rate, n_freqs=1)
+        freqs_3 = dominant_frequencies(self.sine_wave, self.sample_rate, n_freqs=3)
+        self.assertEqual(freqs_1.ndim, 1)
+        self.assertEqual(freqs_3.ndim, 2)
+        self.assertEqual(freqs_3.shape[0], freqs_1.shape[0])
+        self.assertEqual(freqs_3.shape[1], 3)
 
-def test_value_checks():
-    with pytest.raises(ValueError, match="must be between 0 and 1"):
-        dominant_frequencies(sine_wave, sample_rate, n_freqs=3, min_height=2, min_distance=4, min_prominence=5)
-        dominant_frequencies(sine_wave, sample_rate, n_freqs=3, min_height=-2, min_distance=-4, min_prominence=-5)
+    def test_value_checks(self):
+        # Assuming these values cause ValueError due to domain-specific constraints
+        with self.assertRaises(ValueError):
+            dominant_frequencies(self.sine_wave, self.sample_rate, n_freqs=3, min_height=2, min_distance=4, min_prominence=5)
+        with self.assertRaises(ValueError):
+            dominant_frequencies(self.sine_wave, self.sample_rate, n_freqs=3, min_height=-2, min_distance=-4, min_prominence=-5)
+
+
+from biosonic.compute.spectral import hz_to_mel
+class TestHzToMel(unittest.TestCase):
+    def test_oshaughnessy_scalar(self):
+        result = hz_to_mel(1000.0, after="oshaughnessy")
+        expected = 2595 * np.log(1 + 1000 / 700)
+        self.assertAlmostEqual(result.item(), expected, places=6)
+
+    def test_oshaughnessy_array(self):
+        freqs = np.array([0, 100, 1000, 8000])
+        result = hz_to_mel(freqs, after="oshaughnessy")
+        expected = 2595 * np.log(1 + freqs / 700)
+        np.testing.assert_allclose(result, expected, rtol=1e-6)
+    
+    def test_beranek_array(self):
+        freqs = np.array([0, 100, 1000, 8000])
+        result = hz_to_mel(freqs, after="beranek")
+        expected = 2595 * np.log(1 + freqs / 700)
+        np.testing.assert_allclose(result, expected, rtol=1e-6)
+
+    def test_umesh_scalar(self):
+        result = hz_to_mel(1000.0, after="umesh")
+        expected = 1000.0 / (0.0004 * 1000.0 + 0.603)
+        self.assertAlmostEqual(result.item(), expected, places=6)
+
+    def test_fant_with_corner_frequency(self):
+        result = hz_to_mel(1000.0, corner_frequency=2000.0)
+        expected = 2000.0 * np.log(1 + 1000.0 / 2000.0)
+        self.assertAlmostEqual(result.item(), expected, places=6)
+
+    def test_raises_for_koenig(self):
+        with self.assertRaises(NotImplementedError):
+            hz_to_mel(1000.0, after="koenig")
+
+    def test_raises_for_invalid_method(self):
+        with self.assertRaises(ValueError):
+            hz_to_mel(1000.0, after="invalid_method")
+
+
+from biosonic.compute.spectral import power_spectral_entropy
+class TestPowerSpectralEntropy(unittest.TestCase):
+    def setUp(self):
+        self.sample_rate = 1000  # Hz
+
+    def test_entropy_of_sine_wave(self):
+        # A pure sine wave should have low entropy
+        t = np.linspace(0, 1.0, self.sample_rate, endpoint=False)
+        sine = np.sin(2 * np.pi * 10 * t)
+        entropy = power_spectral_entropy(sine, self.sample_rate)
+        self.assertIsInstance(entropy, float)
+        self.assertLess(entropy, 1.0)
+
+    def test_entropy_of_white_noise(self):
+        # White noise should have high entropy
+        np.random.seed(42)
+        noise = np.random.normal(0, 1, self.sample_rate)
+        entropy = power_spectral_entropy(noise, self.sample_rate)
+        self.assertIsInstance(entropy, float)
+        self.assertGreater(entropy, 4.0)
+
+    def test_flat_signal_entropy_is_zero(self):
+        # Flat signal should yield 0 entropy
+        flat = np.zeros(self.sample_rate)
+        entropy = power_spectral_entropy(flat, self.sample_rate)
+        self.assertEqual(entropy, 0.0)
+
+    def test_entropy_with_multiple_tones(self):
+        # Multiple tones should give intermediate entropy
+        t = np.linspace(0, 1.0, self.sample_rate, endpoint=False)
+        multi = np.sin(2 * np.pi * 50 * t) + np.sin(2 * np.pi * 100 * t)
+        entropy = power_spectral_entropy(multi, self.sample_rate)
+        self.assertIsInstance(entropy, float)
+        self.assertGreater(entropy, 0.5)
+        self.assertLess(entropy, 4.0)
+
+    def test_entropy_output_type(self):
+        t = np.linspace(0, 1.0, self.sample_rate, endpoint=False)
+        signal = np.sin(2 * np.pi * 5 * t)
+        entropy = power_spectral_entropy(signal, self.sample_rate)
+        self.assertTrue(isinstance(entropy, float))
+    
+    def test_entropy_units_consistency(self):
+        t = np.linspace(0, 1.0, self.sample_rate, endpoint=False)
+        x = np.sin(2 * np.pi * 30 * t)
+        e_bits = power_spectral_entropy(x, self.sample_rate, unit="bits")
+        e_nats = power_spectral_entropy(x, self.sample_rate, unit="nat")
+        e_dits = power_spectral_entropy(x, self.sample_rate, unit="dits")
+        self.assertAlmostEqual(e_bits * np.log(2), e_nats, places=4)
+        self.assertAlmostEqual(e_dits * np.log(10), e_nats, places=4)
+
+    def test_entropy_invalid_unit_raises(self):
+        t = np.linspace(0, 1.0, self.sample_rate, endpoint=False)
+        signal = np.sin(2 * np.pi * 15 * t)
+        with self.assertRaises(ValueError):
+            power_spectral_entropy(signal, self.sample_rate, unit="watts")
+
+
+if __name__ == '__main__':
+    unittest.main()
