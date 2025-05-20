@@ -2,12 +2,23 @@ import numpy as np
 from numpy.typing import NDArray, ArrayLike
 from scipy import signal
 from scipy.stats import kurtosis, skew
-from typing import Optional, Tuple, Union, Dict
+from typing import Optional, Tuple, Union, Dict, Literal, Any
 import warnings
-from .utils import exclude_trailing_and_leading_zeros, check_signal_format, check_sr_format, cumulative_distribution_function
+from .utils import (
+    exclude_trailing_and_leading_zeros, 
+    check_signal_format, 
+    check_sr_format, 
+    cumulative_distribution_function,
+    shannon_entropy
+)
 
 
-def amplitude_envelope(data: ArrayLike, kernel_size: Optional[int] = None) -> NDArray[np.float64]:
+def amplitude_envelope(
+        data: ArrayLike, 
+        kernel_size: Optional[int] = None,
+        remove_trailing_zeros : bool = True,
+        avoid_zero_values : bool = False
+    ) -> NDArray[np.float64]:
     """
     Computes the amplitude envelope of a signal using the Hilbert transform.
     
@@ -21,6 +32,12 @@ def amplitude_envelope(data: ArrayLike, kernel_size: Optional[int] = None) -> ND
         kernel_size : Optional[int]
             The size of the moving average kernel to smooth the envelope. Must be an uneven number.
             If `None`, no smoothing is applied (default is `None`).
+        remove_trailing_zeros : Optional[bool]
+            If `True`, removes leading and trailing zeros of the envelope after applying Hilbert transform. 
+            Defaults to `True`
+        avoid_zero_values : Optional[bool]
+            If `True`, replaces zero values with 1e-10 after applying Hilbert transform and removing leading and trailing zeros. 
+            Defaults to `False`
     
     Returns:
         NDArray[np.float64]
@@ -55,11 +72,13 @@ def amplitude_envelope(data: ArrayLike, kernel_size: Optional[int] = None) -> ND
         # apply kernel to smooth envelope
         envelope = signal.convolve(envelope, kernel, mode='same')
     
-    # TODO remove before calculating analytic signal? -> check
-    envelope = exclude_trailing_and_leading_zeros(envelope)
+    if remove_trailing_zeros:
+        # TODO remove before calculating analytic signal? -> check
+        envelope = exclude_trailing_and_leading_zeros(envelope)
 
-    # replace values close to zero to avoid log conflicts in following calculations
-    envelope = np.where(envelope < 1e-10, 1e-10, envelope)
+    if avoid_zero_values:
+        # replace values close to zero to avoid log conflicts in following calculations
+        envelope = np.where(envelope < 1e-10, 1e-10, envelope)
 
     return envelope
 
@@ -214,7 +233,7 @@ def temporal_kurtosis(data: ArrayLike, sr: int, kernel_size: Optional[int] = Non
             The temporal kurtosis
     """
     data = check_signal_format(data)
-    check_sr_format(sr)
+    sr = check_sr_format(sr)
     
     kurtosis_ = kurtosis(amplitude_envelope(data, kernel_size))
 
@@ -224,10 +243,49 @@ def temporal_kurtosis(data: ArrayLike, sr: int, kernel_size: Optional[int] = Non
     return float(kurtosis_)
 
 
+def entropy(
+        data: ArrayLike,  
+        unit: Literal["bits", "nat", "dits", "bans", "hartleys"] = "bits",
+        *args : Any, 
+        **kwargs : Any
+    ) -> Tuple[float, float]:
+    """
+    Calculates the entropy of the amplitude envelope as follows:
+    1. Compute the amplitude envelope.
+    2. Calculate a discrete probability distribution from the histogram of the envelope.
+    3. Calculate Shannon-Wiener entropy of the probability distribution.
+
+    Args:
+        data : ArrayLike
+            Input signal as a 1D ArrayLike
+        unit : str, optional
+            Desired unit of the entropy, determines the logarithmic base used for calculatein. 
+            Choose from "bits" (log2), "nat" (ln), or "dits"/"bans"/"hartleys" (log10).
+            Defaults to "bits".
+
+    Returns:
+        float 
+            Temporal entropy.
+    References:
+        1. https://de.mathworks.com/help/signal/ref/spectralentropy.html accessed January 13th, 2025. 18:34 pm
+        2. https://docs.scipy.org/doc/scipy-1.15.2/reference/generated/scipy.stats.entropy.html accessed May 20th 2025, 11:32 am
+        3. Shannon C. E. 1948 A mathematical theory of communication. The Bell System Technical Journal XXVII.
+
+    Notes:
+        Rounds
+    """
+    envelope = amplitude_envelope(data)
+    hist, _ = np.histogram(envelope, bins="auto", density=False)
+    hist = hist[hist > 0]
+    norm_counts = hist / np.sum(hist)
+
+    return shannon_entropy(norm_counts, unit, *args, **kwargs)
+
+
 def temporal_features(
         data: NDArray[np.float64], 
         sr: int, 
-        kernel_size: Optional[int] = None
+        kernel_size: Optional[int] = None,
         ) -> Dict[str, Union[float, NDArray[np.float64]]]:
     # TODO adjust for new functions
     """

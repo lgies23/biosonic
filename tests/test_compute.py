@@ -446,45 +446,55 @@ class TestPowerSpectralEntropy(unittest.TestCase):
         # A pure sine wave should have low entropy
         t = np.linspace(0, 1.0, self.sample_rate, endpoint=False)
         sine = np.sin(2 * np.pi * 10 * t)
-        entropy = power_spectral_entropy(sine, self.sample_rate)
-        self.assertIsInstance(entropy, float)
-        self.assertLess(entropy, 1.0)
+        H, H_max = power_spectral_entropy(sine, self.sample_rate)
+        self.assertIsInstance(H, float)
+        self.assertLess(H, 0.5)
+        self.assertLess(0, H)
+        print(H_max)
+        self.assertAlmostEqual(H_max, 1.0)
+
+    def test_norm(self):
+        t = np.linspace(0, 1.0, self.sample_rate, endpoint=False)
+        sine = np.sin(2 * np.pi * 10 * t)
+        H, H_max = power_spectral_entropy(sine, self.sample_rate, norm=False)
+        self.assertIsInstance(H, float)
+        self.assertNotEqual(H_max, 1.0)
 
     def test_entropy_of_white_noise(self):
         # White noise should have high entropy
         np.random.seed(42)
         noise = np.random.normal(0, 1, self.sample_rate)
-        entropy = power_spectral_entropy(noise, self.sample_rate)
-        self.assertIsInstance(entropy, float)
-        self.assertGreater(entropy, 4.0)
+        H, H_max = power_spectral_entropy(noise, self.sample_rate)
+        self.assertIsInstance(H, float)
+        self.assertGreater(H, 0.75)
 
     def test_flat_signal_entropy_is_zero(self):
         # Flat signal should yield 0 entropy
-        flat = np.zeros(self.sample_rate)
-        entropy = power_spectral_entropy(flat, self.sample_rate)
-        self.assertEqual(entropy, 0.0)
+        flat = np.full(self.sample_rate, 5)
+        H, _ = power_spectral_entropy(flat, self.sample_rate)
+        self.assertAlmostEqual(H, 0.0)
 
     def test_entropy_with_multiple_tones(self):
         # Multiple tones should give intermediate entropy
         t = np.linspace(0, 1.0, self.sample_rate, endpoint=False)
         multi = np.sin(2 * np.pi * 50 * t) + np.sin(2 * np.pi * 100 * t)
-        entropy = power_spectral_entropy(multi, self.sample_rate)
-        self.assertIsInstance(entropy, float)
-        self.assertGreater(entropy, 0.5)
-        self.assertLess(entropy, 4.0)
+        H, H_max = power_spectral_entropy(multi, self.sample_rate, norm=False)
+        self.assertIsInstance(H, float)
+        self.assertGreater(H, 0.5)
+        self.assertLess(H, H_max)
 
     def test_entropy_output_type(self):
         t = np.linspace(0, 1.0, self.sample_rate, endpoint=False)
         signal = np.sin(2 * np.pi * 5 * t)
-        entropy = power_spectral_entropy(signal, self.sample_rate)
-        self.assertTrue(isinstance(entropy, float))
+        H, H_max = power_spectral_entropy(signal, self.sample_rate)
+        self.assertTrue(isinstance(H, float))
     
     def test_entropy_units_consistency(self):
         t = np.linspace(0, 1.0, self.sample_rate, endpoint=False)
         x = np.sin(2 * np.pi * 30 * t)
-        e_bits = power_spectral_entropy(x, self.sample_rate, unit="bits")
-        e_nats = power_spectral_entropy(x, self.sample_rate, unit="nat")
-        e_dits = power_spectral_entropy(x, self.sample_rate, unit="dits")
+        e_bits, _ = power_spectral_entropy(x, self.sample_rate, unit="bits")
+        e_nats, _ = power_spectral_entropy(x, self.sample_rate, unit="nat")
+        e_dits, _ = power_spectral_entropy(x, self.sample_rate, unit="dits")
         self.assertAlmostEqual(e_bits * np.log(2), e_nats, places=4)
         self.assertAlmostEqual(e_dits * np.log(10), e_nats, places=4)
 
@@ -493,6 +503,56 @@ class TestPowerSpectralEntropy(unittest.TestCase):
         signal = np.sin(2 * np.pi * 15 * t)
         with self.assertRaises(ValueError):
             power_spectral_entropy(signal, self.sample_rate, unit="watts")
+
+
+from biosonic.compute.temporal import entropy
+from scipy.signal import chirp
+class TestTemporalEntropy(unittest.TestCase):
+    def setUp(self):
+        self.sample_rate = 1000  # Hz
+        self.duration = 1.0  # seconds
+        self.time = np.linspace(0, self.duration, int(self.sample_rate * self.duration), endpoint=False)
+
+    # TODO
+    # def test_constant_signal_entropy(self):
+    #     signal = np.full(self.sample_rate, 5)
+    #     H, H_max = entropy(signal)
+    #     self.assertAlmostEqual(H, 0.0, places=6, msg="Entropy of a constant signal should be zero.")
+
+    # def test_sine_wave_entropy(self):
+    #     freq = 3 # Hz
+    #     signal = np.sin(2 * np.pi * freq * self.time)
+    #     result = entropy(signal)
+    #     self.assertGreater(result, 0.0, "Entropy of a sine wave should be greater than zero.")
+
+    def test_chirp_entropy(self):
+        f1 = 300
+        f2 = 400
+        signal = chirp(self.time, f1, 10, f2) + np.random.normal(0, 1, size=self.time.shape)
+        H, H_max  = entropy(signal)
+        self.assertGreater(H, 0.5, "Entropy of chirp with noise should be relatively high.")
+
+    def test_noise_signal_entropy(self):
+        signal = np.random.normal(0, 1, size=self.time.shape)
+        H, H_max = entropy(signal)
+        self.assertGreater(H, 0.5, "Entropy of white noise should be relatively high.")
+
+    def test_entropy_units(self):
+        signal = np.random.normal(0, 1, size=self.time.shape)
+        h_bits, _ = entropy(signal, unit="bits", norm=False)
+        h_nats, _ = entropy(signal, unit="nat", norm=False)
+        h_hartleys, _ = entropy(signal, unit="hartleys", norm=False)
+
+        self.assertNotEqual(h_bits, h_nats, "Entropy in different units should yield different values.")
+        self.assertAlmostEqual(h_bits * np.log(2), h_nats, delta=0.1)
+        self.assertAlmostEqual(h_bits / np.log2(10), h_hartleys, delta=0.1)
+
+        # TODO assert relative H independent of unit equal
+
+    def test_invalid_unit_raises(self):
+        signal = np.random.normal(0, 1, size=self.time.shape)
+        with self.assertRaises(ValueError):
+            entropy(signal, unit="invalid_unit")
 
 
 if __name__ == '__main__':

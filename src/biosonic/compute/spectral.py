@@ -4,7 +4,13 @@ from scipy import fft, signal
 from scipy.stats import gmean
 from typing import Optional, Tuple, Union, Any, Dict, Literal
 import warnings
-from .utils import exclude_trailing_and_leading_zeros, check_signal_format, check_sr_format, cumulative_distribution_function
+from .utils import  (
+    exclude_trailing_and_leading_zeros, 
+    check_signal_format,  
+    check_sr_format,  
+    cumulative_distribution_function,  
+    shannon_entropy
+)
 
 
 def spectrum(data: ArrayLike, 
@@ -478,8 +484,10 @@ def peak_frequency(data: ArrayLike, sr: int) -> Union[float, np.floating[Any]]:
 def power_spectral_entropy(
         data: ArrayLike, 
         sr: int, 
-        unit: Literal["bits", "nat", "dits", "bans", "hartleys"] = "bits"
-        ) -> float:
+        unit: Literal["bits", "nat", "dits", "bans", "hartleys"] = "bits",
+        *args : Any, 
+        **kwargs : Any
+        ) -> Tuple[float, float]:
     """
     Calculates the power spectral entropy as follows:
     1. Compute power spectral density (PSD)
@@ -511,23 +519,13 @@ def power_spectral_entropy(
     # _, psd = signal.welch(data, sr, nperseg=N_FFT, noverlap=N_FFT//HOP_OVERLAP) # would return psd - frequency spectrum squared and scaled by sum - 
     _, psd = spectrum(data, sr, mode="power")
     psd = exclude_trailing_and_leading_zeros(psd)
-    psd_sum : float = np.sum(psd)
-    if psd_sum == 0:
-        return 0.0
-    
-    psd_norm = psd / psd_sum
-    # Ensure no zero values in normalized power distribution for log calculation
-    psd_norm = np.clip(psd_norm, 1e-12, 1.0)
 
-    if unit == "bits":
-        H = np.negative(np.sum(psd_norm * np.log2(psd_norm)))
-    elif unit == "nat":
-        H = np.negative(np.sum(psd_norm * np.log(psd_norm)))
-    elif unit in ["dits", "bans", "hartleys"]:
-        H = np.negative(np.sum(psd_norm * np.log10(psd_norm)))
-    else:
-        raise ValueError(f'Invalid unit for power spectral entropy: {unit} Must be in ["bits", "nat", "dits", "bans", "hartleys"]')
-    return float(H)
+    psd_sum : float = np.sum(psd)
+    psd_norm = psd / psd_sum
+    print(np.max(psd_norm), np.min(psd_norm))
+    # Ensure no zero values in normalized power distribution because H is undefined with p=0
+    psd_norm = psd_norm[psd_norm > 0]
+    return shannon_entropy(psd_norm, unit, *args, **kwargs)
 
 
 def dominant_frequencies(

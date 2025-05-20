@@ -1,7 +1,7 @@
 from numpy.typing import NDArray, ArrayLike
 import numpy as np
 import logging
-from typing import Optional, Literal, Union
+from typing import Optional, Literal, Union, Tuple, Any
 import warnings
 
 
@@ -173,3 +173,33 @@ def transform_spectrogram_for_nn(
             spectrogram = np.expand_dims(spectrogram, axis=0)   # (1, H, W)
 
     return spectrogram.astype(values_type)
+
+
+def shannon_entropy(
+        prob_dist : ArrayLike, 
+        unit : Literal["bits", "nat", "dits", "bans", "hartleys"] = "bits",
+        norm : bool = True
+    ) -> Tuple[float, float]:
+
+    if unit == "bits":
+        log_ : Any = np.log2
+    elif unit == "nat":
+        log_ = np.log
+        #H = np.negative(np.sum(prob_dist * np.log(prob_dist)))
+    elif unit in ["dits", "bans", "hartleys"]:
+        log_ = np.log10
+        #H = np.negative(np.sum(prob_dist * np.log10(prob_dist)))
+    else:
+        raise ValueError(f'Invalid unit for power spectral entropy: {unit} Must be in ["bits", "nat", "dits", "bans", "hartleys"]')
+
+    if np.all(prob_dist == prob_dist[0]):
+        return 0.0, 1 if norm else log_(len(prob_dist))
+
+    if norm:
+        H = np.negative(np.sum(prob_dist * (log_(prob_dist)/log_(len(prob_dist)))))
+        max = 1
+    else:
+        H = np.negative(np.sum(prob_dist * log_(prob_dist)))
+        max = log_(len(prob_dist))
+    
+    return float(H), float(max)
