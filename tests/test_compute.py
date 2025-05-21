@@ -398,7 +398,7 @@ class TestDominantFrequencies(unittest.TestCase):
             dominant_frequencies(self.sine_wave, self.sample_rate, n_freqs=3, min_height=-2, min_distance=-4, min_prominence=-5)
 
 
-from biosonic.compute.spectral import hz_to_mel
+from biosonic.compute.utils import hz_to_mel
 class TestHzToMel(unittest.TestCase):
     def test_oshaughnessy_scalar(self):
         result = hz_to_mel(1000.0, after="oshaughnessy")
@@ -635,5 +635,34 @@ def test_cepstrum(sine_wave, chirp_with_noise):
         cepstrum(x, sr, mode="power")
 
 
-if __name__ == '__main__':
-    unittest.main()
+# @pytest.mark.parametrize("filterbank_type", ["mel", "linear", "log"])
+# def test_cepstral_coefficients(filterbank_type, sine_wave, chirp_with_noise):
+#     from biosonic.compute.spectrotemporal import cepstral_coefficients
+#     signal, sr = sine_wave
+#     ceps = cepstral_coefficients(signal, sr, n_ceps=13)
+#     assert isinstance(ceps, np.ndarray)
+#     assert ceps.shape == (13,)
+
+#     # filterbank types
+#     signal, sr = chirp_with_noise
+#     ceps = cepstral_coefficients(signal, sr, filterbank_type=filterbank_type, n_ceps=10)
+#     assert ceps.shape == (10,)
+
+#     # invalid filterbank type
+#     signal, sr = sine_wave
+#     with pytest.raises(ValueError):
+#         cepstral_coefficients(signal, sr, filterbank_type="invalid")
+
+#     # short signal
+#     sr = 16000
+#     signal = np.random.randn(32)
+#     ceps = cepstral_coefficients(signal, sr, n_fft=64, n_ceps=5)
+#     assert ceps.shape == (5,)
+
+#     # fmin fmax
+#     signal, sr = chirp_with_noise
+#     ceps = cepstral_coefficients(signal, sr, fmin=100, fmax=5000, n_ceps=12)
+#     assert ceps.shape == (12,)
+
+# if __name__ == '__main__':
+#     unittest.main()

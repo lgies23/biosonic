@@ -7,6 +7,7 @@ from scipy.fft import fft, ifft
 from .temporal import temporal_entropy
 from .spectral import power_spectral_entropy
 from .utils import check_signal_format, check_sr_format
+from biosonic.filter import linear_filterbank, mel_filterbank, log_filterbank
 
 
 def spectrogram(
@@ -67,7 +68,7 @@ def spectrogram(
     """
     # todo more scaling, dynamic range, dB transform, invert, etc 
     data = check_signal_format(data)
-    check_sr_format(sr)
+    sr = check_sr_format(sr)
 
     if 0 > overlap > 1 or not isinstance(overlap, float):
         raise ValueError("Window overlap must be a float between 0 and 1.")
@@ -89,6 +90,7 @@ def spectrogram(
     Sx = STFT.stft(data, *args, **kwargs)
 
     return Sx, STFT.t(len(data)), STFT.f
+
 
 def cepstrum(
         data: ArrayLike,  
@@ -127,6 +129,9 @@ def cepstrum(
     The cepstrum: A guide to processing. Proc. IEEE 65, 1428–1443. 
     (doi:10.1109/PROC.1977.10747)
     """
+    data = check_signal_format(data)
+    sr = check_sr_format(sr)
+
     if np.all(data == data[0]):
         raise ValueError("Cannot compute cepstrum of flat signal.")
 
@@ -145,8 +150,90 @@ def cepstrum(
 
     return cepstrum_, quefrencies
 
-# def cepstral_coefficients():
-#     pass
+
+def cepstral_coefficients(
+    signal: ArrayLike,
+    sr: int,
+    n_fft: int = 512,
+    n_filters: int = 20,
+    n_ceps: int = 13,
+    fmin: float = 20.0,
+    fmax: Optional[float] = None,
+    filterbank_type: Literal["mel", "linear", "log"] = "mel",
+    dct_type: int = 2,
+    norm: Optional[str] = "ortho",
+    **kwargs : Any
+) -> ArrayLike:
+    """
+    Compute cepstral coefficients from a signal using the specified filter bank.
+
+    Parameters
+    ----------
+    signal : ArrayLike
+        Input time-domain signal.
+    sr : int
+        Sampling rate in Hz.
+    n_fft : int
+        FFT size.
+    n_filters : int
+        Number of filters in the filter bank.
+    n_ceps : int
+        Number of cepstral coefficients to return.
+    fmin : float
+        Minimum frequency for the filter bank.
+    fmax : Optional[float]
+        Maximum frequency for the filter bank. Defaults to Nyquist (sr/2).
+    filterbank_type : {'mel', 'linear', 'log'}
+        Type of filter bank to apply before DCT.
+    dct_type : int
+        Type of Discrete Cosine Transform. Typically 2 for MFCCs.
+    norm : Optional[str]
+        Norm parameter for `scipy.fftpack.dct`. Use 'ortho' for MFCCs.
+    corner_frequency : Optional[float]
+        Corner frequency for mel scaling if other than 1000 Hz is desired, given in Hz. If provided, calculations are based on Fant (1970).
+    after : Literal
+        Choice of Mel scale formula to use.
+        - 'fant': Classic formula: `f = b * (exp(m/a) - 1)` with `a=b=1000`
+        - 'oshaughnessy' or 'beranek': Common formula: `a=2595`, `b=700`
+        - 'umesh': Rational model: `f = b * m / (1 - a * m)`
+        - 'koenig': (Not yet implemented)
+    base : float
+        Base of the logarithmic spacing. Typically 2 (for octaves).
+
+    Returns
+    -------
+    np.ndarray
+        Cepstral coefficient array of shape (n_ceps,).
+    """
+    from scipy.fftpack import dct
+    from scipy.signal import get_window
+
+    # power spectrum
+    windowed = signal * get_window("hann", len(signal), fftbins=True)
+    spectrum = np.abs(np.fft.rfft(windowed, n=n_fft)) ** 2
+
+    # filter bank selection
+    if fmax is None:
+        fmax = sr / 2
+
+    if filterbank_type == "mel":
+        fbanks = mel_filterbank(n_filters, n_fft, sr, fmin, fmax, **kwargs)
+    elif filterbank_type == "linear":
+        fbanks = linear_filterbank(n_filters, n_fft, sr, fmin, fmax)
+    elif filterbank_type == "log":
+        fbanks = log_filterbank(n_filters, n_fft, sr, fmin, fmax, **kwargs)
+    else:
+        raise ValueError(f"Unknown filterbank_type: {filterbank_type}")
+
+    # filterbank energies
+    energies = np.dot(fbanks, spectrum + 1e-10)  # add epsilon for log stability
+    log_energies = np.log(energies)
+
+    # DCT to cepstral domain
+    ceps = dct(log_energies, type=dct_type, norm=norm)[:n_ceps]
+
+    return np.asarray(ceps)
+
 
 def spectrotemporal_entropy(
         data: ArrayLike,  

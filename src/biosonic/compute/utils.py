@@ -203,3 +203,136 @@ def shannon_entropy(
         max = log_(len(prob_dist))
     
     return float(H), float(max)
+
+
+def hz_to_mel(
+        f: Union[ArrayLike, float],
+        a: Optional[float] = None,
+        b: Optional[float] = None,
+        corner_frequency: Optional[float] = None,
+        after : Literal["fant", "koenig", "oshaughnessy", "umesh"] = "oshaughnessy"
+    ) -> Union[ArrayLike, float]:
+    """
+    Converts a frequency or array of frequencies in Hertz to the Mel scale
+    using one of several proposed formulas.
+
+    Parameters:
+        f : Union[ArrayLike, np.floating])
+            Frequency or array of frequencies in Hz.
+        a : Optional[float])
+            Scaling factor for the selected formula. Default depends on `after`.
+        b : Optional[float]
+            Denominator or offset parameter. Default depends on `after`.
+        corner_frequency : Optional[float]
+            If corner frequency other than 1000 Hz is desired, given in Hz. If provided, calculations are based on Fant (1970).
+        after (Literal): Choice of Mel scale formula to use.
+            - 'fant': Classic formula with `a=b=1000`: `F_m = a * np.log(1 + f / b)`
+            - 'koenig': (Not yet implemented)
+            - 'oshaughnessy' or 'beranek': Commonly used formula as fant, but with `a=2595`, `b=700`
+            - 'umesh': Formula using rational function with `a=0.0004`, `b=0.603`.
+
+    Returns:
+        np.ndarray: Frequencies mapped to the Mel scale.
+
+
+    References:
+        1. Fant G. 1970 Acoustic Theory of Speech Production. The Hague: Mouton & Co. 
+        2. Umesh S, Cohen L, Nelson D. 1999 Fitting the Mel scale. In 1999 IEEE International 
+           Conference on Acoustics, Speech, and Signal Processing. Proceedings. ICASSP99 (Cat. No.99CH36258), 
+           pp. 217–220 vol.1. Phoenix, AZ, USA: IEEE. (doi:10.1109/ICASSP.1999.758101)
+        3. D. O'Shaughnessy, ”Speech Communication - Human and Machine” Addison- Wesley, New York, 1987. As cited in [2]
+
+    """
+    f_arr = np.asarray(f, dtype=np.float64)
+
+    if corner_frequency is not None:
+        a, b = corner_frequency, corner_frequency
+        after = "fant"
+
+    if after == "fant":
+        a = 1000.0 if a is None else a
+        b = 1000.0 if b is None else b
+        F_m = a * np.log(1 + f_arr / b)
+    elif after in ["oshaughnessy", "beranek"]:
+        a = 2595.0 if a is None else a
+        b = 700.0 if b is None else b
+        F_m = a * np.log(1 + f_arr / b)
+    elif after == "umesh":
+        a = 0.0004 if a is None else a
+        b = 0.603 if b is None else b
+        F_m = f_arr / (a * f_arr + b)
+    elif after == "koenig":
+        raise NotImplementedError("The 'koenig' Mel scale formula is not yet implemented.")
+    else:
+        raise ValueError(f"Unknown Mel scale method: '{after}'")
+
+    return F_m
+
+
+def mel_to_hz(
+    m: Union[ArrayLike, float],
+    a: Optional[float] = None,
+    b: Optional[float] = None,
+    corner_frequency: Optional[float] = None,
+    after: Literal["fant", "koenig", "oshaughnessy", "umesh"] = "oshaughnessy"
+) -> Union[ArrayLike, float]:
+    """
+    Converts a Mel scale value or array of values to frequency in Hertz,
+    using one of several inverse Mel formulas.
+
+    Parameters
+    ----------
+    m : Union[ArrayLike, float]
+        Mel frequency or array of Mel frequencies.
+    a : Optional[float]
+        Scaling factor for the selected formula. Default depends on `after`.
+    b : Optional[float]
+        Denominator or offset parameter. Default depends on `after`.
+    corner_frequency : Optional[float]
+        If a corner frequency other than 1000 Hz is desired, given in Hz. If provided, calculations are based on Fant (1970).
+    after : Literal
+        Choice of Mel scale formula to use.
+        - 'fant': Classic formula: `f = b * (exp(m/a) - 1)` with `a=b=1000`
+        - 'oshaughnessy' or 'beranek': Common formula: `a=2595`, `b=700`
+        - 'umesh': Rational model: `f = b * m / (1 - a * m)`
+        - 'koenig': (Not yet implemented)
+
+    Returns
+    -------
+    Union[ArrayLike, float]
+        Frequency or array of frequencies in Hertz.
+
+    References
+    ----------
+    1. Fant G. 1970 Acoustic Theory of Speech Production.
+    2. Umesh S, Cohen L, Nelson D. 1999 Fitting the Mel scale. ICASSP.
+    3. D. O'Shaughnessy, "Speech Communication - Human and Machine", 1987.
+    """
+    m_arr = np.asarray(m, dtype=np.float64)
+
+    if corner_frequency is not None:
+        a = corner_frequency
+        b = corner_frequency
+        after = "fant"
+
+    if after == "fant":
+        a = 1000.0 if a is None else a
+        b = 1000.0 if b is None else b
+        f_hz = b * (np.exp(m_arr / a) - 1)
+    elif after in ["oshaughnessy", "beranek"]:
+        a = 2595.0 if a is None else a
+        b = 700.0 if b is None else b
+        f_hz = b * (np.exp(m_arr / a) - 1)
+    elif after == "umesh":
+        a = 0.0004 if a is None else a
+        b = 0.603 if b is None else b
+        denominator = 1 - a * m_arr
+        if np.any(denominator == 0):
+            raise ZeroDivisionError("Denominator in Umesh model became zero.")
+        f_hz = b * m_arr / denominator
+    elif after == "koenig":
+        raise NotImplementedError("The 'koenig' Mel scale formula is not yet implemented.")
+    else:
+        raise ValueError(f"Unknown Mel scale method: '{after}'")
+
+    return f_hz
