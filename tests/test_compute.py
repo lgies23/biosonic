@@ -183,7 +183,6 @@ def test_peak_frequency():
     t = np.linspace(0, 1.0, sampling_rate, endpoint=False)
     signal = np.sin(2 * np.pi * 50.0 * t)
     freq_est = peak_frequency(signal, sampling_rate)
-    print(freq_est)
     assert np.isclose(freq_est, 50)
 
     # check mixed signal (strongest component is 120 Hz)
@@ -216,7 +215,7 @@ def test_peak_frequency():
 
 
 def test_spectrogram():
-    from biosonic.compute.spectral import spectrogram
+    from biosonic.compute.spectrotemporal import spectrogram
 
     sr = 44100
     duration = 1.0
@@ -340,7 +339,7 @@ def test_centroid():
     assert np.isclose(centroid(data, sr=1000), expected)
 
 
-from biosonic.compute.spectral import dominant_frequencies
+from biosonic.compute.spectrotemporal import dominant_frequencies
 class TestDominantFrequencies(unittest.TestCase):
 
     def setUp(self):
@@ -450,7 +449,6 @@ class TestPowerSpectralEntropy(unittest.TestCase):
         self.assertIsInstance(H, float)
         self.assertLess(H, 0.5)
         self.assertLess(0, H)
-        print(H_max)
         self.assertAlmostEqual(H_max, 1.0)
 
     def test_norm(self):
@@ -505,7 +503,7 @@ class TestPowerSpectralEntropy(unittest.TestCase):
             power_spectral_entropy(signal, self.sample_rate, unit="watts")
 
 
-from biosonic.compute.temporal import entropy
+from biosonic.compute.temporal import temporal_entropy
 from scipy.signal import chirp
 class TestTemporalEntropy(unittest.TestCase):
     def setUp(self):
@@ -529,19 +527,19 @@ class TestTemporalEntropy(unittest.TestCase):
         f1 = 300
         f2 = 400
         signal = chirp(self.time, f1, 10, f2) + np.random.normal(0, 1, size=self.time.shape)
-        H, H_max  = entropy(signal)
+        H, H_max  = temporal_entropy(signal)
         self.assertGreater(H, 0.5, "Entropy of chirp with noise should be relatively high.")
 
     def test_noise_signal_entropy(self):
         signal = np.random.normal(0, 1, size=self.time.shape)
-        H, H_max = entropy(signal)
+        H, H_max = temporal_entropy(signal)
         self.assertGreater(H, 0.5, "Entropy of white noise should be relatively high.")
 
     def test_entropy_units(self):
         signal = np.random.normal(0, 1, size=self.time.shape)
-        h_bits, _ = entropy(signal, unit="bits", norm=False)
-        h_nats, _ = entropy(signal, unit="nat", norm=False)
-        h_hartleys, _ = entropy(signal, unit="hartleys", norm=False)
+        h_bits, _ = temporal_entropy(signal, unit="bits", norm=False)
+        h_nats, _ = temporal_entropy(signal, unit="nat", norm=False)
+        h_hartleys, _ = temporal_entropy(signal, unit="hartleys", norm=False)
 
         self.assertNotEqual(h_bits, h_nats, "Entropy in different units should yield different values.")
         self.assertAlmostEqual(h_bits * np.log(2), h_nats, delta=0.1)
@@ -552,7 +550,34 @@ class TestTemporalEntropy(unittest.TestCase):
     def test_invalid_unit_raises(self):
         signal = np.random.normal(0, 1, size=self.time.shape)
         with self.assertRaises(ValueError):
-            entropy(signal, unit="invalid_unit")
+            temporal_entropy(signal, unit="invalid_unit")
+
+
+from biosonic.compute.spectrotemporal import spectrotemporal_entropy
+from biosonic.compute.spectral import power_spectral_entropy
+from biosonic.compute.temporal import temporal_entropy
+
+def test_spectrotemporal_entropy():
+    f1 = 300
+    f2 = 400
+    duration = 1
+    sr = 1000
+    time = np.linspace(0, duration, int(sr * duration), endpoint=False)
+    data = chirp(time, f1, 10, f2) + np.random.normal(0, 1, size=time.shape)
+        
+    entropy_val = spectrotemporal_entropy(data, sr, unit="bits")
+    expected_temporal, _ = temporal_entropy(data, unit="bits")
+    expected_spectral, _ = power_spectral_entropy(data, sr, unit="bits")
+    assert np.isclose(entropy_val, expected_temporal * expected_spectral)
+
+    entropy_val = spectrotemporal_entropy(data, sr, unit="nat")
+    expected_temporal, _ = temporal_entropy(data, unit="nat")
+    expected_spectral, _ = power_spectral_entropy(data, sr, unit="nat")
+    assert np.isclose(entropy_val, expected_temporal * expected_spectral)
+
+    for unit in ["bits", "nat", "dits", "bans", "hartleys"]:
+        entropy_val = spectrotemporal_entropy(data, sr, unit=unit)
+        assert isinstance(entropy_val, float)
 
 
 if __name__ == '__main__':

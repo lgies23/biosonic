@@ -243,7 +243,7 @@ def temporal_kurtosis(data: ArrayLike, sr: int, kernel_size: Optional[int] = Non
     return float(kurtosis_)
 
 
-def entropy(
+def temporal_entropy(
         data: ArrayLike,  
         unit: Literal["bits", "nat", "dits", "bans", "hartleys"] = "bits",
         *args : Any, 
@@ -257,7 +257,7 @@ def entropy(
 
     Args:
         data : ArrayLike
-            Input signal as a 1D ArrayLike
+            Input signal as a 1D ArrayLike.
         unit : str, optional
             Desired unit of the entropy, determines the logarithmic base used for calculatein. 
             Choose from "bits" (log2), "nat" (ln), or "dits"/"bans"/"hartleys" (log10).
