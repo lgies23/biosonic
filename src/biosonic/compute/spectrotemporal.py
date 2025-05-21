@@ -2,6 +2,7 @@ from typing import Optional, Tuple, Union, Dict, Literal, Any
 import numpy as np
 from numpy.typing import NDArray, ArrayLike
 from scipy import signal
+from scipy.fft import fft, ifft
 
 from .temporal import temporal_entropy
 from .spectral import power_spectral_entropy
@@ -89,6 +90,63 @@ def spectrogram(
 
     return Sx, STFT.t(len(data)), STFT.f
 
+def cepstrum(
+        data: ArrayLike,  
+        sr: int,
+        mode : Literal ["amplitude", "power"] = "power",
+    ) -> Tuple[ArrayLike, ArrayLike]:
+    """
+    Compute the cepstrum of a real-valued time-domain signal.
+
+    The cepstrum is computed by taking the inverse Fourier transform 
+    of the logarithm of the magnitude spectrum. Depending on the `mode`, 
+    this function returns either the amplitude or power cepstrum.
+
+    Parameters
+    ----------
+    data : ArrayLike
+        Input real-valued time-domain signal (1D array).
+    sr : int
+        Sampling rate of the signal in Hz.
+    mode : {"amplitude", "power"}, optional
+        Type of cepstrum to compute:
+        - "amplitude" : Returns the absolute value of the inverse FFT of the log-magnitude spectrum.
+        - "power"     : Returns the squared magnitude of the inverse FFT of the log-power spectrum.
+        Default is "power".
+
+    Returns
+    -------
+    cepstrum : ArrayLike
+        The computed cepstrum (amplitude or power based on the selected mode).
+    quefrencies : ArrayLike
+        Array of quefrency values (in seconds), corresponding to each element in the cepstrum.
+
+    References
+    ----------
+    Childers DG, Skinner DP, Kemerait RC. 1977 
+    The cepstrum: A guide to processing. Proc. IEEE 65, 1428–1443. 
+    (doi:10.1109/PROC.1977.10747)
+    """
+    if np.all(data == data[0]):
+        raise ValueError("Cannot compute cepstrum of flat signal.")
+
+    cepstrum_ = np.asarray([])
+
+    if mode == "power":
+        cepstrum_ = np.abs(ifft(np.log(np.abs(fft(data))**2)))**2
+
+    elif mode == "amplitude":
+        cepstrum_ = np.abs(ifft(np.log(np.abs(fft(data)))))
+    
+    else:
+        raise ValueError(f"Invalid mode for cepstrum calculation: {mode}")
+
+    quefrencies = np.arange(len(data)) / sr
+
+    return cepstrum_, quefrencies
+
+# def cepstral_coefficients():
+#     pass
 
 def spectrotemporal_entropy(
         data: ArrayLike,  

@@ -578,6 +578,62 @@ def test_spectrotemporal_entropy():
         entropy_val = spectrotemporal_entropy(data, sr, unit=unit)
         assert isinstance(entropy_val, float)
 
+from biosonic.compute.spectrotemporal import cepstrum
+@pytest.fixture
+def sine_wave():
+    sr = 16000
+    t = np.linspace(0, 1, sr, endpoint=False)
+    freq = 440  # A4
+    x = np.sin(2 * np.pi * freq * t)
+    return x, sr
+
+@pytest.fixture
+def chirp_with_noise():
+    f1 = 300
+    f2 = 400
+    duration = 1
+    sr = 1000
+    time = np.linspace(0, duration, int(sr * duration), endpoint=False)
+    x = chirp(time, f1, 10, f2) + np.random.normal(0, 1, size=time.shape)
+    return x, sr
+
+def test_cepstrum(sine_wave, chirp_with_noise):
+    x, sr = chirp_with_noise
+    cep, qf = cepstrum(x, sr, mode="amplitude")
+
+    # output shape
+    assert cep.shape == x.shape
+    assert qf.shape == x.shape
+
+    # amplitude vs power
+    x, sr = sine_wave
+    cep_amp, _ = cepstrum(x, sr, mode="amplitude")
+    cep_pow, _ = cepstrum(x, sr, mode="power")
+    assert np.all(cep_pow >= 0), "Power cepstrum should be non-negative"
+    assert not np.allclose(cep_amp, cep_pow), "Amplitude and power cepstra should differ"
+
+    # quefrency scale
+    x, sr = sine_wave
+    _, qf = cepstrum(x, sr)
+    expected = np.arange(len(x)) / sr
+    assert np.allclose(qf, expected)
+
+    # invalid mode
+    x, sr = sine_wave
+    with pytest.raises(ValueError, match="Invalid mode for cepstrum calculation"):
+        cepstrum(x, sr, mode="invalid")
+
+    # energy conservation
+    x, sr = sine_wave
+    cep, _ = cepstrum(x, sr, mode="power")
+    energy = np.sum(cep)
+    assert energy > 0, "Cepstrum energy should be positive"
+
+    # flat signal
+    x, sr = np.full(500, 1), 50
+    with pytest.raises(ValueError, match="flat signal"):
+        cepstrum(x, sr, mode="power")
+
 
 if __name__ == '__main__':
     unittest.main()
