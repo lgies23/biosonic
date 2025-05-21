@@ -113,7 +113,7 @@ def extract_all_features(
     sr = check_sr_format(sr)
 
     temporal_feats = temporal_features(data, sr, kernel_size)
-    spectral_feats = spectral_features(data, sr, n_freqs=n_dominant_freqs)
+    spectral_feats = spectral_features(data, sr)
 
     return {**temporal_feats, **spectral_feats}
 

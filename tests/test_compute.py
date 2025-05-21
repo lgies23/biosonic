@@ -556,7 +556,6 @@ class TestTemporalEntropy(unittest.TestCase):
 from biosonic.compute.spectrotemporal import spectrotemporal_entropy
 from biosonic.compute.spectral import power_spectral_entropy
 from biosonic.compute.temporal import temporal_entropy
-
 def test_spectrotemporal_entropy():
     f1 = 300
     f2 = 400

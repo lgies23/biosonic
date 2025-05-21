@@ -93,7 +93,6 @@ def spectrogram(
 def spectrotemporal_entropy(
         data: ArrayLike,  
         sr: int, 
-        unit: Literal["bits", "nat", "dits", "bans", "hartleys"] = "bits",
         *args : Any, 
         **kwargs : Any
     ) -> float:
@@ -128,8 +127,8 @@ def spectrotemporal_entropy(
     temporal_entropy : Computes the temporal_entropy of the data.
     power_spectral_entropy : Computes the temporal_entropy in the frequency domain.
     """
-    H_t, _ = temporal_entropy(data, unit=unit, *args, **kwargs)
-    H_f, _ = power_spectral_entropy(data, sr, unit=unit, *args, **kwargs)
+    H_t, _ = temporal_entropy(data, *args, **kwargs)
+    H_f, _ = power_spectral_entropy(data, sr, *args, **kwargs)
     return H_t * H_f
 
 
