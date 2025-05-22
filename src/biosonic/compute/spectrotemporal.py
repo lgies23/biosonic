@@ -226,8 +226,8 @@ def cepstral_coefficients(
         raise ValueError(f"Unknown filterbank_type: {filterbank_type}")
 
     # filterbank energies
-    energies = np.dot(fbanks, spectrum + 1e-10)  # add epsilon for log stability
-    log_energies = np.log(energies)
+    energies = np.dot(fbanks, spectrum)
+    log_energies = np.log(energies + 1e-30)  # epsilon for log stability
 
     # DCT to cepstral domain
     ceps = dct(log_energies, type=dct_type, norm=norm)[:n_ceps]

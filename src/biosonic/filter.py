@@ -5,11 +5,35 @@ from typing import Optional, Any
 from biosonic.compute.utils import hz_to_mel, mel_to_hz
 
 
+def check_filterbank_parameters(
+        n_filters : int, 
+        n_fft : int, 
+        sr : int, 
+        fmin : float = 0.0, 
+        fmax : Optional[float] = None,
+        ):
+    
+    if fmax > sr / 2:
+        raise ValueError(f"fmax must be <= Nyquist frequency (sr/2 = {sr/2}), but got fmax={fmax}")
+
+    if fmin < 0 or fmin >= fmax:
+        raise ValueError(f"fmin must be >= 0 and < fmax, but got fmin={fmin}, fmax={fmax}")
+
+    # Ensure n_fft provides enough resolution to resolve unique bins for each filter
+    min_bins_required = n_filters + 2
+    max_bin_index = int(np.floor((n_fft + 1) * fmax / sr))
+    if max_bin_index < min_bins_required:
+        raise ValueError(
+            f"n_fft={n_fft} doesn't provide enough resolution for {n_filters} filters up to fmax={fmax}Hz "
+            f"(only {max_bin_index} frequency bins available). Increase n_fft or reduce fmax/n_filters."
+        )
+    
 def filterbank(
         n_filters : int, 
         n_fft : int, 
         bin_freqs : ArrayLike
     ) -> ArrayLike:
+
     filterbank = np.zeros([n_filters, n_fft // 2 + 1])
     for i in range(1, n_filters + 1):
         left = bin_freqs[i - 1]
@@ -36,6 +60,8 @@ def mel_filterbank(
     if fmax is None:
         fmax = sr / 2
 
+    check_filterbank_parameters(n_filters, n_fft, sr, fmin, fmax)
+
     # boundaries
     mel_min = hz_to_mel(fmin, corner_frequency=corner_frequency, **kwargs)
     mel_max = hz_to_mel(fmax, corner_frequency=corner_frequency, **kwargs)
@@ -59,6 +85,8 @@ def linear_filterbank(
     ) -> ArrayLike:
     if fmax is None:
         fmax = sr / 2
+
+    check_filterbank_parameters(n_filters, n_fft, sr, fmin, fmax)
 
     hz_points = np.linspace(fmin, fmax, n_filters + 2)
     bin_freqs = np.floor((n_fft + 1) * hz_points / sr).astype(int)
@@ -100,8 +128,7 @@ def log_filterbank(
     if fmax is None:
         fmax = sr / 2
 
-    if fmin <= 0 or fmin >= fmax:
-        raise ValueError("fmin must be > 0 and < fmax")
+    check_filterbank_parameters(n_filters, n_fft, sr, fmin, fmax)
 
     # compute log-spaced center frequencies
     log_min = np.log(fmin) / np.log(base)
