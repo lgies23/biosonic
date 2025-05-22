@@ -1,9 +1,99 @@
-# import matplotlib.pyplot as plt
-# import numpy as np
+import matplotlib.pyplot as plt
+import numpy as np
 # from numpy.typing import ArrayLike, NDArray
 # from typing import Union, Dict
-# from compute.spectral import spectrogram
+# from compute.spectrotemporal import spectrogram
 # from compute.utils import extract_all_features, check_signal_format, check_sr_format
+
+
+def plot_spectrogram(Sx, t, f, db_scale=True, cmap='viridis', vmin=None, vmax=None, title="Spectrogram"):
+    """
+    Plot a spectrogram.
+    
+    Parameters:
+    - Sx: 2D array, spectrogram (complex or magnitude)
+    - t: 1D array, time axis
+    - f: 1D array, frequency axis
+    - db_scale: bool, convert magnitude to dB
+    - cmap: str, colormap
+    - vmin, vmax: float, optional color limits
+    - title: str, title of the plot
+    """
+    # Convert to magnitude if complex
+    magnitude = np.abs(Sx)
+
+    # Convert to dB scale
+    if db_scale:
+        magnitude = 20 * np.log10(magnitude + 1e-30)  # Avoid log(0)
+
+    plt.figure(figsize=(10, 4))
+    plt.pcolormesh(t, f, magnitude, cmap=cmap, vmin=vmin, vmax=vmax)
+    # plt.imshow(magnitude, 
+    #        origin='lower', 
+    #        aspect='auto', 
+    #        extent=[t[0], t[-1], f[0], f[-1]], 
+    #        cmap='viridis', 
+    #        vmin=vmin, 
+    #        vmax=vmax)
+    plt.colorbar(label='Amplitude (dB)' if db_scale else 'Amplitude')
+    plt.xlabel('Time [s]')
+    plt.ylabel('Frequency [Hz]')
+    plt.title(title)
+    plt.tight_layout()
+    plt.show()
+
+
+def plot_filterbank_and_cepstrum(
+        fbanks, 
+        sr, 
+        n_fft, 
+        ceps, 
+        fmax=None, 
+        title_prefix=""):
+    """
+    Plots:
+    1. The filter bank filters (rows of the filter bank matrix)
+    2. The resulting cepstral coefficients
+
+    Parameters:
+        fbanks (np.ndarray): Filter bank matrix of shape (n_filters, n_fft//2+1)
+        sr (int): Sampling rate
+        n_fft (int): FFT size
+        ceps (np.ndarray): Cepstral coefficients (1D array)
+        fmax (float): Optional frequency max for plotting x-axis
+        title_prefix (str): Optional prefix for plot titles
+    """
+    # Set frequency axis (only positive freqs from rfft)
+    freqs = np.linspace(0, sr / 2, n_fft // 2 + 1)
+
+    # Limit frequency axis
+    if fmax is not None:
+        max_bin = np.searchsorted(freqs, fmax)
+        freqs = freqs[:max_bin]
+        fbanks = fbanks[:, :max_bin]
+
+    # Plot filter bank
+    plt.figure(figsize=(14, 5))
+
+    plt.subplot(1, 2, 1)
+    for i in range(fbanks.shape[0]):
+        plt.plot(freqs, fbanks[i])
+    plt.title(f"{title_prefix}Filter Bank")
+    plt.xlabel("Frequency (Hz)")
+    plt.ylabel("Amplitude")
+    plt.grid(True)
+
+    # Plot cepstral coefficients
+    plt.subplot(1, 2, 2)
+    plt.plot(np.arange(len(ceps)), ceps, marker='o')
+    plt.title(f"{title_prefix}Cepstral Coefficients")
+    plt.xlabel("Coefficient Index")
+    plt.ylabel("Amplitude")
+    plt.grid(True)
+
+    plt.tight_layout()
+    plt.show()
+
 
 # def plot_features(
 #         data: ArrayLike, 

@@ -2,16 +2,16 @@ import numpy as np
 from numpy.typing import ArrayLike
 from typing import Optional, Any
 
-from biosonic.compute.utils import hz_to_mel, mel_to_hz
+from compute.utils import hz_to_mel, mel_to_hz
 
 
 def check_filterbank_parameters(
         n_filters : int, 
         n_fft : int, 
         sr : int, 
-        fmin : float = 0.0, 
-        fmax : Optional[float] = None,
-        ):
+        fmin : float, 
+        fmax : float,
+        ) -> None:
     
     if fmax > sr / 2:
         raise ValueError(f"fmax must be <= Nyquist frequency (sr/2 = {sr/2}), but got fmax={fmax}")
@@ -131,7 +131,7 @@ def log_filterbank(
     check_filterbank_parameters(n_filters, n_fft, sr, fmin, fmax)
 
     # compute log-spaced center frequencies
-    log_min = np.log(fmin) / np.log(base)
+    log_min = np.log(fmin+1e-30) / np.log(base)
     log_max = np.log(fmax) / np.log(base)
     log_centers = np.linspace(log_min, log_max, n_filters + 2)
     hz_points = base ** log_centers

@@ -7,7 +7,7 @@ from scipy.fft import fft, ifft
 from .temporal import temporal_entropy
 from .spectral import power_spectral_entropy
 from .utils import check_signal_format, check_sr_format
-from biosonic.filter import linear_filterbank, mel_filterbank, log_filterbank
+from filter import linear_filterbank, mel_filterbank, log_filterbank
 
 
 def spectrogram(
@@ -70,6 +70,11 @@ def spectrogram(
     data = check_signal_format(data)
     sr = check_sr_format(sr)
 
+    # pad_amt = 0 
+    # if pad:
+    #     pad_amt = window_length // 2
+    #     data = np.pad(data, pad_amt, mode='reflect')
+
     if 0 > overlap > 1 or not isinstance(overlap, float):
         raise ValueError("Window overlap must be a float between 0 and 1.")
 
@@ -88,8 +93,17 @@ def spectrogram(
 
     STFT = signal.ShortTimeFFT(window, hop_length, sr, scale_to=scaling, *args, **kwargs)
     Sx = STFT.stft(data, *args, **kwargs)
+    
+    # # adjust time vector for padding offset
+    t = STFT.t(len(data))
 
-    return Sx, STFT.t(len(data)), STFT.f
+    # trim frames whose center is outside the unpadded signal range
+    duration = len(data) / sr  # real signal duration
+    valid_mask = (t >= 0) & (t <= duration)
+    Sx = Sx[:, valid_mask]
+    t = t[valid_mask]
+
+    return Sx, t, STFT.f
 
 
 def cepstrum(
@@ -155,9 +169,9 @@ def cepstral_coefficients(
     signal: ArrayLike,
     sr: int,
     n_fft: int = 512,
-    n_filters: int = 20,
-    n_ceps: int = 13,
-    fmin: float = 20.0,
+    n_filters: int = 32,
+    n_ceps: int = 32,
+    fmin: float = 0.0,
     fmax: Optional[float] = None,
     filterbank_type: Literal["mel", "linear", "log"] = "mel",
     dct_type: int = 2,

@@ -656,7 +656,7 @@ def test_cepstral_coefficients(filterbank_type, sine_wave, chirp_with_noise):
     # short signal
     sr = 16000
     signal = np.random.randn(32)
-    ceps = cepstral_coefficients(signal, sr, n_fft=64, n_ceps=5)
+    ceps = cepstral_coefficients(signal, sr, n_fft=512, n_ceps=5)
     assert ceps.shape == (5,)
 
     # fmin fmax
