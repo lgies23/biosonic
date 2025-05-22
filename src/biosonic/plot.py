@@ -1,12 +1,21 @@
 import matplotlib.pyplot as plt
 import numpy as np
-# from numpy.typing import ArrayLike, NDArray
-# from typing import Union, Dict
+from numpy.typing import ArrayLike
+from typing import Optional
 # from compute.spectrotemporal import spectrogram
 # from compute.utils import extract_all_features, check_signal_format, check_sr_format
 
 
-def plot_spectrogram(Sx, t, f, db_scale=True, cmap='viridis', vmin=None, vmax=None, title="Spectrogram"):
+def plot_spectrogram(
+        Sx : ArrayLike, 
+        t : ArrayLike, 
+        f : ArrayLike, 
+        db_scale : bool = True, 
+        cmap : str = 'viridis', 
+        vmin : Optional[float] = None, 
+        vmax : Optional[float] = None, 
+        title : str = "Spectrogram"
+    ) -> None:
     """
     Plot a spectrogram.
     
@@ -44,12 +53,13 @@ def plot_spectrogram(Sx, t, f, db_scale=True, cmap='viridis', vmin=None, vmax=No
 
 
 def plot_filterbank_and_cepstrum(
-        fbanks, 
-        sr, 
-        n_fft, 
-        ceps, 
-        fmax=None, 
-        title_prefix=""):
+        fbanks : ArrayLike, 
+        sr : int, 
+        n_fft : int, 
+        ceps : ArrayLike, 
+        fmax : Optional[float] = None, 
+        title_prefix : str = ""
+    ) -> None:
     """
     Plots:
     1. The filter bank filters (rows of the filter bank matrix)

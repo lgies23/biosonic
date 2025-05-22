@@ -2,7 +2,7 @@ import numpy as np
 from numpy.typing import ArrayLike
 from typing import Optional, Any
 
-from compute.utils import hz_to_mel, mel_to_hz
+from biosonic.compute.utils import hz_to_mel, mel_to_hz
 
 
 def check_filterbank_parameters(

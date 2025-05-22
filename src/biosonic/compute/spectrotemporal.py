@@ -7,7 +7,7 @@ from scipy.fft import fft, ifft
 from .temporal import temporal_entropy
 from .spectral import power_spectral_entropy
 from .utils import check_signal_format, check_sr_format
-from filter import linear_filterbank, mel_filterbank, log_filterbank
+from ..filter import linear_filterbank, mel_filterbank, log_filterbank
 
 
 def spectrogram(
