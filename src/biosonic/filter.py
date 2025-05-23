@@ -28,6 +28,7 @@ def check_filterbank_parameters(
             f"(only {max_bin_index} frequency bins available). Increase n_fft or reduce fmax/n_filters."
         )
     
+    
 def filterbank(
         n_filters : int, 
         n_fft : int, 

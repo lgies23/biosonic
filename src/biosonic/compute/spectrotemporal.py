@@ -170,7 +170,7 @@ def cepstral_coefficients(
     sr: int,
     n_fft: int = 512,
     n_filters: int = 32,
-    n_ceps: int = 32,
+    n_ceps: int = 16,
     fmin: float = 0.0,
     fmax: Optional[float] = None,
     filterbank_type: Literal["mel", "linear", "log"] = "mel",
