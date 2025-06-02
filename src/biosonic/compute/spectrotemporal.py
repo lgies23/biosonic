@@ -11,71 +11,75 @@ from ..filter import linear_filterbank, mel_filterbank, log_filterbank
 
 
 def spectrogram(
-        data: ArrayLike, 
-        sr: int, 
-        window: Union[str, ArrayLike] = "hann", 
-        window_length: int = 1024, 
-        overlap: float = .5, 
-        scaling: str = "magnitude",
-        *args: Any, 
-        **kwargs: Any
-    ) -> Tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
+    data: ArrayLike,
+    sr: int,
+    window_length: int = 512,
+    window: Union[str, ArrayLike] = "hann",
+    zero_padding: int = 0,
+    overlap: float = 50,
+    noisereduction: Optional[int] = None,
+    complex_output: bool = False,
+) -> Tuple[NDArray[np.float32], NDArray[np.float32], NDArray[np.float32]]:
     """
-    Compute the spectrogram of a 1D signal using short-time Fourier transform (STFT).
+    Compute the spectrogram of a waveform. Uses scipy.signal.stft and is oriented on seewave.
 
-    Args:
-        data : ArrayLike
-            Input signal as a 1D array-like.
-        sr : int
-            Sampling rate of the signal in Hz.
-        window : Union[str, NDArray], optional
-            Type of window to use (e.g., 'hann', 'hamming' of scipy.signal.windows) or a custom window array.
-            Defaults to 'hann'.
-        window_length : int, optional
-            Length of the analysis window in samples.
-            Defaults to 1024. Ignored if the window is given as a custom array,
-        overlap : float, optional
-            Fractional overlap between adjacent windows (0 < overlap < 1).
-            Defaults to 0.5 (50% overlap).
-        scaling : str, optional
-            scaling of the spectrogram, either 'magnitude' or 'psd' for power spectral density. 
-            Defaults to 'magnitude'.
-        *args : tuple
-            Additional positional arguments to pass to scipy's ShortTimeFFT class.
-        **kwargs : dict
-            Additional keyword arguments to pass to scipy's ShortTimeFFT class.
+    Parameters
+    ----------
+    data : ArrayLike
+        Input signal as a 1D array.
+    sr : int
+        Sampling rate in Hz.
+    window_length : int, optional
+        Length of the window in samples. Must be even. Default is 512.
+    window : str or tuple, optional
+        Type of window to use (e.g., 'hann', 'hamming' of scipy.signal.windows) or a custom window array. 
+        Defaults to 'hann'.
+    zero_padding : int, optional
+        Number of zeros to pad to each FFT window. Default is 0.
+    overlap : float, optional
+        Overlap between adjacent windows as a percentage (0–100). Default is 50.
+    noisereduction : int or None, optional
+        Noise reduction mode:
+        - `None`: no noise reduction
+        - `1`: subtract median across time
+        - `2`: subtract median across frequency
+    complex_output : bool, optional
+        If True, return the complex STFT result. If False, return magnitude. Default is False.
 
-    Retuns:
-        Sx : NDArray[np.float64]
-            2D array of complex STFT values (frequency x time).
-        t : NDArray[np.float64]
-            Array of time values corresponding to the STFT columns.
-        f : NDArray[np.float64]
-            Array of frequency bins corresponding to the STFT rows.
+    Returns
+    -------
+    Sx : np.ndarray
+        Spectrogram array (complex or magnitude depending on `complex_output`).
+    t : np.ndarray
+        Time vector corresponding to the columns of `Sx`, in seconds.
+    f : np.ndarray
+        Frequency vector corresponding to the rows of `Sx`, in Hz.
 
-    Notes:
-        This function relies on scipy's `ShortTimeFFT` class and the submodule scipy.signal.windows.
-    
-    References:
-        Pauli Virtanen, Ralf Gommers, Travis E. Oliphant, Matt Haberland, Tyler Reddy, David Cournapeau, 
-        Evgeni Burovski, Pearu Peterson, Warren Weckesser, Jonathan Bright, Stéfan J. van der Walt, 
-        Matthew Brett, Joshua Wilson, K. Jarrod Millman, Nikolay Mayorov, Andrew R. J. Nelson, Eric Jones, 
-        Robert Kern, Eric Larson, CJ Carey, İlhan Polat, Yu Feng, Eric W. Moore, Jake VanderPlas, Denis 
-        Laxalde, Josef Perktold, Robert Cimrman, Ian Henriksen, E.A. Quintero, Charles R Harris, Anne M. 
-        Archibald, Antônio H. Ribeiro, Fabian Pedregosa, Paul van Mulbregt, and SciPy 1.0 Contributors. 
-        (2020) SciPy 1.0: Fundamental Algorithms for Scientific Computing in Python. Nature Methods, 17(3), 
-        261-272. DOI: 10.1038/s41592-019-0686-2.
+    Raises
+    ------
+    ValueError
+        If `window_length` is not an even number.
+
+    References
+    ----------
+    [1] Pauli Virtanen, Ralf Gommers, Travis E. Oliphant, Matt Haberland, Tyler Reddy, David Cournapeau, 
+    Evgeni Burovski, Pearu Peterson, Warren Weckesser, Jonathan Bright, Stéfan J. van der Walt, 
+    Matthew Brett, Joshua Wilson, K. Jarrod Millman, Nikolay Mayorov, Andrew R. J. Nelson, Eric Jones, 
+    Robert Kern, Eric Larson, CJ Carey, İlhan Polat, Yu Feng, Eric W. Moore, Jake VanderPlas, Denis 
+    Laxalde, Josef Perktold, Robert Cimrman, Ian Henriksen, E.A. Quintero, Charles R Harris, Anne M. 
+    Archibald, Antônio H. Ribeiro, Fabian Pedregosa, Paul van Mulbregt, and SciPy 1.0 Contributors. 
+    (2020) SciPy 1.0: Fundamental Algorithms for Scientific Computing in Python. Nature Methods, 17(3), 
+    261-272. DOI: 10.1038/s41592-019-0686-2.
+
+    [2] J. Sueur, T. Aubin, C. Simonis (2008). “Seewave: a free modular tool for sound analysis and 
+    synthesis.” Bioacoustics, 18, 213-226.
     """
-    # todo more scaling, dynamic range, dB transform, invert, etc 
-    data = check_signal_format(data)
-    sr = check_sr_format(sr)
-    N = len(data)
-    
-    if 0 > overlap > 1 or not isinstance(overlap, float):
-        raise ValueError("Window overlap must be a float between 0 and 1.")
+    # TODO more scaling, dynamic range, dB transform, invert, etc 
+    if window_length % 2 != 0:
+        raise ValueError("'window_length' must be even")
 
-    if not isinstance(window_length, int) or window_length <= 0:
-        raise ValueError("'window_length' must be a positive integer.")
+    noverlap = int(window_length * overlap / 100)
+    nfft = window_length + zero_padding
 
     if isinstance(window, str):
         try:
@@ -86,57 +90,161 @@ def spectrogram(
         window = np.asarray(window) 
         if not isinstance(window, np.ndarray):
             raise TypeError("'window' must be either a string or a 1D NumPy array.")
+
+    f, t, Sx = signal.stft(
+        data,
+        fs=sr,
+        window=window,
+        nperseg=window_length,
+        noverlap=noverlap,
+        nfft=nfft,
+        padded=False,
+        boundary=None
+    )
+
+    if complex_output:
+        return Sx, t, f
+
+    S_real = np.abs(Sx)
+
+    # Noise reduction
+    if noisereduction == 1:
+        noise = np.median(S_real, axis=0)
+        S_real = np.abs(S_real - noise[:, None])
+    elif noisereduction == 2:
+        noise = np.median(S_real, axis=1)
+        S_real = np.abs(S_real - noise[None, :])
+
+    return S_real, t, f
+
+
+# def spectrogram(
+#         data: ArrayLike, 
+#         sr: int, 
+#         window: Union[str, ArrayLike] = "hann", 
+#         window_length: int = 1024, 
+#         overlap: float = .5, 
+#         scaling: str = "magnitude",
+#         *args: Any, 
+#         **kwargs: Any
+#     ) -> Tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
+#     """
+#     Compute the spectrogram of a 1D signal using short-time Fourier transform (STFT).
+
+#     Args:
+#         data : ArrayLike
+#             Input signal as a 1D array-like.
+#         sr : int
+#             Sampling rate of the signal in Hz.
+#         window : Union[str, NDArray], optional
+#             Type of window to use (e.g., 'hann', 'hamming' of scipy.signal.windows) or a custom window array.
+#             Defaults to 'hann'.
+#         window_length : int, optional
+#             Length of the analysis window in samples.
+#             Defaults to 1024. Ignored if the window is given as a custom array,
+#         overlap : float, optional
+#             Fractional overlap between adjacent windows (0 < overlap < 1).
+#             Defaults to 0.5 (50% overlap).
+#         scaling : str, optional
+#             scaling of the spectrogram, either 'magnitude' or 'psd' for power spectral density. 
+#             Defaults to 'magnitude'.
+#         *args : tuple
+#             Additional positional arguments to pass to scipy's ShortTimeFFT class.
+#         **kwargs : dict
+#             Additional keyword arguments to pass to scipy's ShortTimeFFT class.
+
+#     Retuns:
+#         Sx : NDArray[np.float64]
+#             2D array of complex STFT values (frequency x time).
+#         t : NDArray[np.float64]
+#             Array of time values corresponding to the STFT columns.
+#         f : NDArray[np.float64]
+#             Array of frequency bins corresponding to the STFT rows.
+
+#     Notes:
+#         This function relies on scipy's `ShortTimeFFT` class and the submodule scipy.signal.windows.
     
-    hop_length = int(window_length * (1 - overlap))
-    noverlap = window_length - hop_length
-
-    # pad signal to center the windows
-    #pad = window_length
-    data_padded = np.pad(data, pad_width=window_length, mode='reflect')
-
-    # Compute spectrogram
-    # f, t, Sx = signal.spectrogram(
-    #     data_padded,
-    #     fs=sr,
-    #     window=window,
-    #     nperseg=window_length,
-    #     noverlap=noverlap,
-    #     mode=scaling,
-    #     *args, 
-    #     **kwargs
-    # )
-
-    STFT = signal.ShortTimeFFT(
-        window, 
-        hop_length, 
-        sr, 
-        scale_to=scaling, 
-        *args, 
-        **kwargs
-        )
-
-    Sx = STFT.stft(data, *args, **kwargs)
+#     References:
+#         Pauli Virtanen, Ralf Gommers, Travis E. Oliphant, Matt Haberland, Tyler Reddy, David Cournapeau, 
+#         Evgeni Burovski, Pearu Peterson, Warren Weckesser, Jonathan Bright, Stéfan J. van der Walt, 
+#         Matthew Brett, Joshua Wilson, K. Jarrod Millman, Nikolay Mayorov, Andrew R. J. Nelson, Eric Jones, 
+#         Robert Kern, Eric Larson, CJ Carey, İlhan Polat, Yu Feng, Eric W. Moore, Jake VanderPlas, Denis 
+#         Laxalde, Josef Perktold, Robert Cimrman, Ian Henriksen, E.A. Quintero, Charles R Harris, Anne M. 
+#         Archibald, Antônio H. Ribeiro, Fabian Pedregosa, Paul van Mulbregt, and SciPy 1.0 Contributors. 
+#         (2020) SciPy 1.0: Fundamental Algorithms for Scientific Computing in Python. Nature Methods, 17(3), 
+#         261-272. DOI: 10.1038/s41592-019-0686-2.
+#     """
+#     # TODO more scaling, dynamic range, dB transform, invert, etc 
+#     data = check_signal_format(data)
+#     sr = check_sr_format(sr)
+#     N = len(data)
     
-    t = STFT.t(len(data))
+#     if 0 > overlap > 1 or not isinstance(overlap, float):
+#         raise ValueError("Window overlap must be a float between 0 and 1.")
 
-    # Get indices of "valid" bins (window slice not sticking out to the side) 
-    # - did not use lower, commented out version because index of first was not
+#     if not isinstance(window_length, int) or window_length <= 0:
+#         raise ValueError("'window_length' must be a positive integer.")
 
-    t0_s = STFT.lower_border_end[0] * STFT.T
-    t1_s = STFT.upper_border_begin(N)[0] * STFT.T
+    # if isinstance(window, str):
+    #     try:
+    #         window = signal.windows.get_window(window, window_length)
+    #     except ValueError as e:
+    #         raise ValueError(f"Invalid window type: {window}") from e
+    # else:
+    #     window = np.asarray(window) 
+    #     if not isinstance(window, np.ndarray):
+    #         raise TypeError("'window' must be either a string or a 1D NumPy array.")
     
-    # valid_mask = (t >= t0_s) & (t <= t1_s)
-    # Sx = Sx[:, valid_mask]
-    # t = t[valid_mask]
+#     hop_length = int(window_length * (1 - overlap))
+#     noverlap = window_length - hop_length
 
-    # lower_border = STFT.lower_border_end[1]+1
-    # upper_border = STFT.upper_border_begin(N)[1]-1
+#     # pad signal to center the windows
+#     #pad = window_length
+#     data_padded = np.pad(data, pad_width=window_length, mode='reflect')
 
-    # # trim frames whose center is outside the unpadded signal range
-    # Sx = Sx[:, lower_border:upper_border]
-    # t = t[lower_border:upper_border]
+#     # Compute spectrogram
+#     # f, t, Sx = signal.spectrogram(
+#     #     data_padded,
+#     #     fs=sr,
+#     #     window=window,
+#     #     nperseg=window_length,
+#     #     noverlap=noverlap,
+#     #     mode=scaling,
+#     #     *args, 
+#     #     **kwargs
+#     # )
 
-    return Sx, t, STFT.f
+#     STFT = signal.ShortTimeFFT(
+#         window, 
+#         hop_length, 
+#         sr, 
+#         scale_to=scaling, 
+#         *args, 
+#         **kwargs
+#         )
+
+#     Sx = STFT.stft(data, *args, **kwargs)
+    
+#     t = STFT.t(len(data))
+
+#     # Get indices of "valid" bins (window slice not sticking out to the side) 
+#     # - did not use lower, commented out version because index of first was not
+
+#     # t0_s = STFT.lower_border_end[0] * STFT.T
+#     # t1_s = STFT.upper_border_begin(N)[0] * STFT.T
+    
+#     # valid_mask = (t >= t0_s) & (t <= t1_s)
+#     # Sx = Sx[:, valid_mask]
+#     # t = t[valid_mask]
+
+#     # lower_border = STFT.lower_border_end[1]+1
+#     # upper_border = STFT.upper_border_begin(N)[1]-1
+
+#     # # trim frames whose center is outside the unpadded signal range
+#     # Sx = Sx[:, lower_border:upper_border]
+#     # t = t[lower_border:upper_border]
+
+#     return Sx, t, STFT.f
 
 
 def cepstrum(

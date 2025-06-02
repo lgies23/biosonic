@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from numpy.typing import ArrayLike
-from typing import Optional, Any, Union, Literal
+from typing import Optional, Any, Union, Literal, Tuple
 from scipy import signal
 
 from biosonic.compute.utils import check_signal_format, check_sr_format
@@ -9,66 +9,149 @@ from biosonic.compute.utils import check_signal_format, check_sr_format
 # from compute.utils import extract_all_features, check_signal_format, check_sr_format
 
 
+# def plot_spectrogram(
+#         data : ArrayLike, 
+#         sr : int,
+#         window: Union[str, ArrayLike] = "hann", 
+#         window_length : int = 1024,
+#         overlap: float = .5, 
+#         scaling: Optional[Literal['psd', 'magnitude', 'angle', 'phase']] = "magnitude",
+#         db_scale : bool = True, 
+#         cmap : str = "grey", 
+#         vmin : Optional[float] = None, 
+#         vmax : Optional[float] = None, 
+#         title : str = "Spectrogram",
+#         *args : Any, 
+#         **kwargs : Any
+#     ) -> None:
+#     """
+#     Plot a spectrogram using matplotlibs "specgram" function.
+    
+#     Parameters:
+#     # TODO fix
+#     - Sx: 2D array, spectrogram (complex or magnitude)
+#     - t: 1D array, time axis
+#     - f: 1D array, frequency axis
+#     - db_scale: bool, convert magnitude to dB
+#     - cmap: str, colormap
+#     - vmin, vmax: float, optional color limits
+#     - title: str, title of the plot
+#     """
+#     data = check_signal_format(data)
+#     sr = check_sr_format(sr)
+
+#     hop_length = int(window_length * (1 - overlap))
+#     noverlap_ = window_length - hop_length
+
+#     if isinstance(window, str):
+#         try:
+#             window = signal.windows.get_window(window, window_length)
+#         except ValueError as e:
+#             raise ValueError(f"Invalid window type: {window}") from e
+#     else:
+#         window = np.asarray(window) 
+#         if not isinstance(window, np.ndarray):
+#             raise TypeError("'window' must be either a string or a 1D NumPy array.")
+ 
+#     plt.specgram(
+#         data, 
+#         Fs=sr, 
+#         window=window, 
+#         NFFT=window_length, 
+#         noverlap=noverlap_, 
+#         mode=scaling, 
+#         scale='dB' if db_scale else 'linear',
+#         cmap=cmap
+#         )
+#     plt.title(title)
+#     plt.xlabel("Time [s]")
+#     plt.ylabel("Frequency [Hz]")
+#     plt.colorbar(label="Intensity [dB]" if db_scale else "Magnitude")
+    
 def plot_spectrogram(
-        data : ArrayLike, 
-        sr : int,
-        window: Union[str, ArrayLike] = "hann", 
-        window_length : int = 1024,
-        overlap: float = .5, 
-        scaling: Optional[Literal['psd', 'magnitude', 'angle', 'phase']] = "magnitude",
+        Sx : ArrayLike, 
+        t : ArrayLike, 
+        f : ArrayLike, 
         db_scale : bool = True, 
-        cmap : str = "grey", 
+        cmap : str = 'viridis', 
         vmin : Optional[float] = None, 
         vmax : Optional[float] = None, 
         title : str = "Spectrogram",
-        *args : Any, 
-        **kwargs : Any
+        db_ref : Optional[float] = None,
+        flim : Optional[Tuple[float, float]] = None, # frequency limits in kHz
+        tlim : Optional[Tuple[float, float]] = None, # time limits in seconds
     ) -> None:
     """
-    Plot a spectrogram using matplotlibs "specgram" function.
+    Plot a spectrogram using time-frequency amplitude data as in R seewave [1].
+
+    Parameters
+    ----------
+    Sx : ArrayLike
+        2D array of amplitude values (shape: [frequencies, time]).
+    t : ArrayLike
+        Time vector (in seconds).
+    f : ArrayLike
+        Frequency vector (in Hz).
+    db_scale : bool, optional
+        If True, convert amplitudes to decibel scale. Default is True.
+    cmap : str, optional
+        Colormap used for the spectrogram. Default is 'viridis'.
+    vmin : float, optional
+        Minimum value for colormap scaling. Default is None (automatic).
+    vmax : float, optional
+        Maximum value for colormap scaling. Default is None (automatic).
+    title : str, optional
+        Plot title. Default is 'Spectrogram'.
+    db_ref : float, optional
+        Reference value for dB conversion. If None, use max of Sx. Default is None.
+    flim : tuple of float, optional
+        Frequency limits (min, max) in kHz. Default is None (full range).
+    tlim : tuple of float, optional
+        Time limits (min, max) in seconds. Default is None (full range).
+
+    Returns
+    -------
+    None
+        Displays a matplotlib plot.
     
-    Parameters:
-    # TODO fix
-    - Sx: 2D array, spectrogram (complex or magnitude)
-    - t: 1D array, time axis
-    - f: 1D array, frequency axis
-    - db_scale: bool, convert magnitude to dB
-    - cmap: str, colormap
-    - vmin, vmax: float, optional color limits
-    - title: str, title of the plot
+    References
+    ----------
+    [1] J. Sueur, T. Aubin, C. Simonis (2008). “Seewave: a free modular tool for sound analysis and synthesis.” Bioacoustics, 18, 213-226.
     """
-    data = check_signal_format(data)
-    sr = check_sr_format(sr)
+    Sx = np.asarray(Sx)
+    t = np.asarray(t)
+    f = np.asarray(f)
 
-    hop_length = int(window_length * (1 - overlap))
-    noverlap_ = window_length - hop_length
+    # apply dB scale
+    if db_scale:
+        ref = np.max(Sx) if db_ref is None else db_ref
+        Sx = 20 * np.log10(Sx / ref + 1e-30)  # Avoid log(0)
+        #Sx[Sx < -100] = -100  # Clip floor
 
-    if isinstance(window, str):
-        try:
-            window = signal.windows.get_window(window, window_length)
-        except ValueError as e:
-            raise ValueError(f"Invalid window type: {window}") from e
-    else:
-        window = np.asarray(window) 
-        if not isinstance(window, np.ndarray):
-            raise TypeError("'window' must be either a string or a 1D NumPy array.")
- 
-    plt.specgram(
-        data, 
-        Fs=sr, 
-        window=window, 
-        NFFT=window_length, 
-        noverlap=noverlap_, 
-        mode=scaling, 
-        scale='dB' if db_scale else 'linear',
-        cmap=cmap
-        )
-    plt.title(title)
-    plt.xlabel("Time [s]")
-    plt.ylabel("Frequency [Hz]")
-    plt.colorbar(label="Intensity [dB]" if db_scale else "Magnitude")
+    # apply frequency limits
+    if flim is not None:
+        fmin, fmax = flim
+        mask = (f >= fmin * 1000) & (f <= fmax * 1000)
+        f = f[mask]
+        Sx = Sx[mask, :]
+
+    # apply time limits
+    if tlim is not None:
+        tmin, tmax = tlim
+        mask = (t >= tmin) & (t <= tmax)
+        t = t[mask]
+        Sx = Sx[:, mask]
+
+    fig, ax = plt.subplots(figsize=(10, 5))
+    im = ax.pcolormesh(t, f / 1000, Sx, shading='auto', cmap=cmap, vmin=vmin, vmax=vmax)
+    ax.set_ylabel("Frequency (kHz)")
+    ax.set_xlabel("Time (s)")
+    if title:
+        ax.set_title(title)
+    fig.colorbar(im, ax=ax, label="Amplitude (dB)" if db_scale else "Amplitude")
+    plt.tight_layout()
+    plt.show()
     
-
 
 def plot_filterbank_and_cepstrum(
         fbanks : ArrayLike, 

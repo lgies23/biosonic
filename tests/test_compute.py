@@ -228,7 +228,8 @@ def test_spectrogram():
         sr=sr,
         window="hann",
         window_length=512,
-        overlap=0.5
+        overlap=0.5, 
+        complex_output=True
     )
 
     assert isinstance(Sx, np.ndarray)
