@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from numpy.typing import ArrayLike
-from typing import Optional, Any, Union
+from typing import Optional, Any, Union, Literal
 from scipy import signal
 
 from biosonic.compute.utils import check_signal_format, check_sr_format
@@ -15,7 +15,7 @@ def plot_spectrogram(
         window: Union[str, ArrayLike] = "hann", 
         window_length : int = 1024,
         overlap: float = .5, 
-        scaling: str = "magnitude",
+        scaling: Optional[Literal['psd', 'magnitude', 'angle', 'phase']] = "magnitude",
         db_scale : bool = True, 
         cmap : str = "grey", 
         vmin : Optional[float] = None, 
@@ -41,7 +41,7 @@ def plot_spectrogram(
     sr = check_sr_format(sr)
 
     hop_length = int(window_length * (1 - overlap))
-    noverlap = window_length - hop_length
+    noverlap_ = window_length - hop_length
 
     if isinstance(window, str):
         try:
@@ -56,14 +56,12 @@ def plot_spectrogram(
     plt.specgram(
         data, 
         Fs=sr, 
-        NFFT=window_length, 
         window=window, 
-        noverlap=noverlap, 
+        NFFT=window_length, 
+        noverlap=noverlap_, 
         mode=scaling, 
         scale='dB' if db_scale else 'linear',
-        cmap=cmap,
-        *args, 
-        **kwargs
+        cmap=cmap
         )
     plt.title(title)
     plt.xlabel("Time [s]")

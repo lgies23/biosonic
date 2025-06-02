@@ -69,7 +69,7 @@ def spectrogram(
     # todo more scaling, dynamic range, dB transform, invert, etc 
     data = check_signal_format(data)
     sr = check_sr_format(sr)
-    # N = len(data)
+    N = len(data)
     
     if 0 > overlap > 1 or not isinstance(overlap, float):
         raise ValueError("Window overlap must be a float between 0 and 1.")
@@ -125,9 +125,9 @@ def spectrogram(
     t0_s = STFT.lower_border_end[0] * STFT.T
     t1_s = STFT.upper_border_begin(N)[0] * STFT.T
     
-    valid_mask = (t >= t0_s) & (t <= t1_s)
-    Sx = Sx[:, valid_mask]
-    t = t[valid_mask]
+    # valid_mask = (t >= t0_s) & (t <= t1_s)
+    # Sx = Sx[:, valid_mask]
+    # t = t[valid_mask]
 
     # lower_border = STFT.lower_border_end[1]+1
     # upper_border = STFT.upper_border_begin(N)[1]-1
