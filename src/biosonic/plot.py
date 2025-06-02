@@ -1,25 +1,34 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from numpy.typing import ArrayLike
-from typing import Optional
+from typing import Optional, Any, Union
+from scipy import signal
+
+from biosonic.compute.utils import check_signal_format, check_sr_format
 # from compute.spectrotemporal import spectrogram
 # from compute.utils import extract_all_features, check_signal_format, check_sr_format
 
 
 def plot_spectrogram(
-        Sx : ArrayLike, 
-        t : ArrayLike, 
-        f : ArrayLike, 
+        data : ArrayLike, 
+        sr : int,
+        window: Union[str, ArrayLike] = "hann", 
+        window_length : int = 1024,
+        overlap: float = .5, 
+        scaling: str = "magnitude",
         db_scale : bool = True, 
-        cmap : str = 'viridis', 
+        cmap : str = "grey", 
         vmin : Optional[float] = None, 
         vmax : Optional[float] = None, 
-        title : str = "Spectrogram"
+        title : str = "Spectrogram",
+        *args : Any, 
+        **kwargs : Any
     ) -> None:
     """
-    Plot a spectrogram.
+    Plot a spectrogram using matplotlibs "specgram" function.
     
     Parameters:
+    # TODO fix
     - Sx: 2D array, spectrogram (complex or magnitude)
     - t: 1D array, time axis
     - f: 1D array, frequency axis
@@ -28,28 +37,39 @@ def plot_spectrogram(
     - vmin, vmax: float, optional color limits
     - title: str, title of the plot
     """
-    # Convert to magnitude if complex
-    magnitude = np.abs(Sx)
+    data = check_signal_format(data)
+    sr = check_sr_format(sr)
 
-    # Convert to dB scale
-    if db_scale:
-        magnitude = 20 * np.log10(magnitude + 1e-30)  # Avoid log(0)
+    hop_length = int(window_length * (1 - overlap))
+    noverlap = window_length - hop_length
 
-    plt.figure(figsize=(10, 4))
-    plt.pcolormesh(t, f, magnitude, cmap=cmap, vmin=vmin, vmax=vmax)
-    # plt.imshow(magnitude, 
-    #        origin='lower', 
-    #        aspect='auto', 
-    #        extent=[t[0], t[-1], f[0], f[-1]], 
-    #        cmap='viridis', 
-    #        vmin=vmin, 
-    #        vmax=vmax)
-    plt.colorbar(label='Amplitude (dB)' if db_scale else 'Amplitude')
-    plt.xlabel('Time [s]')
-    plt.ylabel('Frequency [Hz]')
+    if isinstance(window, str):
+        try:
+            window = signal.windows.get_window(window, window_length)
+        except ValueError as e:
+            raise ValueError(f"Invalid window type: {window}") from e
+    else:
+        window = np.asarray(window) 
+        if not isinstance(window, np.ndarray):
+            raise TypeError("'window' must be either a string or a 1D NumPy array.")
+ 
+    plt.specgram(
+        data, 
+        Fs=sr, 
+        NFFT=window_length, 
+        window=window, 
+        noverlap=noverlap, 
+        mode=scaling, 
+        scale='dB' if db_scale else 'linear',
+        cmap=cmap,
+        *args, 
+        **kwargs
+        )
     plt.title(title)
-    plt.tight_layout()
-    plt.show()
+    plt.xlabel("Time [s]")
+    plt.ylabel("Frequency [Hz]")
+    plt.colorbar(label="Intensity [dB]" if db_scale else "Magnitude")
+    
 
 
 def plot_filterbank_and_cepstrum(

@@ -69,12 +69,8 @@ def spectrogram(
     # todo more scaling, dynamic range, dB transform, invert, etc 
     data = check_signal_format(data)
     sr = check_sr_format(sr)
-
-    # pad_amt = 0 
-    # if pad:
-    #     pad_amt = window_length // 2
-    #     data = np.pad(data, pad_amt, mode='reflect')
-
+    # N = len(data)
+    
     if 0 > overlap > 1 or not isinstance(overlap, float):
         raise ValueError("Window overlap must be a float between 0 and 1.")
 
@@ -86,22 +82,59 @@ def spectrogram(
             window = signal.windows.get_window(window, window_length)
         except ValueError as e:
             raise ValueError(f"Invalid window type: {window}") from e
-    elif not isinstance(window, np.ndarray):
-        raise TypeError("'window' must be either a string or a 1D NumPy array.")
+    else:
+        window = np.asarray(window) 
+        if not isinstance(window, np.ndarray):
+            raise TypeError("'window' must be either a string or a 1D NumPy array.")
     
     hop_length = int(window_length * (1 - overlap))
+    noverlap = window_length - hop_length
 
-    STFT = signal.ShortTimeFFT(window, hop_length, sr, scale_to=scaling, *args, **kwargs)
+    # pad signal to center the windows
+    #pad = window_length
+    data_padded = np.pad(data, pad_width=window_length, mode='reflect')
+
+    # Compute spectrogram
+    # f, t, Sx = signal.spectrogram(
+    #     data_padded,
+    #     fs=sr,
+    #     window=window,
+    #     nperseg=window_length,
+    #     noverlap=noverlap,
+    #     mode=scaling,
+    #     *args, 
+    #     **kwargs
+    # )
+
+    STFT = signal.ShortTimeFFT(
+        window, 
+        hop_length, 
+        sr, 
+        scale_to=scaling, 
+        *args, 
+        **kwargs
+        )
+
     Sx = STFT.stft(data, *args, **kwargs)
     
-    # # adjust time vector for padding offset
     t = STFT.t(len(data))
 
-    # trim frames whose center is outside the unpadded signal range
-    duration = len(data) / sr  # real signal duration
-    valid_mask = (t >= 0) & (t <= duration)
+    # Get indices of "valid" bins (window slice not sticking out to the side) 
+    # - did not use lower, commented out version because index of first was not
+
+    t0_s = STFT.lower_border_end[0] * STFT.T
+    t1_s = STFT.upper_border_begin(N)[0] * STFT.T
+    
+    valid_mask = (t >= t0_s) & (t <= t1_s)
     Sx = Sx[:, valid_mask]
     t = t[valid_mask]
+
+    # lower_border = STFT.lower_border_end[1]+1
+    # upper_border = STFT.upper_border_begin(N)[1]-1
+
+    # # trim frames whose center is outside the unpadded signal range
+    # Sx = Sx[:, lower_border:upper_border]
+    # t = t[lower_border:upper_border]
 
     return Sx, t, STFT.f
 

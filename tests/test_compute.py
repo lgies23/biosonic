@@ -583,7 +583,7 @@ from biosonic.compute.spectrotemporal import cepstrum
 def sine_wave():
     sr = 16000
     t = np.linspace(0, 1, sr, endpoint=False)
-    freq = 440  # A4
+    freq = 440
     x = np.sin(2 * np.pi * freq * t)
     return x, sr
 
