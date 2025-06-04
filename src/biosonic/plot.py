@@ -2,9 +2,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from numpy.typing import ArrayLike
 from typing import Optional, Any, Union, Literal, Tuple
-from scipy import signal
+from biosonic.compute.spectrotemporal import cepstrum
 
-from biosonic.compute.utils import check_signal_format, check_sr_format
 # from compute.spectrotemporal import spectrogram
 # from compute.utils import extract_all_features, check_signal_format, check_sr_format
 
@@ -78,64 +77,92 @@ def plot_spectrogram(
         vmax : Optional[float] = None, 
         title : str = "Spectrogram",
         db_ref : Optional[float] = None,
-        flim : Optional[Tuple[float, float]] = None, # frequency limits in kHz
-        tlim : Optional[Tuple[float, float]] = None, # time limits in seconds
+        flim: Optional[Tuple[float, float]] = None,
+        tlim: Optional[Tuple[float, float]] = None,
+        freq_scale: Literal["linear", "log", "mel"] = "linear",
+        sr: Optional[int] = None,
+        n_fft: Optional[int] = None,
+        n_bands: int = 40,
+        corner_frequency: Optional[float] = None,
+        **kwargs: Any
     ) -> None:
     """
-    Plot a spectrogram using time-frequency amplitude data as in R seewave [1].
+    Plot a time-frequency spectrogram with optional dB scaling and frequency axis transformations.
 
     Parameters
     ----------
     Sx : ArrayLike
-        2D array of amplitude values (shape: [frequencies, time]).
+        Spectrogram matrix (frequency x time).
     t : ArrayLike
-        Time vector (in seconds).
+        Time axis in seconds.
     f : ArrayLike
-        Frequency vector (in Hz).
+        Frequency axis in Hz.
     db_scale : bool, optional
-        If True, convert amplitudes to decibel scale. Default is True.
+        Whether to convert the spectrogram to decibel scale.
     cmap : str, optional
-        Colormap used for the spectrogram. Default is 'viridis'.
-    vmin : float, optional
-        Minimum value for colormap scaling. Default is None (automatic).
-    vmax : float, optional
-        Maximum value for colormap scaling. Default is None (automatic).
+        Colormap for the spectrogram.
+    vmin, vmax : float or None
+        Color limits.
     title : str, optional
-        Plot title. Default is 'Spectrogram'.
-    db_ref : float, optional
-        Reference value for dB conversion. If None, use max of Sx. Default is None.
-    flim : tuple of float, optional
-        Frequency limits (min, max) in kHz. Default is None (full range).
-    tlim : tuple of float, optional
-        Time limits (min, max) in seconds. Default is None (full range).
-
-    Returns
-    -------
-    None
-        Displays a matplotlib plot.
-    
-    References
-    ----------
-    [1] J. Sueur, T. Aubin, C. Simonis (2008). “Seewave: a free modular tool for sound analysis and synthesis.” Bioacoustics, 18, 213-226.
+        Title of the plot.
+    db_ref : float or None
+        Reference for dB scaling (max if None).
+    flim : tuple of float or None
+        Frequency limits in kHz.
+    tlim : tuple of float or None
+        Time limits in seconds.
+    freq_scale : {"mel", "log", None}
+        Apply mel or log frequency scaling.
+    sr : int, optional
+        Sampling rate (required for mel/log scaling).
+    n_fft : int, optional
+        FFT size used to generate the spectrogram (required for mel/log scaling).
+    n_bands : int, optional
+        Number of mel or log bands to use.
+    corner_frequency : float, optional
+        Corner frequency used for perceptual scaling.
+    **kwargs : dict
+        Extra arguments passed to filterbank functions.
     """
     Sx = np.asarray(Sx)
     t = np.asarray(t)
     f = np.asarray(f)
 
-    # apply dB scale
+    if Sx.shape != (len(f), len(t)):
+        raise ValueError(f"Shape mismatch: Sx is {Sx.shape}, but f and t are {len(f)} and {len(t)}")
+
+    if freq_scale in ("mel", "log"):
+        if sr is None or n_fft is None:
+            raise ValueError("Sample rate and n_fft must be provided for mel or log frequency scale.")
+
+        fmin = flim[0] * 1000 if flim else 0.0
+        fmax = flim[1] * 1000 if flim and flim[1] else sr / 2
+
+        if freq_scale == "mel":
+            from biosonic.filter import mel_filterbank
+            fb, f_centers = mel_filterbank(n_bands, n_fft, sr, fmin=fmin, fmax=fmax, corner_frequency=corner_frequency, **kwargs)
+        elif freq_scale == "log":
+            from biosonic.filter import log_filterbank
+            fb, f_centers = log_filterbank(n_bands, n_fft, sr, fmin=fmin, fmax=fmax, **kwargs)
+            
+        f = f_centers
+        print(f_centers[0], f_centers[-1])
+        Sx = fb @ Sx
+
+    # Apply dB scale
     if db_scale:
         ref = np.max(Sx) if db_ref is None else db_ref
-        Sx = 20 * np.log10(Sx / ref + 1e-30)  # Avoid log(0)
-        #Sx[Sx < -100] = -100  # Clip floor
+        Sx = 20 * np.log10(Sx / ref)
+        # Sx[Sx < -100] = -100
 
-    # apply frequency limits
-    if flim is not None:
+    # Apply frequency limits
+    if flim is not None and freq_scale is None:  # already handled in mel/log cases
         fmin, fmax = flim
         mask = (f >= fmin * 1000) & (f <= fmax * 1000)
         f = f[mask]
         Sx = Sx[mask, :]
 
-    # apply time limits
+    # Apply time limits
     if tlim is not None:
         tmin, tmax = tlim
         mask = (t >= tmin) & (t <= tmax)
@@ -143,15 +170,49 @@ def plot_spectrogram(
         Sx = Sx[:, mask]
 
     fig, ax = plt.subplots(figsize=(10, 5))
-    im = ax.pcolormesh(t, f / 1000, Sx, shading='auto', cmap=cmap, vmin=vmin, vmax=vmax)
+    im = plt.imshow(Sx, aspect='auto', origin='lower', extent=(t[0], t[-1], f[0], f[-1]))
     ax.set_ylabel("Frequency (kHz)")
     ax.set_xlabel("Time (s)")
+
+    # if freq_scale == "log":
+    #     ax.set_yscale("log")
+
     if title:
         ax.set_title(title)
     fig.colorbar(im, ax=ax, label="Amplitude (dB)" if db_scale else "Amplitude")
     plt.tight_layout()
     plt.show()
+
+
+def plot_cepstrum(
+        data : ArrayLike,
+        sr : int, 
+        **kwargs : Any
+) -> None:
     
+    t = np.arange(len(data)) / sr
+    ceps, _ = cepstrum(data, sr, **kwargs)
+
+    fig = plt.figure()
+    ax0 = fig.add_subplot(211)
+    ax0.plot(t, data)
+    ax0.set_xlabel('time in seconds')
+    # ax0.set_xlim(0.0, 0.05)
+    ax1 = fig.add_subplot(212)
+    ax1.plot(t, ceps)
+    ax1.set_xlabel('quefrency in seconds')
+    ax1.set_xlim(0.005, 0.015)
+    # ax1.set_ylim(-5., +10.)
+    # plt.figure(figsize=(14, 5))
+    # plt.plot(t, ceps)
+    # plt.title("Cepstrum")
+    # plt.xlabel("Coefficient Index")
+    # plt.ylabel("Amplitude")
+    # plt.grid(True)
+
+    plt.tight_layout()
+    plt.show()
+
 
 def plot_filterbank_and_cepstrum(
         fbanks : ArrayLike, 

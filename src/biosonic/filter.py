@@ -69,12 +69,14 @@ def mel_filterbank(
 
     # evenly spaced in Mel scale, then convert to Hz
     mel_points = np.linspace(mel_min, mel_max, n_filters + 2)
-    hz_points = mel_to_hz(mel_points, corner_frequency=corner_frequency, **kwargs)
+    hz_points = np.asarray(mel_to_hz(mel_points, corner_frequency=corner_frequency, **kwargs))
 
     # FFT bin numbers
-    bin_freqs = np.floor((n_fft + 1) * hz_points / sr).astype(int)
+    bin_indices = np.floor((n_fft + 1) * hz_points / sr).astype(int)
 
-    return filterbank(n_filters, n_fft, bin_freqs)
+    f_centers = np.sqrt(hz_points[:-2] * hz_points[2:])
+
+    return filterbank(n_filters, n_fft, bin_indices), f_centers
 
 
 def linear_filterbank(
@@ -90,16 +92,19 @@ def linear_filterbank(
     check_filterbank_parameters(n_filters, n_fft, sr, fmin, fmax)
 
     hz_points = np.linspace(fmin, fmax, n_filters + 2)
-    bin_freqs = np.floor((n_fft + 1) * hz_points / sr).astype(int)
+    bin_indices = np.floor((n_fft + 1) * hz_points / sr).astype(int)
 
-    return filterbank(n_filters, n_fft, bin_freqs)
+    # geometric mean of adjacent edges skipping first and last to get centers
+    f_centers = np.sqrt(hz_points[:-2] * hz_points[2:])
+
+    return filterbank(n_filters, n_fft, bin_indices), f_centers
 
 
 def log_filterbank(
     n_filters: int,
     n_fft: int,
     sr: int,
-    fmin: float = 20.0,
+    fmin: float = 0.0,
     fmax: Optional[float] = None,
     base: float = 2.0,
 ) -> ArrayLike:
@@ -132,12 +137,61 @@ def log_filterbank(
     check_filterbank_parameters(n_filters, n_fft, sr, fmin, fmax)
 
     # compute log-spaced center frequencies
-    log_min = np.log(fmin+1e-30) / np.log(base)
+    log_min = np.log(fmin) / np.log(base) if fmin > 0 else 0
     log_max = np.log(fmax) / np.log(base)
     log_centers = np.linspace(log_min, log_max, n_filters + 2)
     hz_points = base ** log_centers
 
     # convert to FFT bin indices
-    bin_freqs = np.floor((n_fft + 1) * hz_points / sr).astype(int)
+    bin_indices = np.floor((n_fft + 1) * hz_points / sr).astype(int)
 
-    return filterbank(n_filters, n_fft, bin_freqs)
+    f_centers = hz_points[1:-1]
+
+    return filterbank(n_filters, n_fft, bin_indices), f_centers
+
+
+# TODO lowpass, highpass, bandpass, bandstop, weighted filter (seewave), rolloff like in audacity f-filter (tuneR)
+
+    # # Initialize the weights
+    # n_mels = int(n_mels)
+    # weights = np.zeros((n_mels, int(1 + n_fft // 2)), dtype=dtype)
+
+    # # Center freqs of each FFT bin
+    # fftfreqs = fft_frequencies(sr=sr, n_fft=n_fft)
+
+    # # 'Center freqs' of mel bands - uniformly spaced between limits
+    # mel_f = mel_frequencies(n_mels + 2, fmin=fmin, fmax=fmax, htk=htk)
+
+    # fdiff = np.diff(mel_f)
+    # ramps = np.subtract.outer(mel_f, fftfreqs)
+
+    # for i in range(n_mels):
+    #     # lower and upper slopes for all bins
+    #     lower = -ramps[i] / fdiff[i]
+    #     upper = ramps[i + 2] / fdiff[i + 1]
+
+    #     # .. then intersect them with each other and zero
+    #     weights[i] = np.maximum(0, np.minimum(lower, upper))
+
+    # if isinstance(norm, str):
+    #     if norm == "slaney":
+    #         # Slaney-style mel is scaled to be approx constant energy per channel
+    #         enorm = 2.0 / (mel_f[2 : n_mels + 2] - mel_f[:n_mels])
+    #         weights *= enorm[:, np.newaxis]
+    #     else:
+    #         raise ParameterError(f"Unsupported norm={norm}")
+    # else:
+    #     weights = util.normalize(weights, norm=norm, axis=-1)
+
+    # # Only check weights if f_mel[0] is positive
+    # if not np.all((mel_f[:-2] == 0) | (weights.max(axis=1) > 0)):
+    #     # This means we have an empty channel somewhere
+    #     warnings.warn(
+    #         "Empty filters detected in mel frequency basis. "
+    #         "Some channels will produce empty responses. "
+    #         "Try increasing your sampling rate (and fmax) or "
+    #         "reducing n_mels.",
+    #         stacklevel=2,
+    #     )
+
+    # return weights

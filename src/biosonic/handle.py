@@ -1,9 +1,10 @@
 from scipy.io import wavfile
+from scipy.signal import resample
 from numpy.typing import NDArray, ArrayLike
 from pathlib import Path
 import numpy as np
 from dataclasses import dataclass
-from typing import Literal, Union
+from typing import Literal, Union, Optional, get_args
 
 QuantizationStr = Literal["int8", "int16", "int32", "float32", "float64"]
 
@@ -42,6 +43,9 @@ def convert_dtype(data: NDArray, target_dtype: QuantizationStr) -> NDArray:
         NDArray 
             Converted audio data with appropriate scaling and clipping.
     """
+    if target_dtype not in get_args(QuantizationStr):
+        raise ValueError(f"Invalid quantization: {target_dtype}. Must be one of {get_args(QuantizationStr)}")
+    
     target_np_dtype: np.dtype[np.generic] = np.dtype(target_dtype)
     current_dtype = data.dtype
 
@@ -69,31 +73,190 @@ def convert_dtype(data: NDArray, target_dtype: QuantizationStr) -> NDArray:
     return data.astype(target_np_dtype)
 
 
-def read_wav(filepath: Union[str, Path], quantization: QuantizationStr = "float32") -> Signal:
+def resample_audio(data: NDArray, orig_sr: int, target_sr: int) -> NDArray:
     """
-    Reads a WAV file and returns a Signal object, optionally converting to the desired quantization.
+    Resample audio data from an original sampling rate to a target sampling rate.
 
-    Args:
-        filepath : str | Path
-            Path to the WAV file.
-        quantization : QuantizationStr
-            Desired output data format (default is "float32").
+    Parameters
+    ----------
+    data : NDArray
+        Input audio data array. Shape can be (n_samples,) for mono or (n_samples, n_channels) for multi-channel audio.
+    orig_sr : int
+        Original sample rate of the audio data in Hz.
+    target_sr : int
+        Desired sample rate in Hz.
 
-    Returns:
-        Signal
-            The loaded and optionally converted audio signal.
-    
-    Notes:
-        - This function uses scipy.io.wavfile
-        - 24bit wav files will be stored as np.int32 (as in scipy.io.wavfile)
-    
-    References:
-        Virtanen P et al. 2020 SciPy 1.0: fundamental algorithms for scientific computing in Python. Nat Methods 17, 261–272. (doi:10.1038/s41592-019-0686-2)
+    Returns
+    -------
+    NDArray
+        Resampled audio data with shape adjusted to the target sample rate.
+        Number of channels remains unchanged.
+
+    Notes
+    -----
+    - If `orig_sr` is equal to `target_sr`, the original data is returned unchanged.
+    - Uses `scipy.signal.resample` internally for resampling each channel independently.
+    """
+    if orig_sr == target_sr:
+        return data
+    n_samples = round(data.shape[0] * target_sr / orig_sr)
+    if data.ndim == 1:
+        return resample(data, n_samples)
+    else:
+        return np.stack([resample(data[:, ch], n_samples) for ch in range(data.shape[1])], axis=1)
+
+
+def convert_channels(data: NDArray, target_channels: int) -> NDArray:
+    """
+    Convert audio data to a target number of channels (mono or stereo).
+
+    Parameters
+    ----------
+    data : NDArray
+        Input audio data array. Shape is (n_samples,) for mono or (n_samples, n_channels) for multi-channel.
+    target_channels : int
+        Desired number of channels. Supported values are 1 (mono) or 2 (stereo).
+
+    Returns
+    -------
+    NDArray
+        Audio data converted to the target number of channels.
+
+    Raises
+    ------
+    NotImplementedError
+        If `target_channels` is greater than 2.
+
+    Notes
+    -----
+    - Converts stereo to mono by averaging channels.
+    - Converts mono to stereo by duplicating the mono channel.
+    - If the data already has the target number of channels, it is returned unchanged.
+    """
+    if target_channels > 2: 
+        raise NotImplementedError("Conversion to more than 2 channels not implemented yet.")
+    if target_channels == 1:
+        # Convert stereo to mono by averaging channels
+        if data.ndim == 2:
+            return data.mean(axis=1)
+    elif target_channels == 2:
+        # Convert mono to stereo by duplicating
+        if data.ndim == 1:
+            return np.stack([data, data], axis=1)
+    return data
+
+
+def read_wav(
+        filepath: Union[str, Path], 
+        sampling_rate : Optional[int] = None,
+        quantization: QuantizationStr = "float32",
+        n_channels : Optional[int] = None,
+    ) -> Signal:
+    """
+    Reads a WAV file and returns a Signal object, optionally converting sample rate, number of channels,
+    and quantization format.
+
+    Parameters
+    ----------
+    filepath : str or Path
+        Path to the WAV file to read.
+    sampling_rate : int, optional
+        Target sample rate in Hz. If specified and different from the file's original sample rate,
+        resampling should be applied (using scipy.signal.resample - Fourier method).
+        If None, the original sample rate is kept.
+    quantization : {'int8', 'int16', 'int32', 'float32', 'float64'}, optional
+        Desired output data format for the audio samples (default is "float32").
+    n_channels : int, optional
+        Target number of audio channels (e.g., 1 for mono, 2 for stereo).
+        If specified and different from the original number of channels, conversion
+        is be applied (downmixing from stereo to mono (np.mean) and copying from mono to stereo).
+        If None, the original number of channels is kept.
+
+    Returns
+    -------
+    Signal
+        An audio Signal dataclass containing:
+        - data : np.ndarray
+            Audio samples, shape (n_samples,) for mono or (n_samples, n_channels) otherwise.
+        - n_channels : int
+            Number of audio channels.
+        - sr : int
+            Sample rate in Hz.
+        - quantization : str
+            Data format of the signal.
+
+    Notes
+    -----
+    - Uses `scipy.io.wavfile` to read WAV files.
+    - 24-bit WAV files are stored as `np.int32` (as in `scipy.io.wavfile`).
+
+    References
+    ----------
+    Virtanen P et al. 2020 SciPy 1.0: fundamental algorithms for scientific computing in Python. 
+    Nat Methods 17, 261–272. (doi:10.1038/s41592-019-0686-2)
     """
     sr, data = wavfile.read(filepath)
-    n_channels = 1 if data.ndim == 1 else data.shape[1]
+
+    if sampling_rate is not None:
+        if sr != sampling_rate:
+            data = resample_audio(data, sr, sampling_rate)
+            sr = sampling_rate
+    
+    n_ch = 1 if data.ndim == 1 else data.shape[1]
+    if n_channels is not None:
+        if n_channels != n_ch:
+            data = convert_channels(data, n_channels)
+            n_ch = n_channels
 
     if quantization != data.dtype.name:
         data = convert_dtype(data, quantization)
 
-    return Signal(data, n_channels, sr, quantization)
+    return Signal(data, n_ch, sr, quantization)
+
+
+def batch_normalize_wav_files(
+    folder_path: Union[str, Path],
+    target_sr: int,
+    target_channels: int,
+    target_quantization: QuantizationStr,
+    output_dir: Optional[Union[str, Path]] = None
+) -> None:
+    """
+    Batch normalize all WAV files in a folder to the same sample rate, number of channels, and quantization.
+
+    Parameters
+    ----------
+    folder_path : str or Path
+        Path to the folder containing input WAV files to normalize.
+    target_sr : int
+        Target sample rate in Hz to convert all audio files to.
+    target_channels : int
+        Target number of audio channels (e.g., 1 for mono, 2 for stereo).
+    target_quantization : {'int8', 'int16', 'int32', 'float32', 'float64'}
+        Target bit depth / data format for the output audio files.
+    output_dir : str or Path, optional
+        Directory to save the normalized WAV files. If None, a 'normalized' subfolder
+        will be created inside `folder_path`.
+
+    Returns
+    -------
+    None
+        This function saves the normalized WAV files to disk and does not return anything.
+
+    Notes
+    -----
+    - Input WAV files with extensions '.wav' and '.WAV' are processed.
+    - Uses `read_wav` for loading and converting audio files. This attaches to scipys wavfile.io.read function.
+    - Output files are saved with the same filename in the output directory. 
+    So if you set output_dir to your folder_path, **all origninal files will be overwritten!**
+    """
+    folder_path = Path(folder_path)
+    output_dir = Path(output_dir) if output_dir else folder_path / "normalized"
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    wav_files = list(folder_path.glob("*.wav")) + list(folder_path.glob("*.WAV"))
+    for wav_file in wav_files:
+        signal = read_wav(wav_file, target_sr, target_quantization, target_channels)
+        out_path = output_dir / wav_file.name
+        wavfile.write(out_path, target_sr, signal.data.astype(np.dtype(target_quantization)))
+        print(f"Normalized: {wav_file.name} -> {out_path}")

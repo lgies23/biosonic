@@ -372,11 +372,11 @@ def cepstral_coefficients(
         fmax = sr / 2
 
     if filterbank_type == "mel":
-        fbanks = mel_filterbank(n_filters, n_fft, sr, fmin, fmax, **kwargs)
+        fbanks, _ = mel_filterbank(n_filters, n_fft, sr, fmin, fmax, **kwargs)
     elif filterbank_type == "linear":
-        fbanks = linear_filterbank(n_filters, n_fft, sr, fmin, fmax)
+        fbanks, _ = linear_filterbank(n_filters, n_fft, sr, fmin, fmax)
     elif filterbank_type == "log":
-        fbanks = log_filterbank(n_filters, n_fft, sr, fmin, fmax, **kwargs)
+        fbanks, _ = log_filterbank(n_filters, n_fft, sr, fmin, fmax, **kwargs)
     else:
         raise ValueError(f"Unknown filterbank_type: {filterbank_type}")
 
