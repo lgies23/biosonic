@@ -135,14 +135,20 @@ def convert_channels(data: NDArray, target_channels: int) -> NDArray:
     """
     if target_channels > 2: 
         raise NotImplementedError("Conversion to more than 2 channels not implemented yet.")
+    
+    n_ch = 1 if data.ndim == 1 else data.shape[1]
+
+    if n_ch == target_channels:
+        return data
+
     if target_channels == 1:
         # Convert stereo to mono by averaging channels
-        if data.ndim == 2:
-            return data.mean(axis=1)
+        return data.mean(axis=1)
+        
     elif target_channels == 2:
         # Convert mono to stereo by duplicating
-        if data.ndim == 1:
-            return np.stack([data, data], axis=1)
+        return np.stack([data, data], axis=1)
+        
     return data
 
 

@@ -1,7 +1,8 @@
 import numpy as np
 from numpy.typing import ArrayLike
-from typing import Optional, Any
+from typing import Optional, Any, Literal, Union, Tuple
 
+from scipy.signal import butter, filtfilt
 from biosonic.compute.utils import hz_to_mel, mel_to_hz
 
 
@@ -151,6 +152,68 @@ def log_filterbank(
 
 
 # TODO lowpass, highpass, bandpass, bandstop, weighted filter (seewave), rolloff like in audacity f-filter (tuneR)
+def filter(
+        data : ArrayLike, 
+        sr : int,
+        f_cutoff : Union[int, Tuple[int, int]],
+        type : Literal["lowpass", "highpass", "bandpass", "bandstop"] = "lowpass", 
+        order : int = 2,  
+) -> ArrayLike:
+    """
+    Apply a zero-phase Butterworth filter to a 1D signal using SciPy.
+
+    This function is a wrapper around `scipy.signal.butter` and `scipy.signal.filtfilt`.
+    It designs a digital Butterworth filter of the specified type and order,
+    then applies it using forward-backward filtering for zero phase distortion.
+
+    Parameters:
+    ----------
+    signal : np.ndarray
+        1D input signal to filter.
+    sr : int
+        Sampling rate of the signal in Hz.
+    type : {'lowpass', 'highpass', 'bandpass', 'bandstop'}
+        Type of filter to apply. Defaults to 'lowpass'.
+    order : int
+        Filter order. Higher values result in a steeper frequency cutoff, 
+        but can introduce more edge artifacts and potential instability. 
+        Defaults to 2, resulting in a slope of 40 dB per decade (i.e. ten-fold change in frequency). 
+    f_cutoff : float or tuple of float
+        Cutoff frequency/frequencies in Hz:
+            - Single int for 'lowpass' or 'highpass'
+            - Tuple of two floats for 'bandpass' or 'bandstop'
+        Values must be within (0, Nyquist), where Nyquist = sr / 2.
+
+    Returns:
+    -------
+    filtered_signal : np.ndarray
+        The filtered signal, same shape as the input.
+
+    Notes:
+    -----
+    - This uses `scipy.signal.butter` and `scipy.signal.filtfilt` to apply the filter forward and backward, 
+      ensuring zero-phase distortion.
+
+    References: 
+    ----------
+    Virtanen P et al. 2020 SciPy 1.0: fundamental algorithms for scientific computing in Python. 
+    Nat Methods 17, 261–272. (doi:10.1038/s41592-019-0686-2)
+    """
+    nyquist = sr / 2
+
+    if type in ['bandpass', 'bandstop']:
+        if not isinstance(f_cutoff, (list, tuple)) or len(f_cutoff) != 2:
+            raise ValueError("f_cutoff must be a tuple/list of two values for bandpass/bandstop filters.")
+        normal_cutoff = [f / nyquist for f in f_cutoff]
+    else:
+        if isinstance(f_cutoff, (list, tuple)):
+            raise ValueError("f_cutoff must be a scalar for lowpass/highpass filters.")
+        normal_cutoff = f_cutoff / nyquist
+
+    b, a = butter(order, normal_cutoff, btype=type, analog=False)
+    filtered_signal = filtfilt(b, a, data)
+    return filtered_signal
+
 
     # # Initialize the weights
     # n_mels = int(n_mels)
