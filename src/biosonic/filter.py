@@ -201,6 +201,8 @@ def filter(
     """
     nyquist = sr / 2
 
+    normal_cutoff : Union[float, list[float]]
+
     if type in ['bandpass', 'bandstop']:
         if not isinstance(f_cutoff, (list, tuple)) or len(f_cutoff) != 2:
             raise ValueError("f_cutoff must be a tuple/list of two values for bandpass/bandstop filters.")
