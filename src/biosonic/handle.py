@@ -271,8 +271,8 @@ def batch_normalize_wav_files(
 
 
 def batch_extract_features(
-        folder_path : str,
-        save_csv_path: str = None
+        folder_path : Union[str, Path],
+        save_csv_path: Optional[str] = None
 ) -> pd.DataFrame :
     
     from biosonic.compute.utils import extract_all_features

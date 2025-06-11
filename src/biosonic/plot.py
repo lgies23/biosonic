@@ -90,7 +90,7 @@ def plot_spectrogram(
         n_bands: int = 40,
         corner_frequency: Optional[float] = None,
         **kwargs: Any
-    ) -> None:
+    ) -> Axes:
     """
     Plot a time-frequency spectrogram with optional dB scaling and frequency axis transformations.
 
@@ -353,17 +353,17 @@ def plot_filterbank_and_cepstrum(
 
 
 def plot_pitch_on_spectrogram(
-    data,
-    sr,
-    time_points,
-    all_candidates,
-    window_length=1024,
-    overlap=50,
-    show_strongest=True,
-    db_scale=True,
-    flim=None,
-    cmap='viridis'
-):
+    data : ArrayLike,
+    sr : int,
+    time_points : ArrayLike,
+    all_candidates : ArrayLike,
+    window_length : int = 512,
+    overlap : int = 50,
+    show_strongest : bool = True,
+    db_scale : bool = True,
+    flim : Optional[Tuple[float, float]] = None,
+    cmap : str = 'viridis'
+) -> None:
     # Compute spectrogram
     #Sx, t, f= spectrogram(data, sr=sr, window_length=window_length, overlap=overlap)
 
