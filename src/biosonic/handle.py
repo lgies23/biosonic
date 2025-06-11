@@ -1,9 +1,11 @@
 from scipy.io import wavfile
 from scipy.signal import resample
 from numpy.typing import NDArray, ArrayLike
+import pandas as pd
 from pathlib import Path
 import numpy as np
 from dataclasses import dataclass
+import traceback
 from typing import Literal, Union, Optional, get_args
 
 QuantizationStr = Literal["int8", "int16", "int32", "float32", "float64"]
@@ -266,3 +268,37 @@ def batch_normalize_wav_files(
         out_path = output_dir / wav_file.name
         wavfile.write(out_path, target_sr, signal.data.astype(np.dtype(target_quantization)))
         print(f"Normalized: {wav_file.name} -> {out_path}")
+
+
+def batch_extract_features(
+        folder_path : str,
+        save_csv_path: str = None
+) -> pd.DataFrame :
+    
+    from biosonic.compute.utils import extract_all_features
+
+    folder_path = Path(folder_path)
+    feature_rows = []
+
+    wav_files = list(folder_path.glob("*.wav")) + list(folder_path.glob("*.WAV"))
+    print(wav_files)
+    for wav_file in wav_files:
+        try:
+            signal = read_wav(wav_file)
+            features = extract_all_features(signal.data, signal.sr)
+            features['filename'] = wav_file.name
+            feature_rows.append(features)
+        except Exception as e:
+            print(f"[WARNING] Failed to process {wav_file.name}: {e}")
+            traceback.print_exc()
+    
+    out_df = pd.DataFrame(feature_rows)
+
+    if save_csv_path:
+        try:
+            out_df.to_csv(save_csv_path, index=False)
+            print(f"[INFO] Features saved to: {save_csv_path}")
+        except Exception as e:
+            print(f"[ERROR] Failed to save CSV: {e}")
+
+    return out_df

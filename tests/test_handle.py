@@ -1,5 +1,8 @@
 import numpy as np
 import pytest
+import pandas as pd
+from pathlib import Path
+from unittest.mock import patch, MagicMock
 
 def test_convert_dtype():
     from biosonic.handle import convert_dtype
@@ -99,3 +102,63 @@ def test_read_wav(tmp_path):
     assert signal.sr == 44100
     assert signal.n_channels == 1
     assert signal.data.dtype == np.float32
+
+
+# @pytest.fixture
+# def mock_wav_file(tmp_path):
+#     """Creates a dummy wav file in a temporary folder"""
+#     wav_file = tmp_path / "mocked.wav"
+#     wav_file.write_bytes(b"RIFF....WAVE")  # minimal fake wav header
+#     return wav_file
+
+@patch("biosonic.handle.Path.glob")
+@patch("biosonic.handle.read_wav")
+@patch("biosonic.compute.utils.extract_all_features")
+def test_batch_extract_feature(mock_extract, mock_read, mock_glob, tmp_path):
+    from biosonic.handle import batch_extract_features
+    # success
+    mock_file = MagicMock(spec=Path)
+    mock_file.name = "mocked.wav"
+    mock_file.suffix = ".wav"
+    mock_file.__str__.return_value = "mocked.wav"
+    mock_glob.return_value = [mock_file]
+
+    mock_signal = MagicMock()
+    mock_signal.data = [0.1, 0.2, 0.3]
+    mock_signal.sr = 44100
+    mock_read.return_value = mock_signal
+    mock_extract.return_value = {'feature1': 1.0, 'feature2': 2.0}
+
+    df = batch_extract_features(str(tmp_path))
+
+    assert isinstance(df, pd.DataFrame)
+    assert df.shape[0] == 2 # because glob is called two times
+    assert 'filename' in df.columns
+    assert 'feature1' in df.columns
+    assert df['filename'].iloc[0] == "mocked.wav"
+
+    
+    # csv output
+    csv_path = tmp_path / "output.csv"
+    df = batch_extract_features(str(tmp_path), save_csv_path=str(csv_path))
+    assert csv_path.exists()
+    saved_df = pd.read_csv(csv_path)
+    assert saved_df.shape[0] == 2
+    assert 'filename' in saved_df.columns
+
+
+    # simulate exception in feature extraction
+    mock_signal = MagicMock()
+    mock_signal.data = [0.1, 0.2]
+    mock_signal.sr = 44100
+    mock_read.return_value = mock_signal
+    mock_extract.side_effect = RuntimeError("Feature extraction failed")
+
+    df = batch_extract_features(str(tmp_path))
+    assert df.empty  # should skip failed file
+
+
+    # empty folder
+    mock_glob.return_value = []
+    df = batch_extract_features(str(tmp_path))
+    assert df.empty

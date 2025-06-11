@@ -2,6 +2,8 @@ import numpy as np
 from numpy.typing import ArrayLike
 from typing import Optional, Any, Literal, Union, Tuple
 
+import warnings
+
 from scipy.signal import butter, filtfilt
 from biosonic.compute.utils import hz_to_mel, mel_to_hz
 
@@ -33,18 +35,43 @@ def check_filterbank_parameters(
 def filterbank(
         n_filters : int, 
         n_fft : int, 
-        bin_freqs : ArrayLike
+        bin_indices : ArrayLike,
     ) -> ArrayLike:
-
+    """
+    
+    References: 
+    ----------
+    
+    McFee, Brian, Colin Raffel, Dawen Liang, Daniel PW Ellis, Matt McVicar, Eric Battenberg, 
+    and Oriol Nieto. “librosa: Audio and music signal analysis in python.” In Proceedings 
+    of the 14th python in science conference, pp. 18-25. 2015.
+    """
     filterbank = np.zeros([n_filters, n_fft // 2 + 1])
+    
     for i in range(1, n_filters + 1):
-        left = bin_freqs[i - 1]
-        center = bin_freqs[i]
-        right = bin_freqs[i + 1]
+        left = bin_indices[i - 1]
+        center = bin_indices[i]
+        right = bin_indices[i + 1]
 
         # Triangular filter
         filterbank[i - 1, left:center] = (np.arange(left, center) - left) / (center - left)
         filterbank[i - 1, center:right] = (right - np.arange(center, right)) / (right - center)
+
+    # normalize
+    # taken from librosa
+    enorm = 2.0 / (bin_indices[2:n_filters+2] - bin_indices[:n_filters])
+    filterbank *= enorm[:, np.newaxis]
+
+    if not np.all((bin_indices[:-2] == 0) | (filterbank.max(axis=1) > 0)):
+        # empty channel 
+        # This code is directly taken from libosa (see reference in docs)
+        warnings.warn(
+            "Empty filters detected in filter bank. "
+            "Some channels will produce empty responses. "
+            "Try increasing your sampling rate (and fmax) or "
+            "reducing n_filters.",
+            stacklevel=2,
+        )
     
     return filterbank
 
@@ -217,46 +244,46 @@ def filter(
     return filtered_signal
 
 
-    # # Initialize the weights
-    # n_mels = int(n_mels)
-    # weights = np.zeros((n_mels, int(1 + n_fft // 2)), dtype=dtype)
+    # Initialize the weights
+    n_mels = int(n_mels)
+    weights = np.zeros((n_mels, int(1 + n_fft // 2)), dtype=dtype)
 
-    # # Center freqs of each FFT bin
-    # fftfreqs = fft_frequencies(sr=sr, n_fft=n_fft)
+    # Center freqs of each FFT bin
+    fftfreqs = fft_frequencies(sr=sr, n_fft=n_fft)
 
-    # # 'Center freqs' of mel bands - uniformly spaced between limits
-    # mel_f = mel_frequencies(n_mels + 2, fmin=fmin, fmax=fmax, htk=htk)
+    # 'Center freqs' of mel bands - uniformly spaced between limits
+    mel_f = mel_frequencies(n_mels + 2, fmin=fmin, fmax=fmax, htk=htk)
 
-    # fdiff = np.diff(mel_f)
-    # ramps = np.subtract.outer(mel_f, fftfreqs)
+    fdiff = np.diff(mel_f)
+    ramps = np.subtract.outer(mel_f, fftfreqs)
 
-    # for i in range(n_mels):
-    #     # lower and upper slopes for all bins
-    #     lower = -ramps[i] / fdiff[i]
-    #     upper = ramps[i + 2] / fdiff[i + 1]
+    for i in range(n_mels):
+        # lower and upper slopes for all bins
+        lower = -ramps[i] / fdiff[i]
+        upper = ramps[i + 2] / fdiff[i + 1]
 
-    #     # .. then intersect them with each other and zero
-    #     weights[i] = np.maximum(0, np.minimum(lower, upper))
+        # .. then intersect them with each other and zero
+        weights[i] = np.maximum(0, np.minimum(lower, upper))
 
-    # if isinstance(norm, str):
-    #     if norm == "slaney":
-    #         # Slaney-style mel is scaled to be approx constant energy per channel
-    #         enorm = 2.0 / (mel_f[2 : n_mels + 2] - mel_f[:n_mels])
-    #         weights *= enorm[:, np.newaxis]
-    #     else:
-    #         raise ParameterError(f"Unsupported norm={norm}")
-    # else:
-    #     weights = util.normalize(weights, norm=norm, axis=-1)
+    if isinstance(norm, str):
+        if norm == "slaney":
+            # Slaney-style mel is scaled to be approx constant energy per channel
+            enorm = 2.0 / (mel_f[2 : n_mels + 2] - mel_f[:n_mels])
+            weights *= enorm[:, np.newaxis]
+        else:
+            raise ParameterError(f"Unsupported norm={norm}")
+    else:
+        weights = util.normalize(weights, norm=norm, axis=-1)
 
-    # # Only check weights if f_mel[0] is positive
-    # if not np.all((mel_f[:-2] == 0) | (weights.max(axis=1) > 0)):
-    #     # This means we have an empty channel somewhere
-    #     warnings.warn(
-    #         "Empty filters detected in mel frequency basis. "
-    #         "Some channels will produce empty responses. "
-    #         "Try increasing your sampling rate (and fmax) or "
-    #         "reducing n_mels.",
-    #         stacklevel=2,
-    #     )
+    # Only check weights if f_mel[0] is positive
+    if not np.all((mel_f[:-2] == 0) | (weights.max(axis=1) > 0)):
+        # This means we have an empty channel somewhere
+        warnings.warn(
+            "Empty filters detected in mel frequency basis. "
+            "Some channels will produce empty responses. "
+            "Try increasing your sampling rate (and fmax) or "
+            "reducing n_mels.",
+            stacklevel=2,
+        )
 
-    # return weights
+    return weights

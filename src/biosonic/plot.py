@@ -1,8 +1,10 @@
 import matplotlib.pyplot as plt
+from matplotlib.axes import Axes
 import numpy as np
 from numpy.typing import ArrayLike
 from typing import Optional, Any, Union, Literal, Tuple
-from biosonic.compute.spectrotemporal import cepstrum
+
+from biosonic.compute.spectrotemporal import cepstrum, spectrogram, cepstral_coefficients
 
 # from compute.spectrotemporal import spectrogram
 # from compute.utils import extract_all_features, check_signal_format, check_sr_format
@@ -68,9 +70,8 @@ from biosonic.compute.spectrotemporal import cepstrum
 #     plt.colorbar(label="Intensity [dB]" if db_scale else "Magnitude")
     
 def plot_spectrogram(
-        Sx : ArrayLike, 
-        t : ArrayLike, 
-        f : ArrayLike, 
+        data : ArrayLike, 
+        sr: int, 
         db_scale : bool = True, 
         cmap : str = 'viridis', 
         vmin : Optional[float] = None, 
@@ -80,7 +81,11 @@ def plot_spectrogram(
         flim: Optional[Tuple[float, float]] = None,
         tlim: Optional[Tuple[float, float]] = None,
         freq_scale: Literal["linear", "log", "mel"] = "linear",
-        sr: Optional[int] = None,
+        window_length: int = 512,
+        window: Union[str, ArrayLike] = "hann",
+        zero_padding: int = 0,
+        overlap: float = 50,
+        noisereduction: Optional[int] = None,
         n_fft: Optional[int] = None,
         n_bands: int = 40,
         corner_frequency: Optional[float] = None,
@@ -91,12 +96,10 @@ def plot_spectrogram(
 
     Parameters
     ----------
-    Sx : ArrayLike
-        Spectrogram matrix (frequency x time).
-    t : ArrayLike
-        Time axis in seconds.
-    f : ArrayLike
-        Frequency axis in Hz.
+    data : ArrayLike
+        Input signal.
+    sr : int
+        Sampling rate in Hz.
     db_scale : bool, optional
         Whether to convert the spectrogram to decibel scale.
     cmap : str, optional
@@ -108,13 +111,11 @@ def plot_spectrogram(
     db_ref : float or None
         Reference for dB scaling (max if None).
     flim : tuple of float or None
-        Frequency limits in kHz.
+        Frequency limits in Hz.
     tlim : tuple of float or None
         Time limits in seconds.
     freq_scale : {"mel", "log", None}
         Apply mel or log frequency scaling.
-    sr : int, optional
-        Sampling rate (required for mel/log scaling).
     n_fft : int, optional
         FFT size used to generate the spectrogram (required for mel/log scaling).
     n_bands : int, optional
@@ -124,19 +125,26 @@ def plot_spectrogram(
     **kwargs : dict
         Extra arguments passed to filterbank functions.
     """
-    Sx = np.asarray(Sx)
-    t = np.asarray(t)
-    f = np.asarray(f)
+    Sx, t, f = spectrogram(
+        data=data,
+        sr=sr,
+        window_length=window_length,
+        window=window,
+        zero_padding=zero_padding,
+        overlap=overlap,
+        noisereduction=noisereduction,
+        complex_output=False
+    )
 
-    if Sx.shape != (len(f), len(t)):
-        raise ValueError(f"Shape mismatch: Sx is {Sx.shape}, but f and t are {len(f)} and {len(t)}")
+    if n_fft is None:
+        n_fft = window_length + zero_padding
 
     if freq_scale in ("mel", "log"):
         if sr is None or n_fft is None:
             raise ValueError("Sample rate and n_fft must be provided for mel or log frequency scale.")
 
-        fmin = flim[0] * 1000 if flim else 0.0
-        fmax = flim[1] * 1000 if flim and flim[1] else sr / 2
+        fmin = flim[0] if flim else 0.0
+        fmax = flim[1] if flim and flim[1] else sr / 2
 
         if freq_scale == "mel":
             from biosonic.filter import mel_filterbank
@@ -144,7 +152,8 @@ def plot_spectrogram(
         elif freq_scale == "log":
             from biosonic.filter import log_filterbank
             fb, f_centers = log_filterbank(n_bands, n_fft, sr, fmin=fmin, fmax=fmax, **kwargs)
-            
+            print(f_centers[:5])
+
         f = f_centers
         print(f_centers[0], f_centers[-1])
         Sx = fb @ Sx
@@ -156,9 +165,9 @@ def plot_spectrogram(
         # Sx[Sx < -100] = -100
 
     # Apply frequency limits
-    if flim is not None and freq_scale is None:  # already handled in mel/log cases
+    if flim is not None and freq_scale=="linear":  # already handled in mel/log cases
         fmin, fmax = flim
-        mask = (f >= fmin * 1000) & (f <= fmax * 1000)
+        mask = (f >= fmin) & (f <= fmax)
         f = f[mask]
         Sx = Sx[mask, :]
 
@@ -170,8 +179,8 @@ def plot_spectrogram(
         Sx = Sx[:, mask]
 
     fig, ax = plt.subplots(figsize=(10, 5))
-    im = plt.imshow(Sx, aspect='auto', origin='lower', extent=(t[0], t[-1], f[0], f[-1]))
-    ax.set_ylabel("Frequency (kHz)")
+    im = plt.imshow(Sx, aspect='auto', origin='lower', extent=(t[0], t[-1], f[0], f[-1]), cmap=cmap)
+    ax.set_ylabel("Frequency (Hz)")
     ax.set_xlabel("Time (s)")
 
     # if freq_scale == "log":
@@ -182,6 +191,8 @@ def plot_spectrogram(
     fig.colorbar(im, ax=ax, label="Amplitude (dB)" if db_scale else "Amplitude")
     plt.tight_layout()
     plt.show()
+    
+    return ax
 
 
 def plot_cepstrum(
@@ -212,6 +223,17 @@ def plot_cepstrum(
 
     plt.tight_layout()
     plt.show()
+
+
+def plot_cepstral_coefficients(
+        data : ArrayLike, 
+        sr : int, 
+        n_fft : int, 
+        n_filters : int = 32, 
+        n_ceps : int = 40
+    ) -> None:
+        ceps = cepstral_coefficients(data, sr, n_fft, n_filters, n_ceps)
+        print(ceps.shape)
 
 
 def plot_filterbank_and_cepstrum(
@@ -328,3 +350,93 @@ def plot_filterbank_and_cepstrum(
 
 #     plt.tight_layout()
 #     plt.show()
+
+
+def plot_pitch_on_spectrogram(
+    data,
+    sr,
+    time_points,
+    all_candidates,
+    window_length=1024,
+    overlap=50,
+    show_strongest=True,
+    db_scale=True,
+    flim=None,
+    cmap='viridis'
+):
+    # Compute spectrogram
+    #Sx, t, f= spectrogram(data, sr=sr, window_length=window_length, overlap=overlap)
+
+    # Plot base spectrogram
+    ax = plot_spectrogram(
+        data,
+        sr,
+        overlap=overlap,
+        db_scale=db_scale, 
+        cmap=cmap, 
+        flim=flim,
+        title="Spectrogram with Pitch Candidates",
+        n_fft=window_length
+    )
+    
+    for t_frame, candidates in zip(time_points, all_candidates):
+        for pitch, _ in candidates:
+            if pitch > 0:
+                ax.plot(t_frame, pitch, 'w.', alpha=0.4, markersize=4)
+
+    # Optionally overlay the strongest voiced candidate
+    if show_strongest:
+        times = []
+        pitches = []
+        for t_frame, candidates in zip(time_points, all_candidates):
+            voiced = [c for c in candidates if c[0] > 0]
+            if voiced:
+                best = max(voiced, key=lambda x: x[1])
+                times.append(t_frame)
+                pitches.append(best[0])
+        ax.plot(times, pitches, 'r-', linewidth=1.5, label="Strongest pitch")
+        ax.legend()
+
+    plt.show()
+
+
+def plot_pitch_candidates(
+        time_points : ArrayLike, 
+        all_candidates : ArrayLike, 
+        show_strongest : bool = True
+    ) -> None:
+    """
+    Plot pitch candidates over time.
+    
+    Parameters:
+    - time_points: list of time stamps for each frame.
+    - all_candidates: list of lists of (pitch, strength) tuples.
+    - show_strongest: if True, highlight the strongest voiced candidate per frame.
+    """
+    plt.figure(figsize=(12, 6))
+    
+    # Plot all candidates
+    for t, candidates in zip(time_points, all_candidates):
+        for pitch, strength in candidates:
+            if pitch > 0:
+                plt.plot(t, pitch, 'k.', alpha=0.3)
+
+    # Optionally plot the strongest voiced candidate
+    if show_strongest:
+        times = []
+        pitches = []
+        for t, candidates in zip(time_points, all_candidates):
+            voiced = [c for c in candidates if c[0] > 0]
+            if voiced:
+                best = max(voiced, key=lambda x: x[1])
+                times.append(t)
+                pitches.append(best[0])
+        plt.plot(times, pitches, 'b-', label="Strongest candidate", linewidth=1.5)
+
+    plt.title("Praat-style Pitch Tracking")
+    plt.xlabel("Time (s)")
+    plt.ylabel("Pitch (Hz)")
+    plt.grid(True)
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
