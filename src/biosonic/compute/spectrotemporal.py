@@ -97,7 +97,7 @@ def spectrogram(
 
     f, t, Sx = signal.stft(
         data,
-        fs=sr,
+        sr=sr,
         window=window,
         nperseg=window_length,
         noverlap=noverlap,
@@ -391,7 +391,7 @@ def cepstral_coefficients(
     plt.figure(figsize=(15,4))
     plt.plot(window)
     plt.grid(True)
-
+    
     data_windowed = data_framed * window
 
     ind = 3
@@ -416,6 +416,8 @@ def cepstral_coefficients(
     plt.figure(figsize=(15,6))
     plt.imshow(np.transpose(spectrogram))
 
+    plt.close()
+
     # log_energies = np.log(spectrum + 1e-30)
     # print(log_energies.shape)
 
@@ -433,7 +435,7 @@ def cepstral_coefficients(
         raise ValueError(f"Unknown filterbank_type: {filterbank_type}")
 
     audio_filtered = np.dot(fbanks, spectrogram)
-    audio_log = 10.0 * np.log10(audio_filtered)
+    audio_log = 10.0 * np.log10(audio_filtered + 1e-30)
     audio_log.shape
 
     # DCT to cepstral domain
@@ -442,6 +444,8 @@ def cepstral_coefficients(
     plt.figure(figsize=(15,5))
     plt.plot(np.linspace(0, len(data) / sr, num=len(data)), data)
     plt.imshow(ceps, aspect='auto', origin='lower')
+
+    plt.close()
 
     return np.asarray(ceps)
 
@@ -585,100 +589,129 @@ def dominant_frequencies(
 # ) -> ArrayLike:
     
 
-# def preprocess_for_f0_(
-#         signal : ArrayLike, 
-#         sr : int
-#     ) -> ArrayLike:
-#     """Soft upsampling via frequency filtering and iFFT with longer FFT size."""
-#     N = len(signal)
-#     spectrum = rfft(signal)
-#     nyquist = sr / 2
-#     freqs = np.linspace(0, nyquist, len(spectrum))
+def preprocess_for_f0_(
+        data : ArrayLike, 
+        sr : int
+    ) -> ArrayLike:
+    """Soft upsampling via frequency filtering and iFFT with longer FFT size."""
+    N = len(data)
+    spectrum = rfft(data)
+    nyquist = sr / 2
+    freqs = np.linspace(0, nyquist, len(spectrum))
 
-#     # Linear taper to zero from 95% to 100% Nyquist
-#     taper_start = 0.95 * nyquist
-#     taper = np.ones_like(spectrum)
-#     taper[freqs > taper_start] = 1 - (freqs[freqs > taper_start] - taper_start) / (nyquist - taper_start)
-#     taper[freqs > nyquist] = 0
-#     spectrum *= taper
+    # Linear taper to zero from 95% to 100% Nyquist
+    taper_start = 0.95 * nyquist
+    taper = np.ones_like(spectrum)
+    taper[freqs > taper_start] = 1 - (freqs[freqs > taper_start] - taper_start) / (nyquist - taper_start)
+    taper[freqs > nyquist] = 0
+    spectrum *= taper
 
-#     new_N = 2**int(np.ceil(np.log2(N)) + 1)  # One order higher
-#     filtered_signal = irfft(spectrum, n=new_N)
-#     return filtered_signal[:N]
+    new_N = 2**int(np.ceil(np.log2(N)) + 1)  # One order higher
+    filtered_signal = irfft(spectrum, n=new_N)
+    return filtered_signal[:N]
 
-# def get_frames_(signal, fs, frame_step, min_pitch, for_hnr=False):
-#     """Slice the signal into overlapping frames based on min pitch."""
-#     periods = 6 if for_hnr else 3
-#     win_len_sec = periods / min_pitch
-#     win_len_samples = int(win_len_sec * fs)
-#     step_samples = int(frame_step * fs)
-#     frames = []
-#     for start in range(0, len(signal) - win_len_samples + 1, step_samples):
-#         frames.append(signal[start:start + win_len_samples])
-#     return np.array(frames)
+def get_frames_(
+        data : ArrayLike, 
+        sr : int, 
+        frame_step : float, 
+        min_pitch : int, 
+        for_hnr : bool = False
+    ) -> NDArray:
+    """Slice the signal into overlapping frames based on min pitch."""
+    periods = 6 if for_hnr else 3
+    win_len_sec = periods / min_pitch
+    win_len_samples = int(win_len_sec * sr)
+    step_samples = int(frame_step * sr)
+    frames = []
+    for start in range(0, len(data) - win_len_samples + 1, step_samples):
+        frames.append(data[start:start + win_len_samples])
+    return np.array(frames)
 
-# def compute_autocorrelation_(frame, fs):
-#     """Window, pad, FFT, square, IFFT to get autocorrelation."""
-#     window = np.hanning(len(frame))
-#     win_frame = frame * window
+def compute_autocorrelation_(
+        frame : ArrayLike
+        ) -> ArrayLike:
+    """Window, pad, FFT, square, IFFT to get autocorrelation."""
+    window = np.hanning(len(frame))
+    win_frame = frame * window
 
-#     # Padding
-#     padded_len = int(2**np.ceil(np.log2(2 * len(win_frame))))
-#     padded_frame = np.zeros(padded_len)
-#     padded_frame[:len(win_frame)] = win_frame
+    # Padding
+    padded_len = int(2**np.ceil(np.log2(2 * len(win_frame))))
+    padded_frame = np.zeros(padded_len)
+    padded_frame[:len(win_frame)] = win_frame
 
-#     spectrum = rfft(padded_frame)
-#     power_spectrum = spectrum * np.conj(spectrum)
-#     ac = irfft(power_spectrum)
-#     return ac / np.max(ac)  # normalize
+    spectrum = rfft(padded_frame)
+    power_spectrum = spectrum * np.conj(spectrum)
+    ac = irfft(power_spectrum)
+    return ac / np.max(ac)  # normalize
 
-# def find_pitch_candidates_(ac, fs, min_pitch, max_pitch, num_candidates=4, octave_cost=0.01):
-#     """Find pitch candidates based on autocorrelation peaks."""
-#     min_lag = int(fs / max_pitch)
-#     max_lag = int(fs / min_pitch)
+def find_pitch_candidates_(
+        ac : ArrayLike, 
+        sr : int, 
+        min_pitch : int, 
+        max_pitch : int, 
+        num_candidates : int = 4, 
+        octave_cost : float = 0.01
+        ) -> ArrayLike:
+    """Find pitch candidates based on autocorrelation peaks."""
+    min_lag = int(sr / max_pitch)
+    max_lag = int(sr / min_pitch)
 
-#     # Interpolation for higher accuracy
-#     lags = np.arange(min_lag, max_lag)
-#     interp_ac = interp1d(np.arange(len(ac)), ac, kind='cubic', fill_value="extrapolate")
+    # Interpolation for higher accuracy
+    lags = np.arange(min_lag, max_lag)
+    interp_ac = interp1d(np.arange(len(ac)), ac, kind='cubic', fill_value="extrapolate")
 
-#     def cost_fn(lag):
-#         if lag < min_lag or lag >= max_lag:
-#             return -np.inf
-#         r_tau = float(interp_ac(lag))
-#         return r_tau - octave_cost * 2 * np.log(min_pitch * lag)
 
-#     candidates = []
-#     for lag in range(min_lag, max_lag):
-#         if ac[lag] > ac[lag - 1] and ac[lag] > ac[lag + 1]:
-#             res = minimize_scalar(lambda x: -cost_fn(x), bounds=(lag-1, lag+1), method='bounded')
-#             pitch = fs / res.x
-#             strength = -res.fun
-#             candidates.append((pitch, strength))
+    def cost_fn(
+            lag : float
+            ) -> float:
+        
+        if lag < min_lag or lag >= max_lag:
+            return -np.inf
+        r_tau = float(interp_ac(lag))
+        return float(r_tau - octave_cost * 2 * np.log(min_pitch * lag))
 
-#     candidates = sorted(candidates, key=lambda x: -x[1])[:num_candidates - 1]
-#     return candidates
 
-# def praat_pitch_tracking(signal, fs, min_pitch=75, max_pitch=600,
-#                          timestep=0.01, silence_thresh=0.05, voicing_thresh=0.4,
-#                          max_candidates=4, octave_cost=0.01):
-#     """Main pitch tracking wrapper."""
-#     processed_signal = preprocess_for_f0_(signal, fs)
-#     global_peak = np.max(np.abs(processed_signal))
-#     frames = get_frames_(processed_signal, fs, timestep, min_pitch)
-#     time_points = np.arange(len(frames)) * timestep
+    candidates = []
+    for lag in range(min_lag, max_lag):
+        if ac[lag] > ac[lag - 1] and ac[lag] > ac[lag + 1]:
+            res = minimize_scalar(lambda x: -cost_fn(x), bounds=(lag-1, lag+1), method='bounded')
+            pitch = sr / res.x
+            strength = -res.fun
+            candidates.append((pitch, strength))
 
-#     all_candidates = []
-#     for frame in frames:
-#         local_peak = np.max(np.abs(frame))
-#         ac = compute_autocorrelation_(frame - np.mean(frame), fs)
+    candidates = sorted(candidates, key=lambda x: -x[1])[:num_candidates - 1]
+    return candidates
 
-#         # Voicing strength of unvoiced candidate
-#         unvoiced_strength = voicing_thresh + max(0, 2 - (local_peak / global_peak)) / \
-#                             (silence_thresh * (1 + voicing_thresh))
-#         voiced_candidates = find_pitch_candidates_(ac, fs, min_pitch, max_pitch,
-#                                                   num_candidates=max_candidates,
-#                                                   octave_cost=octave_cost)
-#         candidates = [(0.0, unvoiced_strength)] + voiced_candidates
-#         all_candidates.append(candidates)
 
-#     return time_points, all_candidates
+def praat_pitch_tracking(
+        data : ArrayLike, 
+        sr : int, 
+        min_pitch : int = 75, 
+        max_pitch : int = 600,
+        timestep : float = 0.01, 
+        silence_thresh : float = 0.05, 
+        voicing_thresh : float = 0.4,
+        max_candidates :int = 4, 
+        octave_cost : float = 0.01
+    ) -> Tuple[ArrayLike, ArrayLike]:
+    """Main pitch tracking wrapper."""
+    processed_signal = preprocess_for_f0_(data, sr)
+    global_peak : float = np.max(np.abs(processed_signal))
+    frames = get_frames_(processed_signal, sr, timestep, min_pitch)
+    time_points = np.arange(len(frames)) * timestep
+
+    all_candidates = []
+    for frame in frames:
+        local_peak : float = np.max(np.abs(frame))
+        ac = compute_autocorrelation_(frame - np.mean(frame))
+
+        # Voicing strength of unvoiced candidate
+        unvoiced_strength = voicing_thresh + max(0, 2 - (local_peak / global_peak)) / \
+                            (silence_thresh * (1 + voicing_thresh))
+        voiced_candidates = find_pitch_candidates_(ac, sr, min_pitch, max_pitch,
+                                                  num_candidates=max_candidates,
+                                                  octave_cost=octave_cost)
+        candidates = [(0.0, unvoiced_strength)] + voiced_candidates
+        all_candidates.append(candidates)
+
+    return time_points, all_candidates

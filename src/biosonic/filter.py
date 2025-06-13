@@ -62,16 +62,16 @@ def filterbank(
     enorm = 2.0 / (bin_indices[2:n_filters+2] - bin_indices[:n_filters])
     filterbank *= enorm[:, np.newaxis]
 
-    if not np.all((bin_indices[:-2] == 0) | (filterbank.max(axis=1) > 0)):
-        # empty channel 
-        # This code is directly taken from libosa (see reference in docs)
-        warnings.warn(
-            "Empty filters detected in filter bank. "
-            "Some channels will produce empty responses. "
-            "Try increasing your sampling rate (and fmax) or "
-            "reducing n_filters.",
-            stacklevel=2,
-        )
+    # if not np.all((bin_indices[:-2] == 0) | (filterbank.max(axis=1) > 0)):
+    #     # empty channel 
+    #     # This code is directly taken from libosa (see reference in docs)
+    #     warnings.warn(
+    #         "Empty filters detected in filter bank. "
+    #         "Some channels will produce empty responses. "
+    #         "Try increasing your sampling rate (and fmax) or "
+    #         "reducing n_filters.",
+    #         stacklevel=2,
+    #     )
     
     return filterbank
 

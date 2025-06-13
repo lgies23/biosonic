@@ -89,6 +89,7 @@ def plot_spectrogram(
         n_fft: Optional[int] = None,
         n_bands: int = 40,
         corner_frequency: Optional[float] = None,
+        ax : Optional[Axes] = None,
         **kwargs: Any
     ) -> Axes:
     """
@@ -178,7 +179,9 @@ def plot_spectrogram(
         t = t[mask]
         Sx = Sx[:, mask]
 
-    fig, ax = plt.subplots(figsize=(10, 5))
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(10, 5))
+
     im = plt.imshow(Sx, aspect='auto', origin='lower', extent=(t[0], t[-1], f[0], f[-1]), cmap=cmap)
     ax.set_ylabel("Frequency (Hz)")
     ax.set_xlabel("Time (s)")
@@ -188,9 +191,11 @@ def plot_spectrogram(
 
     if title:
         ax.set_title(title)
-    fig.colorbar(im, ax=ax, label="Amplitude (dB)" if db_scale else "Amplitude")
-    plt.tight_layout()
-    plt.show()
+    if ax is None:
+        fig.colorbar(im, ax=ax, label="Amplitude (dB)" if db_scale else "Amplitude")
+        plt.tight_layout()
+        plt.show()
+        return
     
     return ax
 
@@ -234,6 +239,21 @@ def plot_cepstral_coefficients(
     ) -> None:
         ceps = cepstral_coefficients(data, sr, n_fft, n_filters, n_ceps)
         print(ceps.shape)
+
+
+def dominant_frequencies(
+        times : ArrayLike, 
+        freqs : ArrayLike,
+        ax : Optional[Axes]
+        ) -> Optional[Axes]:
+    if ax is None: 
+        fig, ax = plt.subplots(figsize=(10, 5))
+    ax.scatter(times, freqs, color=(0.7, 0.1, 0.1, 0.3), marker="o", label='Dominant Frequency')
+
+    if ax is None: 
+        plt.show()
+        
+    return ax
 
 
 def plot_filterbank_and_cepstrum(
@@ -352,6 +372,55 @@ def plot_filterbank_and_cepstrum(
 #     plt.show()
 
 
+
+def plot_pitch_candidates(
+        time_points : ArrayLike, 
+        all_candidates : ArrayLike, 
+        show_strongest : bool = True,
+        ax : Optional[Axes] = None
+    ) -> Optional[Axes]:
+    """
+    Plot pitch candidates over time.
+    
+    Parameters:
+    - time_points: list of time stamps for each frame.
+    - all_candidates: list of lists of (pitch, strength) tuples.
+    - show_strongest: if True, highlight the strongest voiced candidate per frame.
+    """    
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(10, 5))
+
+    # Plot all candidates
+    for t, candidates in zip(time_points, all_candidates):
+        for pitch, _ in candidates:
+            if pitch > 0:
+                ax.plot(t, pitch, 'k.', alpha=0.3)
+
+    # Optionally plot the strongest voiced candidate
+    if show_strongest:
+        times = []
+        pitches = []
+        for t, candidates in zip(time_points, all_candidates):
+            voiced = [c for c in candidates if c[0] > 0]
+            if voiced:
+                best = max(voiced, key=lambda x: x[1])
+                times.append(t)
+                pitches.append(best[0])
+        ax.plot(times, pitches, 'b-', label="Strongest candidate", linewidth=1.5)
+
+    if ax is None:
+        plt.title("Praat-style Pitch Tracking")
+        plt.xlabel("Time (s)")
+        plt.ylabel("Pitch (Hz)")
+        plt.grid(True)
+        plt.legend()
+        plt.tight_layout()
+        plt.show()
+        return
+
+    return ax
+
+
 def plot_pitch_on_spectrogram(
     data : ArrayLike,
     sr : int,
@@ -364,11 +433,10 @@ def plot_pitch_on_spectrogram(
     flim : Optional[Tuple[float, float]] = None,
     cmap : str = 'viridis'
 ) -> None:
-    # Compute spectrogram
-    #Sx, t, f= spectrogram(data, sr=sr, window_length=window_length, overlap=overlap)
-
-    # Plot base spectrogram
-    ax = plot_spectrogram(
+    
+    fig, ax = plt.subplots(figsize=(10, 5))
+    
+    plot_spectrogram(
         data,
         sr,
         overlap=overlap,
@@ -376,67 +444,15 @@ def plot_pitch_on_spectrogram(
         cmap=cmap, 
         flim=flim,
         title="Spectrogram with Pitch Candidates",
-        n_fft=window_length
+        n_fft=window_length,
+        ax=ax
     )
-    
-    for t_frame, candidates in zip(time_points, all_candidates):
-        for pitch, _ in candidates:
-            if pitch > 0:
-                ax.plot(t_frame, pitch, 'w.', alpha=0.4, markersize=4)
 
-    # Optionally overlay the strongest voiced candidate
-    if show_strongest:
-        times = []
-        pitches = []
-        for t_frame, candidates in zip(time_points, all_candidates):
-            voiced = [c for c in candidates if c[0] > 0]
-            if voiced:
-                best = max(voiced, key=lambda x: x[1])
-                times.append(t_frame)
-                pitches.append(best[0])
-        ax.plot(times, pitches, 'r-', linewidth=1.5, label="Strongest pitch")
-        ax.legend()
+    plot_pitch_candidates(
+        time_points=time_points, 
+        all_candidates=all_candidates, 
+        show_strongest=show_strongest,
+        ax=ax,
+        )
 
-    plt.show()
-
-
-def plot_pitch_candidates(
-        time_points : ArrayLike, 
-        all_candidates : ArrayLike, 
-        show_strongest : bool = True
-    ) -> None:
-    """
-    Plot pitch candidates over time.
-    
-    Parameters:
-    - time_points: list of time stamps for each frame.
-    - all_candidates: list of lists of (pitch, strength) tuples.
-    - show_strongest: if True, highlight the strongest voiced candidate per frame.
-    """
-    plt.figure(figsize=(12, 6))
-    
-    # Plot all candidates
-    for t, candidates in zip(time_points, all_candidates):
-        for pitch, strength in candidates:
-            if pitch > 0:
-                plt.plot(t, pitch, 'k.', alpha=0.3)
-
-    # Optionally plot the strongest voiced candidate
-    if show_strongest:
-        times = []
-        pitches = []
-        for t, candidates in zip(time_points, all_candidates):
-            voiced = [c for c in candidates if c[0] > 0]
-            if voiced:
-                best = max(voiced, key=lambda x: x[1])
-                times.append(t)
-                pitches.append(best[0])
-        plt.plot(times, pitches, 'b-', label="Strongest candidate", linewidth=1.5)
-
-    plt.title("Praat-style Pitch Tracking")
-    plt.xlabel("Time (s)")
-    plt.ylabel("Pitch (Hz)")
-    plt.grid(True)
-    plt.legend()
-    plt.tight_layout()
     plt.show()
