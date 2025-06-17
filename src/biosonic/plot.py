@@ -390,6 +390,9 @@ def plot_pitch_candidates(
     if ax is None:
         fig, ax = plt.subplots(figsize=(10, 5))
 
+    if all(isinstance(p, (int, float, np.number)) for p in all_candidates):
+        all_candidates = [[(p, 1.0)] for p in all_candidates]
+
     # Plot all candidates
     for t, candidates in zip(time_points, all_candidates):
         for pitch, _ in candidates:

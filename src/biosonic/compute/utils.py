@@ -3,7 +3,7 @@ import numpy as np
 import logging
 from typing import Optional, Literal, Union, Tuple, Any
 import warnings
-
+from scipy.signal import windows
 
 def check_sr_format(sr: Union[int, float]) -> int:
     try:
@@ -337,3 +337,50 @@ def mel_to_hz(
         raise ValueError(f"Unknown Mel scale method: '{after}'")
 
     return f_hz
+
+
+def frame_signal(
+        data: ArrayLike,
+        sr : int,
+        window_length : int = 512, 
+        timestep : float = 0.01,
+        normalize : bool = False
+    ) -> ArrayLike:
+    samples_step = timestep * sr
+    data = np.pad(data, int(window_length / 2), mode='reflect')
+
+    frame_num = int((len(data) - window_length) / samples_step) + 1
+    frames = np.zeros((frame_num, window_length))
+    
+    for n in range(frame_num):
+        start = int(n * samples_step)
+        frames[n] = data[start : start + window_length]
+    
+    if normalize:
+        frames = [frame / np.mean(frame) if frame.any() else frame for frame in frames] # skip normalization for frames with all 0
+        
+    return frames
+
+
+def window_signal(
+        data: ArrayLike,
+        sr : int, 
+        window_length: int = 512,
+        window: Union[str, ArrayLike] = "hann",
+        timestep : float = 0.01,
+        normalize : bool = False
+) -> ArrayLike:
+    
+    if isinstance(window, str):
+        try:
+            window = windows.get_window(window, window_length)
+        except ValueError as e:
+            raise ValueError(f"Invalid window type: {window}") from e
+    else:
+        window = np.asarray(window) 
+        if not isinstance(window, np.ndarray):
+            raise TypeError("'window' must be either a string or a 1D NumPy array.")
+
+    frames = frame_signal(data, sr, window_length, timestep, normalize)
+
+    return frames * window

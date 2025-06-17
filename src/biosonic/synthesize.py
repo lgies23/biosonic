@@ -1,3 +1,6 @@
+import numpy as np
+from numpy.typing import ArrayLike
+
 # def ripple_sound():
 #     """
 #     Generate a ripple signal ad defined in [2]:
@@ -15,3 +18,12 @@
     
 #     """
 #     pass
+
+def amplitude_modulated(
+        t : ArrayLike,
+        f0 : float,
+        modulator : float
+) -> ArrayLike:
+    carrier = 1 + .3 * np.sin(2 * np.pi * f0 * t )
+    modulator = np.sin( 2 * np.pi * modulator *t )
+    return carrier * modulator
