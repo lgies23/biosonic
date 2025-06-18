@@ -3,7 +3,7 @@ import numpy as np
 from scipy.fft import rfft, irfft
 from scipy.interpolate import interp1d
 from scipy.optimize import minimize_scalar, brent
-from scipy.signal import windows
+from scipy.signal import windows, correlate
 from typing import Tuple, List
 import matplotlib.pyplot as plt
 
@@ -281,7 +281,9 @@ def autocorr_(frame, pad_width_for_pow2):
     power_spec = spec ** 2 # TODO check if this is the correct way
 
     # 3.9 ifft of power spectrum
-    return irfft(power_spec)
+    lag_domain = irfft(power_spec)
+
+    return lag_domain[len(frame) // 2 :]
 
 
 def boersma(
@@ -301,7 +303,21 @@ def boersma(
     1. Boersma P. 1993 Accurate short-term analysis of the fundamental 
     frequency and the harmonics-to-noise ratio of a sampled sound. 
     IFA Proceedings 17, 97–110.
+    2. Anikin A. 2019. Soundgen: an open-source tool for synthesizing
+    nonverbal vocalizations. Behavior Research Methods, 51(2), 778-792.
     """
+
+    # make sure, the signal is inside the bounds [-1, 1]
+    if np.max(np.abs(data)) > 1:
+        raise ValueError("the signal needs to be within the bounds [-1, 1]")
+
+
+    if min_pitch >= max_pitch or max_pitch >= sr / 2:
+        raise ValueError("max_pitch should be greater than min_pitch and below the nyquist frequency.")
+    
+    # not enough resolution above half the niquist frequency 
+    # -> amend pitch ceiling if applicable. From Soundgen (see references)
+    max_pitch = min(max_pitch, sr / 4) 
 
     window_length = 3 * (1 / min_pitch) # three periods of minimum frequency
     #data_preprocessed = preprocess_for_pitch_(data, sr) # TODO am I doing this correctly?
@@ -319,7 +335,7 @@ def boersma(
     framed_signal = frame_signal(data_preprocessed, sr, window_length_samples, timestep, normalize=False)
     window = windows.get_window("hann", window_length_samples)
     autocorr_hann = autocorr_(window, pad_width_for_pow2)
-
+    # autocorr_hann /= autocorr_hann
     all_candidates = []
 
     for frame in framed_signal:
@@ -351,6 +367,11 @@ def boersma(
         
         candidates = [(0.0, unvoiced_strength)] + voiced_candidates
         all_candidates.append(candidates)
+
+    fig, ax = plt.subplots()
+    ax.plot(sampled_autocorr)
+    # ax.plot(autocorr_hann)
+    ax.plot(frame)
 
     time_points = np.arange(len(framed_signal)) * timestep
     return time_points, all_candidates
