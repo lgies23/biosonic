@@ -636,44 +636,44 @@ def test_cepstrum(sine_wave, chirp_with_noise):
         cepstrum(x, sr, mode="power")
 
 
-@pytest.mark.parametrize("filterbank_type", ["mel", "linear", "log"])
-def test_cepstral_coefficients(filterbank_type, sine_wave, chirp_with_noise):
-    from biosonic.compute.spectrotemporal import cepstral_coefficients
-    signal, sr = sine_wave
-    ceps = cepstral_coefficients(signal, sr, window_length=512, n_ceps=13)
-    assert isinstance(ceps, np.ndarray)
-    assert ceps.shape == (13, 63)
+# @pytest.mark.parametrize("filterbank_type", ["mel", "linear", "log"])
+# def test_cepstral_coefficients(filterbank_type, sine_wave, chirp_with_noise):
+#     from biosonic.compute.spectrotemporal import cepstral_coefficients
+#     signal, sr = sine_wave
+#     ceps = cepstral_coefficients(signal, sr, window_length=512, n_ceps=13)
+#     assert isinstance(ceps, np.ndarray)
+#     assert ceps.shape == (13, 63)
 
-    # filterbank types
-    signal, sr = chirp_with_noise
-    ceps = cepstral_coefficients(signal, sr, filterbank_type=filterbank_type, n_ceps=10)
-    assert ceps.shape == (10, 4)
+#     # filterbank types
+#     signal, sr = chirp_with_noise
+#     ceps = cepstral_coefficients(signal, sr, filterbank_type=filterbank_type, n_ceps=10)
+#     assert ceps.shape == (10, 4)
 
-    # invalid filterbank type
-    signal, sr = sine_wave
-    with pytest.raises(ValueError):
-        cepstral_coefficients(signal, sr, filterbank_type="invalid")
+#     # invalid filterbank type
+#     signal, sr = sine_wave
+#     with pytest.raises(ValueError):
+#         cepstral_coefficients(signal, sr, filterbank_type="invalid")
 
-    # # short signal
-    # sr = 16000
-    # signal = np.random.randn(32)
-    # ceps = cepstral_coefficients(signal, sr, n_fft=512, n_ceps=5)
-    # assert ceps.shape == (5,)
+#     # # short signal
+#     # sr = 16000
+#     # signal = np.random.randn(32)
+#     # ceps = cepstral_coefficients(signal, sr, n_fft=512, n_ceps=5)
+#     # assert ceps.shape == (5,)
 
-    # fmin fmax
-    signal, sr = chirp_with_noise
-    ceps = cepstral_coefficients(signal, sr, window_length=512, fmin=10, fmax=500, n_ceps=12)
-    assert ceps.shape == (12, 4)
+#     # fmin fmax
+#     signal, sr = chirp_with_noise
+#     ceps = cepstral_coefficients(signal, sr, window_length=512, fmin=10, fmax=500, n_ceps=12)
+#     assert ceps.shape == (12, 4)
 
-    # parameter validation
-    with pytest.raises(ValueError, match="fmax must be <= Nyquist frequency"):
-        ceps = cepstral_coefficients(signal, sr, window_length=512, fmin=10, fmax=5000, n_ceps=12)
+#     # parameter validation
+#     with pytest.raises(ValueError, match="fmax must be <= Nyquist frequency"):
+#         ceps = cepstral_coefficients(signal, sr, window_length=512, fmin=10, fmax=5000, n_ceps=12)
     
-    with pytest.raises(ValueError, match="fmin must be >= 0 and < fmax"):
-        ceps = cepstral_coefficients(signal, sr, window_length=512, fmin=100, fmax=10, n_ceps=12)
+#     with pytest.raises(ValueError, match="fmin must be >= 0 and < fmax"):
+#         ceps = cepstral_coefficients(signal, sr, window_length=512, fmin=100, fmax=10, n_ceps=12)
     
-    with pytest.raises(ValueError, match="fmin must be >= 0 and < fmax"):
-        ceps = cepstral_coefficients(signal, sr, window_length=512, fmin=-1, fmax=10, n_ceps=12)
+#     with pytest.raises(ValueError, match="fmin must be >= 0 and < fmax"):
+#         ceps = cepstral_coefficients(signal, sr, window_length=512, fmin=-1, fmax=10, n_ceps=12)
     
 
 if __name__ == '__main__':

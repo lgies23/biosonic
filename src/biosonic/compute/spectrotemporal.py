@@ -368,12 +368,8 @@ def cepstral_coefficients(
     data_windowed = window_signal(data, sr, window_length, "hann", 0.01)
 
     spectrogram = np.empty((int(1 + window_length // 2), np.transpose(data_windowed).shape[1]))
-    print(spectrogram.shape)
-    print(data_windowed.shape)
     for i in range(spectrogram.shape[1]):
         spectrogram[:, i] = np.abs(np.fft.rfft(data_windowed.T[:, i], n=window_length)[:spectrogram.shape[0]]) ** 2
-    
-    print(spectrogram.T.shape)
 
     plt.figure(figsize=(15,6))
     plt.imshow(np.transpose(spectrogram))
@@ -398,7 +394,6 @@ def cepstral_coefficients(
 
     audio_filtered = np.dot(fbanks, spectrogram)
     audio_log = 10.0 * np.log10(audio_filtered + 1e-30)
-    audio_log.shape
 
     # DCT to cepstral domain
     ceps = dct(audio_log, type=dct_type, norm=norm)[:n_ceps]
@@ -509,17 +504,18 @@ def dominant_frequencies(
     if not (0.0 <= min_prominence <= 1.0):
         raise ValueError("min_prominence must be between 0 and 1")
 
-    spec, _, freqs = spectrogram(data, sr, *args, **kwargs)
+    spec, times, freqs = spectrogram(data, sr, *args, **kwargs)
     spec_real = np.abs(spec)
-    num_frames = spec_real.shape[1]
+    # num_frames = spec_real.shape[1]
+
     if n_freqs == 1:
-        dominant_freqs = np.full(num_frames, np.nan)
+        dominant_freqs = np.full(len(times), np.nan)
     else:
-        dominant_freqs = np.full((num_frames, n_freqs), np.nan)
+        dominant_freqs = np.full((len(times), n_freqs), np.nan)
 
     peak_kwargs = peak_kwargs or {}
 
-    for t in range(num_frames):
+    for t in range(len(times)):
         spectrum = spec_real[:, t]
         magnitude_range = float(np.max(spectrum)) - np.min(spectrum)
 

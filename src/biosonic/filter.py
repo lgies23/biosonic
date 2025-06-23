@@ -78,7 +78,7 @@ def filterbank(
 
 def mel_filterbank(
         n_filters : int, 
-        n_fft : int, 
+        window_length : int, 
         sr : int, 
         fmin : float = 0.0, 
         fmax : Optional[float] = None,
@@ -89,7 +89,7 @@ def mel_filterbank(
     if fmax is None:
         fmax = sr / 2
 
-    check_filterbank_parameters(n_filters, n_fft, sr, fmin, fmax)
+    check_filterbank_parameters(n_filters, window_length, sr, fmin, fmax)
 
     # boundaries
     mel_min = hz_to_mel(fmin, corner_frequency=corner_frequency, **kwargs)
@@ -100,11 +100,11 @@ def mel_filterbank(
     hz_points = np.asarray(mel_to_hz(mel_points, corner_frequency=corner_frequency, **kwargs))
 
     # FFT bin numbers
-    bin_indices = np.floor((n_fft + 1) * hz_points / sr).astype(int)
+    bin_indices = np.floor((window_length + 1) * hz_points / sr).astype(int)
 
     f_centers = np.sqrt(hz_points[:-2] * hz_points[2:])
 
-    return filterbank(n_filters, n_fft, bin_indices), f_centers
+    return filterbank(n_filters, window_length, bin_indices), f_centers
 
 
 def linear_filterbank(
