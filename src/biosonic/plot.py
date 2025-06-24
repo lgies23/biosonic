@@ -374,6 +374,7 @@ def plot_pitch_candidates(
         time_points : ArrayLike, 
         all_candidates : ArrayLike, 
         show_strongest : bool = True,
+        tlim : Optional[Tuple[float, float]] = None,
         ax : Optional[Axes] = None
     ) -> Optional[Axes]:
     """
@@ -392,6 +393,8 @@ def plot_pitch_candidates(
 
     # Plot all candidates
     for t, candidates in zip(time_points, all_candidates):
+        if tlim and not (tlim[0] <= t <= tlim[1]):
+            continue
         for pitch, _ in candidates:
             if pitch > 0:
                 ax.plot(t, pitch, 'k.', alpha=0.3)
@@ -401,6 +404,8 @@ def plot_pitch_candidates(
         times = []
         pitches = []
         for t, candidates in zip(time_points, all_candidates):
+            if tlim and not (tlim[0] <= t <= tlim[1]):
+                continue
             voiced = [c for c in candidates if c[0] > 0]
             if voiced:
                 best = max(voiced, key=lambda x: x[1])
@@ -408,6 +413,9 @@ def plot_pitch_candidates(
                 pitches.append(best[0])
         ax.plot(times, pitches, 'b-', label="Strongest candidate", linewidth=1.5)
 
+    if tlim:
+        ax.set_xlim(tlim)
+        
     if ax is None:
         plt.title("Praat-style Pitch Tracking")
         plt.xlabel("Time [s]")
@@ -431,6 +439,7 @@ def plot_pitch_on_spectrogram(
     show_strongest : bool = True,
     db_scale : bool = True,
     flim : Optional[Tuple[float, float]] = None,
+    tlim : Optional[Tuple[float, float]] = None,
     cmap : str = 'viridis'
 ) -> None:
     
@@ -443,6 +452,7 @@ def plot_pitch_on_spectrogram(
         db_scale=db_scale, 
         cmap=cmap, 
         flim=flim,
+        tlim=tlim,
         title="Spectrogram with Pitch Candidates",
         window_length=window_length,
         ax=ax
@@ -452,6 +462,7 @@ def plot_pitch_on_spectrogram(
         time_points=time_points, 
         all_candidates=all_candidates, 
         show_strongest=show_strongest,
+        tlim=tlim,
         ax=ax,
         )
 

@@ -1,419 +1,421 @@
-# from numpy.typing import ArrayLike
-# import numpy as np
-# from scipy.fft import rfft, irfft
-# from scipy.interpolate import interp1d
-# from scipy.optimize import minimize_scalar, brent
-# from scipy.signal import windows, correlate, find_peaks
-# from typing import Tuple, List, Optional
-# import matplotlib.pyplot as plt
+from numpy.typing import ArrayLike, NDArray
+import numpy as np
+from scipy.fft import rfft, irfft
+from scipy.interpolate import interp1d
+from scipy.optimize import minimize_scalar, brent
+from scipy.signal import windows, correlate, find_peaks
+from typing import Tuple, List, Optional, Any
+import matplotlib.pyplot as plt
 
-# from biosonic.compute.utils import window_signal, frame_signal
+from biosonic.compute.utils import frame_signal
 
 
-# def afc(
-#         data : ArrayLike, 
-#         window_length : int, 
-#         time_step : int, 
-#         max_lag : int
-# ) -> ArrayLike:
-#     """
-#     Compute ACF values for all lags from 0 to max_lag with boundary checking.
-#     """
-#     acf_vals = []
-#     x = data[time_step : time_step + window_length]
-#     if len(x) < window_length:
-#         return np.zeros(max_lag + 1)
+def afc(
+        data : ArrayLike, 
+        window_length : int, 
+        time_step : int, 
+        max_lag : int
+) -> ArrayLike:
+    """
+    Compute ACF values for all lags from 0 to max_lag with boundary checking.
+    """
+    acf_vals : list[float] = []
+    x = data[time_step : time_step + window_length]
+    if len(x) < window_length:
+        return np.zeros(max_lag + 1)
 
-#     for lag in range(max_lag + 1):
-#         start = time_step + lag
-#         y = data[start : start + window_length]
-#         if len(y) != window_length:
-#             break  # avoid broadcasting error
-#         acf_vals.append(np.sum(x * y))
+    for lag in range(max_lag + 1):
+        start = time_step + lag
+        y = data[start : start + window_length]
+        if len(y) != window_length:
+            break  # avoid broadcasting error
+        acf_vals.append(np.sum(x * y))
     
-#     return np.array(acf_vals)
+    return np.array(acf_vals)
 
 
-# def cmnd(
-#         data: ArrayLike, 
-#         window_length: int, 
-#         time_step: int, 
-#         bounds: Tuple[int, int]
-# ) -> ArrayLike:
-#     min_lag, max_lag = bounds
+def cmnd(
+        data: ArrayLike, 
+        window_length: int, 
+        time_step: int, 
+        bounds: Tuple[int, int]
+) -> ArrayLike:
+    min_lag, max_lag = bounds
 
-#     acf = afc(data, window_length, time_step, max_lag)
+    acf = afc(data, window_length, time_step, max_lag)
 
-#     actual_max_lag = len(acf) - 1
-#     if actual_max_lag < max_lag:
-#         max_lag = actual_max_lag
+    actual_max_lag = len(acf) - 1
+    if actual_max_lag < max_lag:
+        max_lag = actual_max_lag
 
-#     df = []
-#     for lag in range(min_lag, max_lag + 1):
-#         seg = data[time_step + lag : time_step + lag + window_length]
-#         if len(seg) < window_length:
-#             break
-#         df_val = acf[0] + np.sum(seg ** 2) - 2 * acf[lag]
-#         df.append(df_val)
+    df = []
+    for lag in range(min_lag, max_lag + 1):
+        seg = data[time_step + lag : time_step + lag + window_length]
+        if len(seg) < window_length:
+            break
+        df_val = acf[0] + np.sum(seg ** 2) - 2 * acf[lag]
+        df.append(df_val)
 
-#     df = np.array(df)
-#     cmndf = np.zeros_like(df)
-#     cmndf[0] = 1  # Avoid divide-by-zero
-#     cumsum = np.cumsum(df)
-#     cmndf[1:] = df[1:] * np.arange(1, len(df)) / cumsum[1:]
+    df = np.array(df)
+    cmndf = np.zeros_like(df)
+    cmndf[0] = 1  # Avoid divide-by-zero
+    cumsum = np.cumsum(df)
+    cmndf[1:] = df[1:] * np.arange(1, len(df)) / cumsum[1:]
 
-#     return cmndf
-
-
-# def fundamental_frequency(
-#     data: ArrayLike,
-#     sr: int,
-#     window_length: int,
-#     time_step: int,
-#     bounds: Tuple[int, int],
-#     threshold: float = 0.1
-# ) -> float:
-#     cmndf = cmnd(data, window_length, time_step, bounds)
-#     for i, val in enumerate(cmndf):
-#         if val < threshold:
-#             return sr / (i + bounds[0])
-#     return sr / (np.argmin(cmndf) + bounds[0])
+    return cmndf
 
 
-# def yin(
-#     data: ArrayLike,
-#     sr: int,
-#     window_length: int,
-#     time_step_sec: float,
-#     bounds: Tuple[int, int],
-#     threshold: float = 0.1
-# ) -> ArrayLike:
-#     step_size = int(time_step_sec * sr)
-#     num_steps = (len(data) - window_length) // step_size
-#     return np.array([
-#         fundamental_frequency(
-#             data,
-#             sr,
-#             window_length,
-#             i * step_size,
-#             bounds,
-#             threshold
-#         )
-#         for i in range(num_steps)
-#     ])
+def fundamental_frequency(
+    data: ArrayLike,
+    sr: int,
+    window_length: int,
+    time_step: int,
+    bounds: Tuple[int, int],
+    threshold: float = 0.1
+) -> float:
+    cmndf = cmnd(data, window_length, time_step, bounds)
+    for i, val in enumerate(cmndf):
+        if val < threshold:
+            return sr / (i + bounds[0])
+    return float(sr / (np.argmin(cmndf) + bounds[0]))
+
+
+def yin(
+    data: ArrayLike,
+    sr: int,
+    window_length: int,
+    time_step_sec: float,
+    bounds: Tuple[int, int],
+    threshold: float = 0.1
+) -> ArrayLike:
+    step_size = int(time_step_sec * sr)
+    num_steps = (len(data) - window_length) // step_size
+    return np.array([
+        fundamental_frequency(
+            data,
+            sr,
+            window_length,
+            i * step_size,
+            bounds,
+            threshold
+        )
+        for i in range(num_steps)
+    ])
     
 
-# def preprocess_for_pitch_(
-#         data : ArrayLike, 
-#         sr : int
-#     ) -> ArrayLike:
-#     """
-#     Soft upsampling via frequency filtering and iFFT with longer FFT size 
-#     to remove sidelobe of the FT of the Hanning window near f_nyquist as described in [1].
+def preprocess_for_pitch_(
+        data : ArrayLike, 
+        sr : int
+    ) -> ArrayLike:
+    """
+    Soft upsampling via frequency filtering and iFFT with longer FFT size 
+    to remove sidelobe of the FT of the Hanning window near f_nyquist as described in [1].
 
-#     References:
-#     ----------
-#     1. Boersma P. 1993 Accurate short-term analysis of the fundamental 
-#     frequency and the harmonics-to-noise ratio of a sampled sound. 
-#     IFA Proceedings 17, 97–110.
-#     """
-#     N = len(data)
-#     spectrum = rfft(data)
-#     nyquist = sr / 2
-#     freqs = np.linspace(0, nyquist, len(spectrum))
+    References:
+    ----------
+    1. Boersma P. 1993 Accurate short-term analysis of the fundamental 
+    frequency and the harmonics-to-noise ratio of a sampled sound. 
+    IFA Proceedings 17, 97–110.
+    """
+    N = len(data)
+    spectrum = rfft(data)
+    nyquist = sr / 2
+    freqs = np.linspace(0, nyquist, len(spectrum))
 
-#     # Linear taper to zero from 95% to 100% Nyquist
-#     taper_start = 0.95 * nyquist
-#     taper = np.ones_like(spectrum)
-#     taper[freqs > taper_start] = 1 - (freqs[freqs > taper_start] - taper_start) / (nyquist - taper_start)
-#     taper[freqs > nyquist] = 0
-#     spectrum *= taper
+    # Linear taper to zero from 95% to 100% Nyquist
+    taper_start = 0.95 * nyquist
+    taper = np.ones_like(spectrum)
+    taper[freqs > taper_start] = 1 - (freqs[freqs > taper_start] - taper_start) / (nyquist - taper_start)
+    taper[freqs > nyquist] = 0
+    spectrum *= taper
 
-#     # Compute new length: next power of two greater, then double (one order higher)
-#     new_N = 2**(int(np.ceil(np.log2(N))) + 1)
-#     new_spectrum_len = new_N // 2 + 1
+    # Compute new length: next power of two greater, then double (one order higher)
+    new_N = 2**(int(np.ceil(np.log2(N))) + 1)
+    new_spectrum_len = new_N // 2 + 1
 
-#     # Zero-pad spectrum to match new IFFT length
-#     padded_spectrum = np.zeros(new_spectrum_len, dtype=complex)
-#     padded_spectrum[:len(spectrum)] = spectrum
+    # Zero-pad spectrum to match new IFFT length
+    padded_spectrum = np.zeros(new_spectrum_len, dtype=complex)
+    padded_spectrum[:len(spectrum)] = spectrum
 
-#     # Inverse FFT
-#     filtered_signal = irfft(padded_spectrum, n=new_N)
+    # Inverse FFT
+    filtered_signal = irfft(padded_spectrum, n=new_N)
 
-#     return filtered_signal[:N]
+    return filtered_signal[:N]
 
 
-# # def get_frames_(
-# #         data : ArrayLike, 
-# #         sr : int, 
-# #         frame_step : float, 
-# #         min_pitch : int, 
-# #         for_hnr : bool = False
-# #     ) -> ArrayLike:
-# #     """
-# #     Slice the signal into overlapping frames based on min pitch.
-# #     """
-# #     periods = 6 if for_hnr else 3
-# #     win_len_sec = periods / min_pitch
-# #     win_len_samples = int(win_len_sec * sr)
-# #     step_samples = int(frame_step * sr)
-# #     frames = []
-# #     for start in range(0, len(data) - win_len_samples + 1, step_samples):
-# #         frames.append(data[start:start + win_len_samples])
-# #     return np.array(frames)
+def find_pitch_candidates_(
+        ac : ArrayLike, 
+        sr : int, 
+        min_pitch : int, 
+        max_pitch : int, 
+        num_candidates : int = 4, 
+        octave_cost : float = 0.01
+        ) -> ArrayLike:
+    """
+    Find pitch candidates based on autocorrelation peaks.
+    """
+    min_lag = int(sr / max_pitch)
+    max_lag = int(sr / min_pitch)
 
-# # def compute_autocorrelation_(
-# #         frame : ArrayLike
-# #         ) -> ArrayLike:
-# #     """
-# #     Window, pad, FFT, square, IFFT to get autocorrelation.
-# #     """
-# #     window = np.hanning(len(frame))
-# #     win_frame = frame * window
+    candidates : list[Tuple[float, float]] = []
 
-# #     # Padding
-# #     padded_len = int(2**np.ceil(np.log2(2 * len(win_frame))))
-# #     padded_frame = np.zeros(padded_len)
-# #     padded_frame[:len(win_frame)] = win_frame
+    # for lag in range(min_lag + 1, max_lag - 1):
+    #     if ac[lag] > ac[lag - 1] and ac[lag] > ac[lag + 1]:
+    #         # parabolic interpolation
+    #         y_m1 = ac[lag - 1]
+    #         y_0 = ac[lag]
+    #         y_p1 = ac[lag + 1]
+    #         denom = (y_m1 - 2 * y_0 + y_p1)
 
-# #     spectrum = rfft(padded_frame)
-# #     power_spectrum = spectrum * np.conj(spectrum)
-# #     ac = irfft(power_spectrum)
-# #     return ac / np.max(ac)  # normalize
+    #         if denom == 0:
+    #             refined_lag = lag
+    #         else:
+    #             refined_lag = lag + 0.5 * (y_m1 - y_p1) / denom
 
-# # def find_pitch_candidates_(
-# #         ac : ArrayLike, 
-# #         sr : int, 
-# #         min_pitch : int, 
-# #         max_pitch : int, 
-# #         num_candidates : int = 4, 
-# #         octave_cost : float = 0.01
-# #         ) -> ArrayLike:
-# #     """
-# #     Find pitch candidates based on autocorrelation peaks.
-# #     """
-# #     min_lag = int(sr / max_pitch)
-# #     max_lag = int(sr / min_pitch)
+    #         # cost function (Boersma 1993, eq 26)
+    #         r_tau = np.interp(refined_lag, np.arange(len(ac)), ac)
+    #         strength = r_tau - octave_cost * 2 * np.log(min_pitch * refined_lag)
 
-# #     # Interpolation for higher accuracy
-# #     lags = np.arange(min_lag, max_lag)
-# #     interp_ac = interp1d(np.arange(len(ac)), ac, kind='cubic', fill_value="extrapolate")
+    #         # convert to pitch
+    #         pitch = sr / refined_lag if refined_lag != 0 else 0
+    #         candidates.append((pitch, strength))
+    # interpolation for higher accuracy
+    interp_ac = interp1d(np.arange(len(ac)), ac, kind='cubic', fill_value="extrapolate")
 
-# #     def cost_fn(
-# #             lag : float
-# #             ) -> float:
+    def cost_fn(
+            lag : float
+            ) -> float:
         
-# #         if lag < min_lag or lag >= max_lag:
-# #             return -np.inf
-# #         r_tau = float(interp_ac(lag))
-# #         return float(r_tau - octave_cost * 2 * np.log(min_pitch * lag))
+        if lag < min_lag or lag >= max_lag:
+            return -np.inf
+        r_tau = float(interp_ac(lag))
+        return float(r_tau - octave_cost * 2 * np.log(min_pitch * lag))
+
+    candidates = []
+    for lag in range(min_lag, max_lag):
+        if ac[lag] > ac[lag - 1] and ac[lag] > ac[lag + 1]:
+            res = minimize_scalar(lambda x: -cost_fn(x), bounds=(lag-1, lag+1), method='bounded')
+            pitch = sr / res.x
+            strength = -res.fun
+            candidates.append((pitch, strength))
+
+    # Sort by strength and take top N-1
+    candidates = sorted(candidates, key=lambda x: -x[1])[:num_candidates - 1]
+
+    # normalize to [0,1]
+    max_strength = max(s for _, s in candidates) if candidates else 1.0
+    if max_strength > 0:
+        candidates = [(p, s / max_strength) for p, s in candidates]
+    else:
+        candidates = [(p, 0.0) for p, s in candidates]
+
+    return candidates
 
 
-# #     candidates = []
-# #     for lag in range(min_lag, max_lag):
-# #         if ac[lag] > ac[lag - 1] and ac[lag] > ac[lag + 1]:
-# #             res = minimize_scalar(lambda x: -cost_fn(x), bounds=(lag-1, lag+1), method='bounded')
-# #             pitch = sr / res.x
-# #             strength = -res.fun
-# #             candidates.append((pitch, strength))
-
-# #     candidates = sorted(candidates, key=lambda x: -x[1])[:num_candidates - 1]
-# #     return candidates
-
-
-# # def hnr() -> float:
-# #     """
-# #     Calculate harmonics-to-noise ratio as in Boersma 1993. Returns value in dB.
-# #     """
-# #     r_tmax = 
-#     # return 10 * np.log10(r_tmax/1-r_tmax)
+def transition_cost(
+        F1 : float, 
+        F2 : float, 
+        voiced_unvoiced_cost : float, 
+        octave_jump_cost : float
+    ) -> float:
+    if F1 == 0.0 and F2 == 0.0:
+        return 0.0
+    elif F1 == 0.0 or F2 == 0.0:
+        return voiced_unvoiced_cost
+    else:
+        return float(octave_jump_cost * abs(np.log2(F1 / F2)))
 
 
-# def find_pitch_candidates_(
-#     sampled_autocorr: np.ndarray,
-#     sr: int,
-#     min_pitch: float,
-#     max_pitch: float,
-#     max_candidates: int,
-#     octave_cost: float
-# ) -> Optional[List[Tuple[float, float]]]:
+def viterbi_pitch_path(
+        all_candidates: List[List[Tuple[float, float]]],
+        voiced_unvoiced_cost: float = 0.2,
+        octave_jump_cost: float = 0.2
+    ) -> List[float]:
+    """
+    Finds the globally optimal pitch path using dynamic programming.
+    
+    Parameters:
+    -----------
+    all_candidates : List of lists of (pitch in Hz, strength)
+    voiced_unvoiced_cost : Cost of voiced/unvoiced transition
+    octave_jump_cost : Cost of pitch discontinuity in octaves
+
+    Returns:
+    --------
+    path : List of chosen pitch values, one per frame
+    """
+    num_frames = len(all_candidates)
+    path_costs = []
+    back_pointers : List[List[Any]] = []
+
+    # initialization
+    prev_costs = [ -strength for _, strength in all_candidates[0] ]
+    path_costs.append(prev_costs)
+    back_pointers.append([None] * len(all_candidates[0]))
+
+    # dynamic programming
+    for t in range(1, num_frames):
+        frame_costs = []
+        frame_back_ptrs = []
+        for j, (curr_pitch, curr_strength) in enumerate(all_candidates[t]):
+            best_cost = float('inf')
+            best_prev_idx = None
+            for i, (prev_pitch, _) in enumerate(all_candidates[t-1]):
+                trans_cost = transition_cost(
+                    prev_pitch, curr_pitch,
+                    voiced_unvoiced_cost, octave_jump_cost
+                )
+                total_cost = path_costs[t-1][i] + trans_cost - curr_strength
+                if total_cost < best_cost:
+                    best_cost = total_cost
+                    best_prev_idx = i
+            frame_costs.append(best_cost)
+            frame_back_ptrs.append(best_prev_idx)
+        path_costs.append(frame_costs)
+        back_pointers.append(frame_back_ptrs)
+
+    # backtrace
+    path = [0.0] * num_frames
+    idx = int(np.argmin(path_costs[-1]))
+    for t in reversed(range(num_frames)):
+        pitch, _ = all_candidates[t][idx]
+        path[t] = pitch
+        idx = back_pointers[t][idx] if back_pointers[t][idx] is not None else 0
+
+    return path
+
+
+# def hnr() -> float:
 #     """
-#     Find voiced pitch candidates using autocorrelation peak detection.
-
-#     Returns a list of (frequency, strength) pairs.
+#     Calculate harmonics-to-noise ratio as in Boersma 1993. Returns value in dB.
 #     """
-#     sampled_autocorr = np.nan_to_num(sampled_autocorr, nan=0.0, posinf=0.0, neginf=0.0)
+#     r_tmax = 
+    # return 10 * np.log10(r_tmax/1-r_tmax)
 
-#     # Convert frequency bounds to lag bounds (in samples) f = sr / lag
-#     min_lag = int(np.floor(sr / max_pitch))
-#     max_lag = int(np.ceil(sr / min_pitch))
 
-#     autocorr_range = sampled_autocorr[min_lag:max_lag]
-#     if len(autocorr_range) == 0:
-#         return None
+def autocorr_(
+        frame : ArrayLike,
+        pad_width_for_pow2 : int
+    ) -> NDArray:
+    # 3.5 and 3.6 append half a window length of zeroes 
+    # plus enough until the length is a power of two
+    frame = np.pad(frame, (0, pad_width_for_pow2), mode='constant', constant_values=0)
     
-#     magnitude_range = sampled_autocorr.max() - sampled_autocorr.min()
+    # 3.7 perform fft
+    spec = rfft(frame)
 
-#     peak_indices, properties = find_peaks(
-#         sampled_autocorr,
-#         height=magnitude_range*0.05,
-#         distance=max(1, len(sampled_autocorr)//(1/0.05)),
-#         prominence=magnitude_range*0.05
-#     )
+    # 3.8 square samples in frequency domain
+    power_spec = spec ** 2 # TODO check if this is the correct way
 
-#     if len(peak_indices) == 0:
-#         return None
+    # 3.9 ifft of power spectrum
+    lag_domain = irfft(power_spec)
+
+    return lag_domain[len(frame) // 2 :]
+
+
+def boersma(
+        data : ArrayLike, 
+        sr : int, 
+        min_pitch : int = 75, 
+        max_pitch : int = 600,
+        timestep : float = 0.01, 
+        silence_thresh : float = 0.05, 
+        voicing_thresh : float = 0.4,
+        max_candidates :int = 5, 
+        octave_cost : float = 0.01
+    ) -> Tuple[ArrayLike, ArrayLike]:
+    """
+    References:
+    ----------
+    1. Boersma P. 1993 Accurate short-term analysis of the fundamental 
+    frequency and the harmonics-to-noise ratio of a sampled sound. 
+    IFA Proceedings 17, 97–110.
+    2. Anikin A. 2019. Soundgen: an open-source tool for synthesizing
+    nonverbal vocalizations. Behavior Research Methods, 51(2), 778-792.
+    """
+
+    # make sure, the signal is inside the bounds [-1, 1]
+    if np.max(np.abs(data)) > 1:
+        raise ValueError("the signal needs to be within the bounds [-1, 1]")
+
+    if min_pitch >= max_pitch or max_pitch >= sr / 2:
+        raise ValueError("max_pitch should be greater than min_pitch and below the nyquist frequency.")
     
-#     # Adjust peaks to original lag indices
-#     peak_indices += min_lag
+    # not enough resolution above half the niquist frequency 
+    # -> amend pitch ceiling if applicable. From Soundgen (see references)
+    # max_pitch = min(max_pitch, sr / 4) 
 
-#     # TODO calculate strength like in paper
-#     # Strength and score calculation
-#     strengths = properties["peak_heights"]
-#     freqs = sr / peak_indices
-#     costs = 1 - octave_cost * (np.log2(sr / peak_indices / min_pitch))**2
-#     scores = strengths * costs
-    
-#     # convert to Hz
-#     freqs = sr / sampled_autocorr
-    
-#     sorted_indices = np.argsort(scores)[::-1][:max_candidates]
-#     return [(freqs[i], scores[i]) for i in sorted_indices]
-     
+    window_length = 3 * (1 / min_pitch) # three periods of minimum frequency
+    data_preprocessed = preprocess_for_pitch_(data, sr) # TODO am I doing this correctly?
+    global_peak : float = np.max(np.abs(data_preprocessed))
+    window_length_samples = int(window_length * sr)
 
-#     # def neg_autocorr(lag: float) -> float:
-#     #     """Negative interpolated autocorrelation for optimization."""
-#     #     i = int(np.floor(lag))
-#     #     frac = lag - i
-#     #     if i + 1 >= len(sampled_autocorr):
-#     #         return 0.0
-#     #     return -(1 - frac) * sampled_autocorr[i] - frac * sampled_autocorr[i + 1]
+    # precalculate for padding to power of two (step 3.6) 
+    # - I do this here to save computation time despite it being a bit less readable
+    n = window_length_samples + np.floor(window_length_samples/2)
+    next_pow2 = 2 ** np.ceil(np.log2(n)).astype(int)
+    pad_width_for_pow2 = next_pow2 - window_length_samples # full pad length needed including half a window size
 
-#     # Find rough peaks (local maxima)
-#     # rough_peaks = []
-#     # for i in range(min_lag + 1, min(max_lag, len(sampled_autocorr) - 1)):
-#     #     if sampled_autocorr[i] > sampled_autocorr[i - 1] and sampled_autocorr[i] > sampled_autocorr[i + 1]:
-#     #         # Refine using Brent's method in a small interval around the peak
-#     #         try:
-#     #             lag_opt = brent(neg_autocorr, brack=(i - 1, i, i + 1), tol=1e-3)
-#     #             if lag_opt == 0:
-#     #                 continue  # Avoid division by zero
-#     #             strength = -neg_autocorr(lag_opt)
-#     #             pitch = sr / lag_opt
-#     #             if min_pitch <= pitch <= max_pitch:
-#     #                 # Apply octave cost: favor higher frequencies (lower lags)
-#     #                 cost = 1 - octave_cost * (np.log2(sr / lag_opt / min_pitch))**2
-#     #                 score = strength * cost
-#     #                 rough_peaks.append((pitch, score))
-#     #         except ValueError:
-#     #             continue
+    # 1. windowing
+    framed_signal = frame_signal(data_preprocessed, sr, window_length_samples, timestep, normalize=False)
+    window = windows.get_window("hann", window_length_samples)
+    autocorr_hann = autocorr_(window, pad_width_for_pow2)
+    autocorr_hann /= np.max(autocorr_hann)
+    all_candidates = []
 
-#     # # Sort by strength and take top candidates
-#     # rough_peaks.sort(key=lambda x: x[1], reverse=True)
-#     # return rough_peaks[:max_candidates - 1]
+    for frame in framed_signal:
+        # 3.2 subtract local average
+        frame = frame - np.mean(frame)
+        local_peak : float = np.max(np.abs(frame))
 
+        # 3.3 see 3.11
 
-# def autocorr_(frame, pad_width_for_pow2):
-#     # 3.5 and 3.6 append half a window length of zeroes 
-#     # plus enough until the length is a power of two
-#     frame = np.pad(frame, (0, pad_width_for_pow2), mode='constant', constant_values=0)
-    
-#     # 3.7 perform fft
-#     spec = rfft(frame)
+        # 3.4 multipy by window function
+        windowed_frame = frame * window
 
-#     # 3.8 square samples in frequency domain
-#     power_spec = spec ** 2 # TODO check if this is the correct way
+        # 3.5-3.9
+        lag_domain = autocorr_(windowed_frame, pad_width_for_pow2)
+        # normalize to range [-1,1]
+        lag_domain = 2 * (lag_domain-float(np.min(lag_domain))) / (float(np.max(lag_domain))-float(np.min(lag_domain))) - 1 
 
-#     # 3.9 ifft of power spectrum
-#     lag_domain = irfft(power_spec)
-
-#     return lag_domain[len(frame) // 2 :]
-
-
-# def boersma(
-#         data : ArrayLike, 
-#         sr : int, 
-#         min_pitch : int = 75, 
-#         max_pitch : int = 600,
-#         timestep : float = 0.01, 
-#         silence_thresh : float = 0.05, 
-#         voicing_thresh : float = 0.4,
-#         max_candidates :int = 4, 
-#         octave_cost : float = 0.01
-#     ) -> Tuple[ArrayLike, ArrayLike]:
-#     """
-#     References:
-#     ----------
-#     1. Boersma P. 1993 Accurate short-term analysis of the fundamental 
-#     frequency and the harmonics-to-noise ratio of a sampled sound. 
-#     IFA Proceedings 17, 97–110.
-#     2. Anikin A. 2019. Soundgen: an open-source tool for synthesizing
-#     nonverbal vocalizations. Behavior Research Methods, 51(2), 778-792.
-#     """
-
-#     # make sure, the signal is inside the bounds [-1, 1]
-#     if np.max(np.abs(data)) > 1:
-#         raise ValueError("the signal needs to be within the bounds [-1, 1]")
-
-#     if min_pitch >= max_pitch or max_pitch >= sr / 2:
-#         raise ValueError("max_pitch should be greater than min_pitch and below the nyquist frequency.")
-    
-#     # not enough resolution above half the niquist frequency 
-#     # -> amend pitch ceiling if applicable. From Soundgen (see references)
-#     max_pitch = min(max_pitch, sr / 4) 
-
-#     window_length = 3 * (1 / min_pitch) # three periods of minimum frequency
-#     data_preprocessed = preprocess_for_pitch_(data, sr) # TODO am I doing this correctly?
-#     global_peak : float = np.max(np.abs(data_preprocessed))
-#     window_length_samples = int(window_length * sr)
-
-#     # precalculate for padding to power of two (step 3.6) 
-#     # - I do this here to save computation time despite it being a bit less readable
-#     n = window_length_samples + np.floor(window_length_samples/2)
-#     next_pow2 = 2 ** np.ceil(np.log2(n)).astype(int)
-#     pad_width_for_pow2 = next_pow2 - window_length_samples # full pad length needed including half a window size
-
-#     # 1. windowing
-#     framed_signal = frame_signal(data_preprocessed, sr, window_length_samples, timestep, normalize=False)
-#     window = windows.get_window("hann", window_length_samples)
-#     autocorr_hann = autocorr_(window, pad_width_for_pow2)
-#     # autocorr_hann /= autocorr_hann
-#     all_candidates = []
-
-#     for frame in framed_signal:
-#         frame = frame - np.mean(frame)
-#         # TODO step 3.3
-#         local_peak : float = np.max(np.abs(frame))
-
-#         # 3.4 multipy by window function
-#         frame = frame * window
-
-#         # 3.5-3.9
-#         lag_domain = autocorr_(frame, pad_width_for_pow2)
-
-#         # 3.10 divide by autocorrelation of window
-#         sampled_autocorr = lag_domain / autocorr_hann
-
-#         # 3.11 find places and heights of maxima
-#         unvoiced_strength = voicing_thresh + max(0, 2 - (local_peak / global_peak)) / \
-#                             (silence_thresh * (1 + voicing_thresh))
+        # 3.10 divide by autocorrelation of window
+        sampled_autocorr = lag_domain / autocorr_hann
+        # only include up to half the window length because unreliable above (p. 100, fig)
+        sampled_autocorr = sampled_autocorr[:(window_length_samples//2)]
         
-#         voiced_candidates = find_pitch_candidates_( # TODO check candidate detection
-#                 sampled_autocorr, 
-#                 sr, 
-#                 min_pitch, 
-#                 max_pitch,
-#                 max_candidates,
-#                 octave_cost
-#             )
+        # 3.11 find places and heights of maxima
+        unvoiced_strength = voicing_thresh + max(0, 2 - ((local_peak / global_peak) / \
+                            (silence_thresh / (1 + voicing_thresh))))
         
-#         candidates = [(0.0, unvoiced_strength)] + voiced_candidates
-#         all_candidates.append(candidates)
+        voiced_candidates = find_pitch_candidates_(
+                sampled_autocorr, 
+                sr, 
+                min_pitch, 
+                max_pitch,
+                max_candidates,
+                octave_cost
+            )
+        
+        candidates = [(0.0, unvoiced_strength)] + voiced_candidates
+        all_candidates.append(candidates)
 
-#     fig, ax = plt.subplots()
-#     ax.plot(sampled_autocorr)
-#     # ax.plot(autocorr_hann)
-#     ax.plot(frame)
+    # for i, cands in enumerate(all_candidates[:-5]):
+    #     print(f"Frame {i}:")
+    #     for pitch, strength in cands:
+    #         print(f"  Pitch: {pitch:.2f} Hz, Strength: {strength:.3f}")
 
-#     time_points = np.arange(len(framed_signal)) * timestep
-#     return time_points, all_candidates
+    # fig, axs = plt.subplots(2, 3)
+    # axs[0][0].plot(frame)
+    # axs[0][1].plot(window)
+    # axs[0][2].plot(windowed_frame)
+    # axs[1][0].plot(lag_domain)
+    # axs[1][1].plot(autocorr_hann)
+    # axs[1][2].plot(sampled_autocorr)
+
+    time_points = np.arange(len(framed_signal)) * timestep
+    pitch_track = viterbi_pitch_path(
+        all_candidates,
+        voiced_unvoiced_cost=0.2,
+        octave_jump_cost=0.2
+    )
+    return time_points, pitch_track
