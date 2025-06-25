@@ -318,7 +318,7 @@ def plot_features(
     sr = check_sr_format(sr)
     features = extract_all_features(data, sr)
     spec, times, freqs = spectrogram(data, sr)
-    freq_ps, ps = spectrum(data, sr, mode="power")
+    freq_ms, ms = spectrum(data, sr)#, mode="power")
     spectrogram_db = 20 * np.log10(np.abs(spec))
 
     # Spectrogram with Dominant Frequencies
@@ -334,22 +334,30 @@ def plot_features(
 
     # Power Spectrum
     plt.subplot(3, 1, 2)
-    plt.title("Power Spectrum with Spectral Features")
-    if not isinstance(freq_ps, np.ndarray):
+    plt.title("Magnitude Spectrum with Spectral Features")
+    if not isinstance(freq_ms, np.ndarray):
         raise TypeError("Expected 'freqs_ps' to be an ndarray.")
-    if not isinstance(freq_ps, np.ndarray):
+    if not isinstance(freq_ms, np.ndarray):
         raise TypeError("Expected 'freqs_ps' to be an ndarray.")
-    cutoff = len(freq_ps) // 3
-    plt.plot(freq_ps[:-cutoff], ps[:-cutoff], label="Power Spectrum", color='blue')
+    cutoff = len(freq_ms) // 3
+    plt.plot(freq_ms[:-cutoff], ms[:-cutoff], label="Magnitude Spectrum", color='blue')
     
-    # TODO add std
-    plt.axvline(features["mean_frequency"], color='green', linestyle="--", label="Mean Frequency (kHz)")
+    #plt.axvline(features["mean_frequency"], color='green', linestyle="--", label="Mean Frequency (kHz)")
     plt.axvline(features["peak_frequency"], color='orange', linestyle="-", label="Peak Frequency (kHz)")
     plt.axvline(features["fq_median"], color='red', linestyle="--", label="Median")
     plt.axvline(features["fq_q1"], color='yellow', linestyle="--", label="Q1")
     plt.axvline(features["fq_q3"], color='purple', linestyle="--", label="Q3")
+    plt.fill_betweenx(
+        y=[0, max(ms)],
+        x1=features["centroid"] - features["spectral_std"],
+        x2=features["centroid"] + features["spectral_std"],
+        color='grey',
+        alpha=0.2,
+        label='Bandwidth'
+    )
+    plt.axvline(features["centroid"], color='pink', linestyle="--", label="Centroid")
     plt.xlabel("Frequency (Hz)")
-    plt.ylabel("Power")
+    plt.ylabel("Magnitude")
     plt.legend()
 
     # Waveform

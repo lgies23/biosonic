@@ -211,6 +211,8 @@ def spectral_moments(
         raise ValueError("Signal contains no nonzero values")
 
     freqs, ms = spectrum(data, sr=sr)
+    # normalize spectrum
+    ms =  ms / np.sum(ms) 
     centroid_ = np.average(freqs, weights=ms)
     bandwidth_ = np.sqrt(np.sum(ms * (freqs-centroid_)**2))
     if bandwidth_ == 0:
@@ -476,13 +478,15 @@ def spectral_features(data: ArrayLike,
     freqs, ps = spectrum(data, sr, mode="power")
     
     features = {
-        "mean_frequency" : np.average(freqs, weights=ps),
+        #"mean_frequency" : np.average(freqs, weights=ps), # because centroid is based on magnitude spectrum
         "fq_q1": fq_q1_bin,
         "fq_median": fq_median_bin,
         "fq_q3": fq_q3_bin,
         "spectral_flatness": flatness(data),
         "centroid": centroid(data, sr),
         "spectral_std": bandwidth(data, sr),
+        "skew" : skewness(data, sr),
+        "kurtosis" : kurtosis(data, sr),
         "peak_frequency": peak_frequency(data, sr),
     }
 

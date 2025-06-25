@@ -110,7 +110,6 @@ def duration(data: ArrayLike, sr: int, exclude_surrounding_silences: Optional[bo
 
 
 def temporal_quartiles(data: ArrayLike, sr: int, kernel_size: Optional[int] = None) -> Tuple[float, float, float]:
-    # TODO source, check
     """
     Computes the temporal quartiles (Q1, median, Q3) of the amplitude envelope.
 
@@ -165,7 +164,6 @@ def temporal_quartiles(data: ArrayLike, sr: int, kernel_size: Optional[int] = No
 
 
 def temporal_sd(data: ArrayLike, sr: int, kernel_size: Optional[int] = None) -> float:
-    # TODO source, check
     """
     Computes the temporal standard deviation of the amplitude envelope.
 
@@ -181,7 +179,6 @@ def temporal_sd(data: ArrayLike, sr: int, kernel_size: Optional[int] = None) -> 
         float
             The standard deviation of the amplitude envelope
     """
-    # TODO check calculation from scratch
     data = check_signal_format(data)
     check_sr_format(sr)
     
@@ -189,7 +186,6 @@ def temporal_sd(data: ArrayLike, sr: int, kernel_size: Optional[int] = None) -> 
 
 
 def skewness(data: ArrayLike, sr: int, kernel_size: Optional[int] = None) -> Optional[float]:
-    # TODO source, check
     """
     Computes the temporal skew of the signal.
 
@@ -286,7 +282,6 @@ def temporal_features(
         sr: int, 
         kernel_size: Optional[int] = None,
         ) -> Dict[str, Union[float, NDArray[np.float64]]]:
-    # TODO adjust for new functions
     """
     Extracts a set of temporal features from the amplitude envelope of a signal.
 
