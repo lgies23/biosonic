@@ -370,7 +370,7 @@ def plot_features(
     plt.axvline(features["t_q1"], color='yellow', linestyle="--", label="Q1")
     plt.axvline(features["t_q3"], color='purple', linestyle="--", label="Q3")
     plt.fill_betweenx(
-        y=[0, max(features["amplitude_envelope"])],
+        y=[0, np.max(features["amplitude_envelope"])],
         x1=features["temporal_centroid"] - features["temporal_sd"],
         x2=features["temporal_centroid"] + features["temporal_sd"],
         color='grey',
