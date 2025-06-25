@@ -56,6 +56,8 @@ def cmnd(
         df_val = acf[0] + np.sum(seg ** 2) - 2 * acf[lag]
         df.append(df_val)
 
+    if len(df) == 0:
+        return np.asarray(df) 
     df = np.array(df)
     cmndf = np.zeros_like(df)
     cmndf[0] = 1  # Avoid divide-by-zero
@@ -72,8 +74,10 @@ def fundamental_frequency(
     time_step: int,
     bounds: Tuple[int, int],
     threshold: float = 0.1
-) -> float:
+) -> Optional[float]:
     cmndf = cmnd(data, window_length, time_step, bounds)
+    if len(cmndf) == 0:
+        return None
     for i, val in enumerate(cmndf):
         if val < threshold:
             return sr / (i + bounds[0])
@@ -85,23 +89,31 @@ def yin(
     sr: int,
     window_length: int,
     time_step_sec: float,
-    bounds: Tuple[int, int],
+    flim: Tuple[int, int],
     threshold: float = 0.1
 ) -> ArrayLike:
     step_size = int(time_step_sec * sr)
     num_steps = (len(data) - window_length) // step_size
-    return np.array([
-        fundamental_frequency(
+
+    min_lag = int(sr / flim[0])
+    max_lag = int(sr / flim[1])
+
+    frequencies = []
+    for i in range(num_steps):
+        freq = fundamental_frequency(
             data,
             sr,
             window_length,
             i * step_size,
-            bounds,
-            threshold
+            bounds=(min_lag, max_lag),
+            threshold=threshold
         )
-        for i in range(num_steps)
-    ])
-    
+        frequencies.append(freq)
+
+    strengths = np.zeros(len(frequencies)) # placeholder until implemented 
+    return (frequencies, strengths)
+        
+        
 
 def preprocess_for_pitch_(
         data : ArrayLike, 

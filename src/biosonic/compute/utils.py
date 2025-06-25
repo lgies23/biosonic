@@ -89,10 +89,11 @@ def cumulative_distribution_function(envelope: NDArray[np.float32]) -> NDArray[n
 
 
 def extract_all_features(
-    data: ArrayLike, 
-    sr: int, 
-    kernel_size: Optional[int] = None,
-    n_dominant_freqs: int = 1
+    data : ArrayLike, 
+    sr : int, 
+    kernel_size : Optional[int] = None,
+    n_dominant_freqs : int = 1, 
+    **kwargs : dict[str, Any]
 ) -> dict[str, Union[float, NDArray[np.float64]]]:
     """
     Extracts a comprehensive set of temporal and spectral features from a signal.
@@ -108,14 +109,17 @@ def extract_all_features(
     """
     from .spectral import spectral_features
     from .temporal import temporal_features
+    from .spectrotemporal import spectrotemporal_features
+    # TODO spectrotemporal
     
     data = check_signal_format(data)
     sr = check_sr_format(sr)
 
     temporal_feats = temporal_features(data, sr, kernel_size)
     spectral_feats = spectral_features(data, sr)
+    spectrotemporal_feats = spectrotemporal_features(data, sr, n_dominant_freqs, **kwargs)
 
-    return {**temporal_feats, **spectral_feats}
+    return {**temporal_feats, **spectral_feats, **spectrotemporal_feats}
 
 
 def transform_spectrogram_for_nn(

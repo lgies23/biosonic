@@ -1,11 +1,12 @@
 import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
 import numpy as np
-from numpy.typing import ArrayLike
+from numpy.typing import ArrayLike, NDArray
 from scipy.signal import windows
-from typing import Optional, Any, Union, Literal, Tuple
+from typing import Optional, Any, Union, Literal, Tuple, Dict
 
 from biosonic.compute.spectrotemporal import cepstrum, spectrogram, cepstral_coefficients
+from biosonic.compute.spectral import spectrum
 from biosonic.filter import mel_filterbank
 
 # from compute.spectrotemporal import spectrogram
@@ -306,67 +307,66 @@ def plot_filterbank_and_cepstrum(
     plt.show()
 
 
-# def plot_features(
-#         data: ArrayLike, 
-#         sr: int, 
-#         features: Dict[str, Union[float, NDArray[np.float64]]]
-#     ) -> None:
-#     """
-#     Plot audio signal features using precomputed feature dictionary.
-#     """
-#     data = check_signal_format(data)
-#     sr = check_sr_format(sr)
-#     features = extract_all_features(data, sr)
-#     spec, times, freqs = spectrogram(data, sr)
-#     spectrogram_db = 20 * np.log10(np.abs(spec))
+def plot_features(
+        data: ArrayLike, 
+        sr: int,
+    ) -> None:
+    """
+    Plot audio signal features using precomputed feature dictionary.
+    """
+    data = check_signal_format(data)
+    sr = check_sr_format(sr)
+    features = extract_all_features(data, sr)
+    spec, times, freqs = spectrogram(data, sr)
+    freq_ps, ps = spectrum(data, sr, mode="power")
+    spectrogram_db = 20 * np.log10(np.abs(spec))
 
-#     # Spectrogram with Dominant Frequencies
-#     plt.figure(figsize=(12, 12))
-#     plt.subplot(3, 1, 1)
-#     plt.title("Spectrogram with Dominant Frequencies")
-#     plt.pcolormesh(times, freqs, spectrogram_db, shading='gouraud', cmap='viridis')
-#     plt.scatter(times, features["dominant_freqs"], color=(0.7, 0.1, 0.1, 0.3), marker="o", label='Dominant Frequency')
-#     plt.colorbar(label="Amplitude (dB)")
-#     plt.xlabel("Time (s)")
-#     plt.ylabel("Frequency (Hz)")
-#     plt.legend()
+    # Spectrogram with Dominant Frequencies
+    plt.figure(figsize=(12, 12))
+    plt.subplot(3, 1, 1)
+    plt.title("Spectrogram with Dominant Frequencies")
+    plt.pcolormesh(times, freqs, spectrogram_db, shading='gouraud', cmap='viridis')
+    plt.scatter(times, features["dominant_freqs"], color=(0.7, 0.1, 0.1, 0.3), marker="o", label='Dominant Frequency')
+    plt.colorbar(label="Amplitude (dB)")
+    plt.xlabel("Time (s)")
+    plt.ylabel("Frequency (Hz)")
+    plt.legend()
 
-#     # Power Spectrum
-#     plt.subplot(3, 1, 2)
-#     plt.title("Power Spectrum with Spectral Features")
-#     freq_ps = features["freqs_ps"]
-#     filtered_ps = features["filtered_pow_spectrum"]
-#     if not isinstance(freq_ps, np.ndarray):
-#         raise TypeError("Expected 'freqs_ps' to be an ndarray.")
-#     if not isinstance(filtered_ps, np.ndarray):
-#         raise TypeError("Expected 'freqs_ps' to be an ndarray.")
-#     cutoff = len(freq_ps) - len(freq_ps) // 3
-#     plt.plot(freq_ps[:cutoff], filtered_ps[:cutoff], label="Power Spectrum", color='blue')
+    # Power Spectrum
+    plt.subplot(3, 1, 2)
+    plt.title("Power Spectrum with Spectral Features")
+    if not isinstance(freq_ps, np.ndarray):
+        raise TypeError("Expected 'freqs_ps' to be an ndarray.")
+    if not isinstance(freq_ps, np.ndarray):
+        raise TypeError("Expected 'freqs_ps' to be an ndarray.")
+    cutoff = len(freq_ps) // 3
+    plt.plot(freq_ps[:-cutoff], ps[:-cutoff], label="Power Spectrum", color='blue')
     
-#     plt.axvline(features["mean_f"] * 1000, color='green', linestyle="--", label="Mean Frequency (kHz)")
-#     plt.axvline(features["mean_peak_f"] * 1000, color='orange', linestyle="-", label="Peak Frequency (kHz)")
-#     plt.axvline(features["f_median"], color='red', linestyle="--", label="Median")
-#     plt.axvline(features["f_q1"], color='yellow', linestyle="--", label="Q1")
-#     plt.axvline(features["f_q3"], color='purple', linestyle="--", label="Q3")
-#     plt.xlabel("Frequency (Hz)")
-#     plt.ylabel("Power")
-#     plt.legend()
+    # TODO add std
+    plt.axvline(features["mean_frequency"], color='green', linestyle="--", label="Mean Frequency (kHz)")
+    plt.axvline(features["peak_frequency"], color='orange', linestyle="-", label="Peak Frequency (kHz)")
+    plt.axvline(features["fq_median"], color='red', linestyle="--", label="Median")
+    plt.axvline(features["fq_q1"], color='yellow', linestyle="--", label="Q1")
+    plt.axvline(features["fq_q3"], color='purple', linestyle="--", label="Q3")
+    plt.xlabel("Frequency (Hz)")
+    plt.ylabel("Power")
+    plt.legend()
 
-#     # Waveform
-#     plt.subplot(3, 1, 3)
-#     plt.title("Waveform with Energy Envelope and Time-domain Features")
-#     times_waveform = np.linspace(0, len(data) / sr, num=len(data))
-#     plt.plot(times_waveform, data, label="Waveform", color="gray", alpha=0.3)
-#     plt.plot(times_waveform, features["amplitude_envelope"], label="Amplitude Envelope", color="blue")
-#     plt.axvline(features["t_median"], color='red', linestyle="--", label="Median")
-#     plt.axvline(features["t_q1"], color='orange', linestyle="--", label="Q1")
-#     plt.axvline(features["t_q3"], color='green', linestyle="--", label="Q3")
-#     plt.xlabel("Time (s)")
-#     plt.ylabel("Amplitude")
-#     plt.legend()
+    # Waveform
+    plt.subplot(3, 1, 3)
+    plt.title("Waveform with Energy Envelope and Time-domain Features")
+    times_waveform = np.linspace(0, len(data) / sr, num=len(data))
+    plt.plot(times_waveform, data, label="Waveform", color="gray", alpha=0.3)
+    plt.plot(times_waveform, features["amplitude_envelope"], label="Amplitude Envelope", color="blue")
+    plt.axvline(features["t_median"], color='red', linestyle="--", label="Median")
+    plt.axvline(features["t_q1"], color='orange', linestyle="--", label="Q1")
+    plt.axvline(features["t_q3"], color='green', linestyle="--", label="Q3")
+    plt.xlabel("Time (s)")
+    plt.ylabel("Amplitude")
+    plt.legend()
 
-#     plt.tight_layout()
-#     plt.show()
+    plt.tight_layout()
+    plt.show()
 
 
 
@@ -411,7 +411,9 @@ def plot_pitch_candidates(
                 best = max(voiced, key=lambda x: x[1])
                 times.append(t)
                 pitches.append(best[0])
-        ax.plot(times, pitches, 'b-', label="Strongest candidate", linewidth=1.5)
+        # ax.plot(times, pitches, 'b-', label="Strongest candidate", linewidth=1.5)
+        ax.scatter(times, pitches, color=(0.7, 0.1, 0.1, 0.3), marker="o", label='Strongest pitch candidate')
+    
 
     if tlim:
         ax.set_xlim(tlim)

@@ -449,7 +449,6 @@ def power_spectral_entropy(
 def spectral_features(data: ArrayLike, 
                       sr: int,
                       ) -> Dict[str, Union[float, np.floating, NDArray[np.float64]]]:
-    # TODO adjust for new functions
     """
     Extracts a set of spectral features from a signal.
 
@@ -461,7 +460,8 @@ def spectral_features(data: ArrayLike,
 
     Retuns:
         dict
-        {"fq_q1": float,
+        {"mean_frequency" : float,
+        "fq_q1": float,
         "fq_median": float,
         "fq_q3": float,
         "spectral_flatness": float,
@@ -473,8 +473,10 @@ def spectral_features(data: ArrayLike,
     check_sr_format(sr)
 
     fq_q1_bin, fq_median_bin, fq_q3_bin = quartiles(data, sr)
+    freqs, ps = spectrum(data, sr, mode="power")
     
     features = {
+        "mean_frequency" : np.average(freqs, weights=ps),
         "fq_q1": fq_q1_bin,
         "fq_median": fq_median_bin,
         "fq_q3": fq_q3_bin,

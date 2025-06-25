@@ -120,135 +120,6 @@ def spectrogram(
     return S_real, t, f
 
 
-# def spectrogram(
-#         data: ArrayLike, 
-#         sr: int, 
-#         window: Union[str, ArrayLike] = "hann", 
-#         window_length: int = 1024, 
-#         overlap: float = .5, 
-#         scaling: str = "magnitude",
-#         *args: Any, 
-#         **kwargs: Any
-#     ) -> Tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
-#     """
-#     Compute the spectrogram of a 1D signal using short-time Fourier transform (STFT).
-
-#     Args:
-#         data : ArrayLike
-#             Input signal as a 1D array-like.
-#         sr : int
-#             Sampling rate of the signal in Hz.
-#         window : Union[str, NDArray], optional
-#             Type of window to use (e.g., 'hann', 'hamming' of scipy.signal.windows) or a custom window array.
-#             Defaults to 'hann'.
-#         window_length : int, optional
-#             Length of the analysis window in samples.
-#             Defaults to 1024. Ignored if the window is given as a custom array,
-#         overlap : float, optional
-#             Fractional overlap between adjacent windows (0 < overlap < 1).
-#             Defaults to 0.5 (50% overlap).
-#         scaling : str, optional
-#             scaling of the spectrogram, either 'magnitude' or 'psd' for power spectral density. 
-#             Defaults to 'magnitude'.
-#         *args : tuple
-#             Additional positional arguments to pass to scipy's ShortTimeFFT class.
-#         **kwargs : dict
-#             Additional keyword arguments to pass to scipy's ShortTimeFFT class.
-
-#     Retuns:
-#         Sx : NDArray[np.float64]
-#             2D array of complex STFT values (frequency x time).
-#         t : NDArray[np.float64]
-#             Array of time values corresponding to the STFT columns.
-#         f : NDArray[np.float64]
-#             Array of frequency bins corresponding to the STFT rows.
-
-#     Notes:
-#         This function relies on scipy's `ShortTimeFFT` class and the submodule scipy.signal.windows.
-    
-#     References:
-#         Pauli Virtanen, Ralf Gommers, Travis E. Oliphant, Matt Haberland, Tyler Reddy, David Cournapeau, 
-#         Evgeni Burovski, Pearu Peterson, Warren Weckesser, Jonathan Bright, Stéfan J. van der Walt, 
-#         Matthew Brett, Joshua Wilson, K. Jarrod Millman, Nikolay Mayorov, Andrew R. J. Nelson, Eric Jones, 
-#         Robert Kern, Eric Larson, CJ Carey, İlhan Polat, Yu Feng, Eric W. Moore, Jake VanderPlas, Denis 
-#         Laxalde, Josef Perktold, Robert Cimrman, Ian Henriksen, E.A. Quintero, Charles R Harris, Anne M. 
-#         Archibald, Antônio H. Ribeiro, Fabian Pedregosa, Paul van Mulbregt, and SciPy 1.0 Contributors. 
-#         (2020) SciPy 1.0: Fundamental Algorithms for Scientific Computing in Python. Nature Methods, 17(3), 
-#         261-272. DOI: 10.1038/s41592-019-0686-2.
-#     """
-#     # TODO more scaling, dynamic range, dB transform, invert, etc 
-#     data = check_signal_format(data)
-#     sr = check_sr_format(sr)
-#     N = len(data)
-    
-#     if 0 > overlap > 1 or not isinstance(overlap, float):
-#         raise ValueError("Window overlap must be a float between 0 and 1.")
-
-#     if not isinstance(window_length, int) or window_length <= 0:
-#         raise ValueError("'window_length' must be a positive integer.")
-
-    # if isinstance(window, str):
-    #     try:
-    #         window = signal.windows.get_window(window, window_length)
-    #     except ValueError as e:
-    #         raise ValueError(f"Invalid window type: {window}") from e
-    # else:
-    #     window = np.asarray(window) 
-    #     if not isinstance(window, np.ndarray):
-    #         raise TypeError("'window' must be either a string or a 1D NumPy array.")
-    
-#     hop_length = int(window_length * (1 - overlap))
-#     noverlap = window_length - hop_length
-
-#     # pad signal to center the windows
-#     #pad = window_length
-#     data_padded = np.pad(data, pad_width=window_length, mode='reflect')
-
-#     # Compute spectrogram
-#     # f, t, Sx = signal.spectrogram(
-#     #     data_padded,
-#     #     fs=sr,
-#     #     window=window,
-#     #     nperseg=window_length,
-#     #     noverlap=noverlap,
-#     #     mode=scaling,
-#     #     *args, 
-#     #     **kwargs
-#     # )
-
-#     STFT = signal.ShortTimeFFT(
-#         window, 
-#         hop_length, 
-#         sr, 
-#         scale_to=scaling, 
-#         *args, 
-#         **kwargs
-#         )
-
-#     Sx = STFT.stft(data, *args, **kwargs)
-    
-#     t = STFT.t(len(data))
-
-#     # Get indices of "valid" bins (window slice not sticking out to the side) 
-#     # - did not use lower, commented out version because index of first was not
-
-#     # t0_s = STFT.lower_border_end[0] * STFT.T
-#     # t1_s = STFT.upper_border_begin(N)[0] * STFT.T
-    
-#     # valid_mask = (t >= t0_s) & (t <= t1_s)
-#     # Sx = Sx[:, valid_mask]
-#     # t = t[valid_mask]
-
-#     # lower_border = STFT.lower_border_end[1]+1
-#     # upper_border = STFT.upper_border_begin(N)[1]-1
-
-#     # # trim frames whose center is outside the unpadded signal range
-#     # Sx = Sx[:, lower_border:upper_border]
-#     # t = t[lower_border:upper_border]
-
-#     return Sx, t, STFT.f
-
-
 def cepstrum(
         data: ArrayLike,  
         sr: int,
@@ -539,3 +410,65 @@ def dominant_frequencies(
                 dominant_freqs[t, :len(top_freqs)] = top_freqs
 
     return dominant_freqs
+
+
+def calculate_dominant_frequency_features(
+        data: ArrayLike, 
+        sr: int, 
+        **kwargs: Any
+    ) -> Dict[str, Union[float, NDArray[np.float64]]]:
+        """
+        Calculate dominant frequency features.
+        """
+        dominant_freqs = dominant_frequencies(data, sr, n_freqs=1, **kwargs)
+        
+        # exclude 0 values (no peak detected) from calculations
+        dom_freqs_detected = dominant_freqs[dominant_freqs > 0]
+        min_dom : float
+        max_dom : float
+        min_dom, max_dom = float(np.min(dom_freqs_detected)), float(np.max(dom_freqs_detected))
+        range_dom = max_dom - min_dom
+        cumulative_diff : float = np.sum(np.abs(np.diff(dom_freqs_detected)))
+        mod_dom = cumulative_diff / range_dom if range_dom > 0 else 0
+
+        return {
+            "mean_dom": np.mean(dom_freqs_detected),
+            "min_dom": min_dom,
+            "max_dom": max_dom,
+            "range_dom": range_dom,
+            "mod_dom": mod_dom
+        }
+
+def spectrotemporal_features(
+        data: ArrayLike, 
+        sr: int,
+        n_dominant_freqs : int = 1,
+        **kwargs : Any
+    ) -> dict[str, Union[float, np.floating, NDArray[np.float64]]]:
+    """
+    Extracts a set of spectrotemporal features from a signal.
+
+    Args:
+        data : ArrayLike
+            The input signal as a 1D ArrayLike.
+        sr : int 
+            Sampling rate of the signal in Hz.
+        n_dominant_frequencies : int
+            Number of dominant frequencies to extract. Default is 1.
+
+    Retuns:
+        dict
+        {"spectrotemporal_entropy": float,
+        "dominant_frequencies": ArrayLike}
+    """
+    data = check_signal_format(data)
+    check_sr_format(sr)
+    
+    features = {
+        "spectrotemporal_entropy": spectrotemporal_entropy(data, sr),
+        "dominant_freqs": dominant_frequencies(data, sr, n_dominant_freqs, **kwargs),
+    }
+
+    dom_freq_feats = calculate_dominant_frequency_features(data, sr)
+
+    return {**features, **dom_freq_feats}

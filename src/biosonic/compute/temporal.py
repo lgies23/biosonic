@@ -73,7 +73,6 @@ def amplitude_envelope(
         envelope = signal.convolve(envelope, kernel, mode='same')
     
     if remove_trailing_zeros:
-        # TODO remove before calculating analytic signal? -> check
         envelope = exclude_trailing_and_leading_zeros(envelope)
 
     if avoid_zero_values:

@@ -201,15 +201,15 @@ def filter(
         Sampling rate of the signal in Hz.
     type : {'lowpass', 'highpass', 'bandpass', 'bandstop'}
         Type of filter to apply. Defaults to 'lowpass'.
-    order : int
-        Filter order. Higher values result in a steeper frequency cutoff, 
-        but can introduce more edge artifacts and potential instability. 
-        Defaults to 2, resulting in a slope of 40 dB per decade (i.e. ten-fold change in frequency). 
     f_cutoff : float or tuple of float
         Cutoff frequency/frequencies in Hz:
             - Single int for 'lowpass' or 'highpass'
             - Tuple of two floats for 'bandpass' or 'bandstop'
         Values must be within (0, Nyquist), where Nyquist = sr / 2.
+    order : int
+        Filter order. Higher values result in a steeper frequency cutoff, 
+        but can introduce more edge artifacts and potential instability. 
+        Defaults to 2, resulting in a slope of 40 dB per decade (i.e. ten-fold change in frequency). 
 
     Returns:
     -------
@@ -233,12 +233,12 @@ def filter(
     if type in ['bandpass', 'bandstop']:
         if not isinstance(f_cutoff, (list, tuple)) or len(f_cutoff) != 2:
             raise ValueError("f_cutoff must be a tuple/list of two values for bandpass/bandstop filters.")
-        normal_cutoff = [f / nyquist for f in f_cutoff]
+        # normal_cutoff = [f / nyquist for f in f_cutoff]
     else:
         if isinstance(f_cutoff, (list, tuple)):
             raise ValueError("f_cutoff must be a scalar for lowpass/highpass filters.")
-        normal_cutoff = f_cutoff / nyquist
+        # normal_cutoff = f_cutoff / nyquist
 
-    b, a = butter(order, normal_cutoff, btype=type, analog=False)
+    b, a = butter(order, f_cutoff, btype=type, analog=False, fs=sr)
     filtered_signal = filtfilt(b, a, data)
     return filtered_signal
