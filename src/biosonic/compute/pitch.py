@@ -129,30 +129,24 @@ def preprocess_for_pitch_(
     frequency and the harmonics-to-noise ratio of a sampled sound. 
     IFA Proceedings 17, 97–110.
     """
-    N = len(data)
     spectrum = rfft(data)
     nyquist = sr / 2
     freqs = np.linspace(0, nyquist, len(spectrum))
 
-    # Linear taper to zero from 95% to 100% Nyquist
+    # Soft taper from 95% to 100% Nyquist
+    taper = np.ones_like(freqs)
     taper_start = 0.95 * nyquist
-    taper = np.ones_like(spectrum)
-    taper[freqs > taper_start] = 1 - (freqs[freqs > taper_start] - taper_start) / (nyquist - taper_start)
+    taper_end = nyquist
+    taper_region = (freqs >= taper_start) & (freqs <= taper_end)
+    taper[taper_region] = 0.5 * (1 + np.cos(np.pi * (freqs[taper_region] - taper_start) / (taper_end - taper_start)))
     taper[freqs > nyquist] = 0
+
     spectrum *= taper
 
-    # Compute new length: next power of two greater, then double (one order higher)
-    new_N = 2**(int(np.ceil(np.log2(N))) + 1)
-    new_spectrum_len = new_N // 2 + 1
+    # inverse FFT back to time domain
+    filtered_signal = irfft(spectrum, n=len(data))
 
-    # Zero-pad spectrum to match new IFFT length
-    padded_spectrum = np.zeros(new_spectrum_len, dtype=complex)
-    padded_spectrum[:len(spectrum)] = spectrum
-
-    # Inverse FFT
-    filtered_signal = irfft(padded_spectrum, n=new_N)
-
-    return filtered_signal[:N]
+    return filtered_signal
 
 
 def find_pitch_candidates_(
@@ -171,45 +165,45 @@ def find_pitch_candidates_(
 
     candidates : list[Tuple[float, float]] = []
 
-    # for lag in range(min_lag + 1, max_lag - 1):
-    #     if ac[lag] > ac[lag - 1] and ac[lag] > ac[lag + 1]:
-    #         # parabolic interpolation
-    #         y_m1 = ac[lag - 1]
-    #         y_0 = ac[lag]
-    #         y_p1 = ac[lag + 1]
-    #         denom = (y_m1 - 2 * y_0 + y_p1)
-
-    #         if denom == 0:
-    #             refined_lag = lag
-    #         else:
-    #             refined_lag = lag + 0.5 * (y_m1 - y_p1) / denom
-
-    #         # cost function (Boersma 1993, eq 26)
-    #         r_tau = np.interp(refined_lag, np.arange(len(ac)), ac)
-    #         strength = r_tau - octave_cost * 2 * np.log(min_pitch * refined_lag)
-
-    #         # convert to pitch
-    #         pitch = sr / refined_lag if refined_lag != 0 else 0
-    #         candidates.append((pitch, strength))
-    # interpolation for higher accuracy
-    interp_ac = interp1d(np.arange(len(ac)), ac, kind='cubic', fill_value="extrapolate")
-
-    def cost_fn(
-            lag : float
-            ) -> float:
-        
-        if lag < min_lag or lag >= max_lag:
-            return -np.inf
-        r_tau = float(interp_ac(lag))
-        return float(r_tau - octave_cost * 2 * np.log(min_pitch * lag))
-
-    candidates = []
-    for lag in range(min_lag, max_lag):
+    for lag in range(min_lag + 1, max_lag - 1):
         if ac[lag] > ac[lag - 1] and ac[lag] > ac[lag + 1]:
-            res = minimize_scalar(lambda x: -cost_fn(x), bounds=(lag-1, lag+1), method='bounded')
-            pitch = sr / res.x
-            strength = -res.fun
+            # parabolic interpolation
+            y_m1 = ac[lag - 1]
+            y_0 = ac[lag]
+            y_p1 = ac[lag + 1]
+            denom = (y_m1 - 2 * y_0 + y_p1)
+
+            if denom == 0:
+                refined_lag = lag
+            else:
+                refined_lag = lag + 0.5 * (y_m1 - y_p1) / denom
+
+            # cost function (Boersma 1993, eq 26)
+            r_tau = np.interp(refined_lag, np.arange(len(ac)), ac)
+            strength = r_tau - octave_cost * 2 * np.log(min_pitch * refined_lag)
+
+            # convert to pitch
+            pitch = sr / refined_lag if refined_lag != 0 else 0
             candidates.append((pitch, strength))
+    # # interpolation for higher accuracy
+    # interp_ac = interp1d(np.arange(len(ac)), ac, kind='cubic', fill_value="extrapolate")
+
+    # def cost_fn(
+    #         lag : float
+    #         ) -> float:
+        
+    #     if lag < min_lag or lag >= max_lag:
+    #         return -np.inf
+    #     r_tau = float(interp_ac(lag))
+    #     return float(r_tau - octave_cost * 2 * np.log(min_pitch * lag))
+
+    # candidates = []
+    # for lag in range(min_lag, max_lag):
+    #     if ac[lag] > ac[lag - 1] and ac[lag] > ac[lag + 1]:
+    #         res = minimize_scalar(lambda x: -cost_fn(x), bounds=(lag-1, lag+1), method='bounded')
+    #         pitch = sr / res.x
+    #         strength = -res.fun
+    #         candidates.append((pitch, strength))
 
     # Sort by strength and take top N-1
     candidates = sorted(candidates, key=lambda x: -x[1])[:num_candidates - 1]
@@ -317,12 +311,12 @@ def autocorr_(
     spec = rfft(frame)
 
     # 3.8 square samples in frequency domain
-    power_spec = spec ** 2 # TODO check if this is the correct way
+    power_spec = spec * np.conj(spec)
 
     # 3.9 ifft of power spectrum
     lag_domain = irfft(power_spec)
 
-    return lag_domain[len(frame) // 2 :]
+    return lag_domain[: len(frame) // 2]
 
 
 def boersma(
@@ -416,13 +410,13 @@ def boersma(
     #     for pitch, strength in cands:
     #         print(f"  Pitch: {pitch:.2f} Hz, Strength: {strength:.3f}")
 
-    # fig, axs = plt.subplots(2, 3)
-    # axs[0][0].plot(frame)
-    # axs[0][1].plot(window)
-    # axs[0][2].plot(windowed_frame)
-    # axs[1][0].plot(lag_domain)
-    # axs[1][1].plot(autocorr_hann)
-    # axs[1][2].plot(sampled_autocorr)
+    fig, axs = plt.subplots(2, 3)
+    axs[0][0].plot(frame)
+    axs[0][1].plot(window)
+    axs[0][2].plot(windowed_frame)
+    axs[1][0].plot(lag_domain)
+    axs[1][1].plot(autocorr_hann)
+    axs[1][2].plot(sampled_autocorr)
 
     time_points = np.arange(len(framed_signal)) * timestep
     pitch_track = viterbi_pitch_path(

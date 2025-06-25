@@ -467,8 +467,10 @@ def spectral_features(data: ArrayLike,
         "fq_median": float,
         "fq_q3": float,
         "spectral_flatness": float,
-        "centroid": float,
-        "spectral_std": float,
+        "spectral_centroid": float,
+        "spectral_skew": float,
+        "spectral_kurtosis": float,
+        "spectral_sd": float,
         "peak_frequency": float}
     """
     data = check_signal_format(data)
@@ -483,10 +485,10 @@ def spectral_features(data: ArrayLike,
         "fq_median": fq_median_bin,
         "fq_q3": fq_q3_bin,
         "spectral_flatness": flatness(data),
-        "centroid": centroid(data, sr),
-        "spectral_std": bandwidth(data, sr),
-        "skew" : skewness(data, sr),
-        "kurtosis" : kurtosis(data, sr),
+        "spectral_centroid": centroid(data, sr),
+        "spectral_sd": bandwidth(data, sr),
+        "spectral_skew" : skewness(data, sr),
+        "spectral_kurtosis" : kurtosis(data, sr),
         "peak_frequency": peak_frequency(data, sr),
     }
 

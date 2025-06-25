@@ -349,13 +349,13 @@ def plot_features(
     plt.axvline(features["fq_q3"], color='purple', linestyle="--", label="Q3")
     plt.fill_betweenx(
         y=[0, max(ms)],
-        x1=features["centroid"] - features["spectral_std"],
-        x2=features["centroid"] + features["spectral_std"],
+        x1=features["spectral_centroid"] - features["spectral_sd"],
+        x2=features["spectral_centroid"] + features["spectral_sd"],
         color='grey',
         alpha=0.2,
         label='Bandwidth'
     )
-    plt.axvline(features["centroid"], color='pink', linestyle="--", label="Centroid")
+    plt.axvline(features["spectral_centroid"], color='pink', linestyle="--", label="Centroid")
     plt.xlabel("Frequency (Hz)")
     plt.ylabel("Magnitude")
     plt.legend()
@@ -367,8 +367,17 @@ def plot_features(
     plt.plot(times_waveform, data, label="Waveform", color="gray", alpha=0.3)
     plt.plot(times_waveform, features["amplitude_envelope"], label="Amplitude Envelope", color="blue")
     plt.axvline(features["t_median"], color='red', linestyle="--", label="Median")
-    plt.axvline(features["t_q1"], color='orange', linestyle="--", label="Q1")
-    plt.axvline(features["t_q3"], color='green', linestyle="--", label="Q3")
+    plt.axvline(features["t_q1"], color='yellow', linestyle="--", label="Q1")
+    plt.axvline(features["t_q3"], color='purple', linestyle="--", label="Q3")
+    plt.fill_betweenx(
+        y=[0, max(features["amplitude_envelope"])],
+        x1=features["temporal_centroid"] - features["temporal_sd"],
+        x2=features["temporal_centroid"] + features["temporal_sd"],
+        color='grey',
+        alpha=0.2,
+        label='Bandwidth'
+    )
+    plt.axvline(features["temporal_centroid"], color='pink', linestyle="--", label="Centroid")
     plt.xlabel("Time (s)")
     plt.ylabel("Amplitude")
     plt.legend()

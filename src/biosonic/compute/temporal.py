@@ -297,16 +297,19 @@ def temporal_features(
             "duration": float
         }
     """
+    envelope = amplitude_envelope(data)
+    times = np.linspace(0, len(data)/sr, len(data))
     t_q1, t_median, t_q3 = temporal_quartiles(data, sr, kernel_size)
     
     features = {
         "t_q1": t_q1,
         "t_median": t_median,
         "t_q3": t_q3,
+        "temporal_centroid": np.average(times, weights=envelope/np.mean(envelope)),
         "temporal_sd": temporal_sd(data, sr, kernel_size),
         "temporal_skew": skewness(data, sr, kernel_size),
         "temporal_kurtosis": temporal_kurtosis(data, sr, kernel_size),
-        "amplitude_envelope": amplitude_envelope(data, kernel_size),
+        "amplitude_envelope": envelope,
         "duration": duration(data, sr, exclude_surrounding_silences=True)
     }
 
