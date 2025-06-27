@@ -6,7 +6,7 @@ from pathlib import Path
 import numpy as np
 # from dataclasses import dataclass
 import traceback
-from typing import Literal, Union, Optional, get_args, Tuple
+from typing import Literal, Union, Optional, get_args, Tuple, List
 
 QuantizationStr = Literal["int8", "int16", "int32", "float32", "float64"]
 
@@ -303,10 +303,10 @@ def batch_extract_features(
     return out_df
 
 
-def extract_segments_from_textgrid(
-        filepath : Union[str, Path],
-    ):
-    """
-    """
-    segments = []
-    # TODO
+# def extract_segments_from_textgrid(
+#         filepath : Union[str, Path],
+#     ) -> List:
+#     """
+#     """
+#     segments : List[Any] = []
+#     # TODO

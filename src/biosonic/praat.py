@@ -20,3 +20,5 @@ def read_textgrid(
         label = syll.text.transcode()
         # Print label and syllable duration
         print(f'"{label}"; {syll.dur}')
+    
+    return grid
