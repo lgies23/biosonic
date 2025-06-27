@@ -1,6 +1,6 @@
 from scipy.io import wavfile
 from scipy.signal import resample
-from numpy.typing import NDArray, ArrayLike
+from numpy.typing import NDArray
 import pandas as pd
 from pathlib import Path
 import numpy as np
@@ -280,15 +280,15 @@ def batch_extract_features(
     feature_rows = []
 
     wav_files = list(folder_path.glob("*.wav")) + list(folder_path.glob("*.WAV"))
-    print(wav_files)
     for wav_file in wav_files:
+        print(f"processing {wav_file.name}")
         try:
             data, sr, _, _ = read_wav(wav_file)
             features = extract_all_features(data, sr)
             features['filename'] = wav_file.name
             feature_rows.append(features)
         except Exception as e:
-            print(f"[WARNING] Failed to process {wav_file.name}: {e}")
+            print(f"Failed to process {wav_file.name}: {e}")
             traceback.print_exc()
     
     out_df = pd.DataFrame(feature_rows)
@@ -296,11 +296,17 @@ def batch_extract_features(
     if save_csv_path:
         try:
             out_df.to_csv(save_csv_path, index=False)
-            print(f"[INFO] Features saved to: {save_csv_path}")
+            print(f"Features saved to: {save_csv_path}")
         except Exception as e:
-            print(f"[ERROR] Failed to save CSV: {e}")
+            print(f"Failed to save CSV: {e}")
 
     return out_df
 
 
-
+def extract_segments_from_textgrid(
+        filepath : Union[str, Path],
+    ):
+    """
+    """
+    segments = []
+    # TODO

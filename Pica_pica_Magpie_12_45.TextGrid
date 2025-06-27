@@ -1,0 +1,60 @@
+File type = "ooTextFile"
+Object class = "TextGrid"
+
+xmin = 0 
+xmax = 87.33333333333333 
+tiers? <exists> 
+size = 2 
+item []: 
+    item [1]:
+        class = "IntervalTier" 
+        name = "silences" 
+        xmin = 0 
+        xmax = 87.33333333333333 
+        intervals: size = 7 
+        intervals [1]:
+            xmin = 0 
+            xmax = 0.9754111646947776 
+            text = "" 
+        intervals [2]:
+            xmin = 0.9754111646947776 
+            xmax = 15.450244169896791 
+            text = "2" 
+        intervals [3]:
+            xmin = 15.450244169896791 
+            xmax = 18.342923388749487 
+            text = "" 
+        intervals [4]:
+            xmin = 18.342923388749487 
+            xmax = 55.68181239801147 
+            text = "3" 
+        intervals [5]:
+            xmin = 55.68181239801147 
+            xmax = 59.42658974332562 
+            text = "" 
+        intervals [6]:
+            xmin = 59.42658974332562 
+            xmax = 78.10875342906518 
+            text = "2" 
+        intervals [7]:
+            xmin = 78.10875342906518 
+            xmax = 87.33333333333333 
+            text = "" 
+    item [2]:
+        class = "IntervalTier" 
+        name = "metadata" 
+        xmin = 0 
+        xmax = 87.33333333333333 
+        intervals: size = 3 
+        intervals [1]:
+            xmin = 0 
+            xmax = 16.517851897466386 
+            text = "call; fledgling" 
+        intervals [2]:
+            xmin = 16.517851897466386 
+            xmax = 57.813350922455676 
+            text = "call; nestling about one week old" 
+        intervals [3]:
+            xmin = 57.813350922455676 
+            xmax = 87.33333333333333 
+            text = "nestling about one week old" 

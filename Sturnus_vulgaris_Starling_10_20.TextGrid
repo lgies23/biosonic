@@ -1,0 +1,80 @@
+File type = "ooTextFile"
+Object class = "TextGrid"
+
+xmin = 0 
+xmax = 173.44 
+tiers? <exists> 
+size = 2 
+item []: 
+    item [1]:
+        class = "IntervalTier" 
+        name = "silences" 
+        xmin = 0 
+        xmax = 173.44 
+        intervals: size = 13 
+        intervals [1]:
+            xmin = 0 
+            xmax = 0.6689040280077417 
+            text = "" 
+        intervals [2]:
+            xmin = 0.6689040280077417 
+            xmax = 28.900229226468813 
+            text = "2" 
+        intervals [3]:
+            xmin = 28.900229226468813 
+            xmax = 31.36345408504304 
+            text = "" 
+        intervals [4]:
+            xmin = 31.36345408504304 
+            xmax = 62.12075159978218 
+            text = "3" 
+        intervals [5]:
+            xmin = 62.12075159978218 
+            xmax = 65.23562526382132 
+            text = "" 
+        intervals [6]:
+            xmin = 65.23562526382132 
+            xmax = 86.11923189040527 
+            text = "1" 
+        intervals [7]:
+            xmin = 86.11923189040527 
+            xmax = 88.84212488035551 
+            text = "" 
+        intervals [8]:
+            xmin = 88.84212488035551 
+            xmax = 135.5773068054759 
+            text = "2" 
+        intervals [9]:
+            xmin = 135.5773068054759 
+            xmax = 138.30291414752247 
+            text = "" 
+        intervals [10]:
+            xmin = 138.30291414752247 
+            xmax = 152.13971305874594 
+            text = "0" 
+        intervals [11]:
+            xmin = 152.13971305874594 
+            xmax = 154.91201998515785 
+            text = "" 
+        intervals [12]:
+            xmin = 154.91201998515785 
+            xmax = 166.82162336628195 
+            text = "0" 
+        intervals [13]:
+            xmin = 166.82162336628195 
+            xmax = 173.44 
+            text = "" 
+    item [2]:
+        class = "IntervalTier" 
+        name = "metadata" 
+        xmin = 0 
+        xmax = 173.44 
+        intervals: size = 2 
+        intervals [1]:
+            xmin = 0 
+            xmax = 136.81761007357704 
+            text = "song; male" 
+        intervals [2]:
+            xmin = 136.81761007357704 
+            xmax = 173.44 
+            text = "song; choral; winter" 
