@@ -40,8 +40,8 @@ pip install -e .
 
 ## Authors
 
-Lena Gies (a12113965@unet.univie.ac.at)
-Tecumseh Fitch ()
+- Lena Gies (a12113965@unet.univie.ac.at)
+- Tecumseh Fitch ()
 
 ## Acknowledgments and References
 
