@@ -157,3 +157,119 @@ def test_batch_extract_feature(mock_extract, mock_read, mock_glob, tmp_path):
     mock_glob.return_value = []
     df = batch_extract_features(str(tmp_path))
     assert df.empty
+
+
+@pytest.fixture
+def sample_data():
+    sr = 1000
+    duration = 2
+    t = np.linspace(0, duration, sr * duration, endpoint=False)
+    data = np.sin(2 * np.pi * 5 * t)  # 5 Hz sine wave
+    return data, sr
+
+def test_segments_from_signal(sample_data):
+    from biosonic.handle import segments_from_signal
+
+    def assert_segment_correct(data, segment, sr, start_time, end_time):
+        expected = data[int(np.floor(start_time * sr)) : int(np.ceil(end_time * sr))]
+        np.testing.assert_array_equal(segment, expected)
+
+    # dict
+    data, sr = sample_data
+    boundaries = {"begin": 0.5, "end": 1.0}
+    segments = segments_from_signal(data, sr, boundaries)
+    assert len(segments) == 1
+    assert_segment_correct(data, segments[0], sr, 0.5, 1.0)
+
+    # tuple
+    data, sr = sample_data
+    boundaries = (0.2, 0.6)
+    segments = segments_from_signal(data, sr, boundaries)
+    assert len(segments) == 1
+    assert_segment_correct(data, segments[0], sr, 0.2, 0.6)
+
+    # list of dicts
+    data, sr = sample_data
+    boundaries = [{"begin": 0.0, "end": 0.3}, {"begin": 1.0, "end": 1.5}]
+    segments = segments_from_signal(data, sr, boundaries)
+    assert len(segments) == 2
+    assert_segment_correct(data, segments[0], sr, 0.0, 0.3)
+    assert_segment_correct(data, segments[1], sr, 1.0, 1.5)
+
+    # ArrayLike
+    data, sr = sample_data
+    boundaries = np.array([[0.1, 0.2], [0.8, 1.0]])
+    segments = segments_from_signal(data, sr, boundaries)
+    assert len(segments) == 2
+    assert_segment_correct(data, segments[0], sr, 0.1, 0.2)
+    assert_segment_correct(data, segments[1], sr, 0.8, 1.0)
+
+    # invalid input
+    data, sr = sample_data
+    with pytest.raises(ValueError):
+        segments_from_signal(data, sr, "not a valid boundary")
+
+
+
+from biosonic.handle import boundaries_from_textgrid, audio_segments_from_textgrid
+
+@pytest.fixture
+def mock_textgrid_data():
+    return [
+        {"begin": 0.0, "end": 0.5, "label": "a"},
+        {"begin": 0.5, "end": 1.0, "label": "b"},
+        {"begin": 1.0, "end": 1.5, "label": ""},  # should be filtered out
+        {"begin": 1.5, "end": 2.0, "label": "c"}
+    ]
+
+@pytest.fixture
+def sample_audio():
+    sr = 1000
+    duration = 2  # seconds
+    data = np.random.randn(sr * duration)
+    return data, sr
+
+@patch("biosonic.praat.read_textgrid")
+def test_boundaries_from_textgrid(mock_read_textgrid, mock_textgrid_data):
+    mock_grid = MagicMock()
+    mock_grid.interval_tier_to_array.return_value = mock_textgrid_data
+    mock_read_textgrid.return_value = mock_grid
+
+    result = boundaries_from_textgrid("dummy_path.TextGrid", "words")
+
+    assert isinstance(result, list)
+    assert all("begin" in r and "end" in r and "label" in r for r in result)
+    assert len(result) == 3  # one empty label should be filtered out
+    assert result[0]["label"] == "a"
+    assert result[1]["label"] == "b"
+    assert result[2]["label"] == "c"
+
+
+@patch("biosonic.handle.boundaries_from_textgrid")
+@patch("biosonic.plot.plot_boundaries_on_spectrogram")  # mock plotting to avoid display
+def test_audio_segments_from_textgrid(
+    mock_plot, mock_boundaries_from_textgrid, sample_audio, mock_textgrid_data
+):
+    data, sr = sample_audio
+
+    # Only keep labeled intervals
+    labeled = [seg for seg in mock_textgrid_data if seg["label"]]
+    mock_boundaries_from_textgrid.return_value = labeled
+
+    segments = audio_segments_from_textgrid(
+        data,
+        sr,
+        "dummy_path.TextGrid",
+        "words"
+    )
+
+    assert isinstance(segments, list)
+    assert len(segments) == len(labeled)
+
+    for item, ref in zip(segments, labeled):
+        assert isinstance(item, dict)
+        assert "segment" in item and "label" in item
+        assert isinstance(item["segment"], np.ndarray)
+        assert item["label"] == ref["label"]
+
+    mock_plot.assert_called_once()

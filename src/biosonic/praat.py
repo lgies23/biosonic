@@ -5,7 +5,7 @@ from pathlib import Path
 
 def read_textgrid(
         filepath : Union[str, Path]
-    ) -> Optional[textgrids.TextGrid]:
+    ) -> textgrids.TextGrid:
     """
     """
     filepath = Path(filepath)

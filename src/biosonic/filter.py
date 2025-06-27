@@ -163,6 +163,27 @@ def linear_filterbank(
         fmin : float = 0.0, 
         fmax : Optional[float] = None
     ) -> ArrayLike:
+    """
+    Create a linearly spaced triangular filterbank.
+
+    Parameters
+    ----------
+    n_filters : int
+        Number of triangular filters.
+    n_fft : int
+        FFT size (defines frequency resolution).
+    sr : int
+        Sampling rate of the signal in Hz.
+    fmin : float
+        Minimum frequency in Hz. Must be > 0.
+    fmax : float, optional
+        Maximum frequency in Hz. Defaults to Nyquist (sr/2).
+
+    Returns
+    -------
+    filterbank : np.ndarray
+        Array of shape (n_filters, n_fft//2 + 1), each row a filter.
+    """
     if fmax is None:
         fmax = sr / 2
 

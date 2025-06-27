@@ -6,7 +6,7 @@ from pathlib import Path
 import numpy as np
 # from dataclasses import dataclass
 import traceback
-from typing import Literal, Union, Optional, get_args, Tuple, List, Dict
+from typing import Any, Literal, Union, Optional, get_args, Tuple, List, Dict
 
 QuantizationStr = Literal["int8", "int16", "int32", "float32", "float64"]
 
@@ -306,24 +306,71 @@ def batch_extract_features(
 def segments_from_signal(
         data : NDArray, 
         sr : int,
-        boundaries : Union[Dict, ArrayLike, Tuple[float, float]]
+        boundaries : Union[Dict[str, float], ArrayLike, Tuple[float, float], List[Dict[str, float]]]
     ) -> List[NDArray]:
+    """
+    Extract segments from an audio signal based on time boundaries.
+
+    Parameters:
+    -----------
+    data : NDArray
+        The audio signal array.
+    sr : int
+        Sampling rate of the audio signal.
+    boundaries : Union[Dict[str, float], Tuple[float, float], ArrayLike, List[Dict[str, float]]]
+        Segment boundaries. Supported formats:
+            - Single dict with 'begin' and 'end' keys
+            - Tuple of (begin, end)
+            - 2D ArrayLike of shape (n, 2), each row as (begin, end)
+            - List of dicts with 'begin' and 'end' keys
+
+    Returns:
+    --------
+    List[NDArray]
+        A list of segmented portions of the audio signal.
+    """
     segments = []
-    for boundary in boundaries:
-        segments.append(data[
-            np.floor(boundary["begin"]*sr) : np.ceil(boundary["end"]*sr)
-            ])
+
+    # Normalize boundaries to a list of (begin, end) tuples
+    if isinstance(boundaries, dict):
+        boundaries = [(boundaries["begin"], boundaries["end"])]
+    elif isinstance(boundaries, tuple) and len(boundaries) == 2:
+        boundaries = [boundaries]
+    elif isinstance(boundaries, list) and all(isinstance(b, dict) for b in boundaries):
+        boundaries = [(b["begin"], b["end"]) for b in boundaries]
+    elif isinstance(boundaries, (np.ndarray, list)):
+        boundaries = list(boundaries)  # ensure list of lists or tuples
+    else:
+        raise ValueError("Unsupported boundary format")
+
+    for begin, end in boundaries:
+        start_idx = int(np.floor(begin * sr))
+        end_idx = int(np.ceil(end * sr))
+        segments.append(data[start_idx:end_idx])
     
     return segments
 
 def boundaries_from_textgrid(
         filepath : Union[str, Path],
         tier_name : str
-    ) -> List:
+    ) -> List[Dict[str, float]]:
     """
+    Extracts segment boundaries from a specified tier in a TextGrid file.
+
+    Parameters:
+    -----------
+    filepath : Union[str, Path]
+        Path to the TextGrid file.
+    tier_name : str
+        The name of the tier from which to extract intervals.
+
+    Returns:
+    --------
+    List[Dict[str, float]]
+        A list of dictionaries, each containing 'begin', 'end', and 'label' keys 
+        for non-empty intervals in the specified tier.
     """
     from biosonic.praat import read_textgrid
-    from biosonic.plot import plot_boundaries_on_spectrogram
 
     grid = read_textgrid(filepath)
     segments = grid.interval_tier_to_array(tier_name=tier_name)
@@ -337,20 +384,31 @@ def audio_segments_from_textgrid(
         tier_name : str
     ) -> List[Dict[NDArray, str]]:
     """
+    Extracts and visualizes audio segments corresponding to labeled intervals 
+    in a TextGrid file.
+
+    Parameters:
+    -----------
+    data : NDArray
+        The audio signal array.
+    sr : int
+        Sampling rate of the audio signal.
+    filepath_textgrid : Union[str, Path]
+        Path to the TextGrid file containing segmentation information.
+    tier_name : str
+        Name of the tier to extract labeled segments from.
+
+    Returns:
+    --------
+    List[Dict[NDArray, str]]
+        A list of dictionaries, each containing:
+            - The audio segment (NDArray) for each labeled interval.
+            - The corresponding label (str).
     """
-    from biosonic.praat import read_textgrid
     from biosonic.plot import plot_boundaries_on_spectrogram
 
     boundaries = boundaries_from_textgrid(filepath_textgrid, tier_name)
 
     plot_boundaries_on_spectrogram(data, sr, boundaries)
-    segments = []
-    for boundary in boundaries:
-        segment = {}
-        segment["data"] = data[
-            int(np.floor(boundary["begin"]*sr)) : int(np.ceil(boundary["end"]*sr))
-            ]
-        segment["label"] = boundary["label"]
-        segments.append(segment)
-    
-    return segments
+    segments = segments_from_signal(data, sr, boundaries)
+    return [{"segment": seg, "label": str(b["label"])} for seg, b in zip(segments, boundaries)]

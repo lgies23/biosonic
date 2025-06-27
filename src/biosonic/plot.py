@@ -3,7 +3,7 @@ from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 import numpy as np
 from numpy.typing import ArrayLike
-from typing import Optional, Any, Union, Literal, Tuple, List
+from typing import Optional, Any, Union, Literal, Tuple, List, Dict
 
 from biosonic.compute.spectrotemporal import cepstrum, spectrogram, cepstral_coefficients
 from biosonic.compute.spectral import spectrum
@@ -478,14 +478,29 @@ def plot_pitch_on_spectrogram(
 def plot_boundaries_on_spectrogram(
     data : ArrayLike,
     sr : int,
-    segments : List[dict],
-    **kwargs
-    ):
+    segments : List[Dict[str, float]],
+    **kwargs : Any
+    ) -> None:
+    """
+    Plot a spectrogram of the input audio data and overlay vertical lines
+    indicating segment boundaries.
 
+    Parameters:
+    -----------
+    data : ArrayLike
+        Audio time series data.
+    sr : int
+        Sampling rate of the audio data.
+    segments : List[Dict[str, float]]
+        A list of segment boundary dictionaries. Each dictionary should
+        contain keys "begin" and "end", representing the start and end
+        times (in seconds or frames, depending on the spectrogram scale).
+    **kwargs : Any
+        Additional keyword arguments passed to the spectrogram plotting function.
+    """
     fig, ax = plt.subplots()
     
-    plot_spectrogram(
-        data, sr, plot=(fig, ax), **kwargs)
+    plot_spectrogram(data, sr, plot=(fig, ax), **kwargs)
 
     for segment in segments: 
         ax.axvline(segment["begin"], color='green', linestyle="--")
