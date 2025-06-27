@@ -38,10 +38,41 @@ def filterbank(
         bin_indices : ArrayLike,
     ) -> ArrayLike:
     """
+    Construct a triangular filter bank for spectral analysis.
+
+    This function creates a bank of `n_filters` triangular filters to be applied 
+    to the magnitude spectrum of an audio signal, commonly used in feature 
+    extraction methods such as Mel-frequency cepstral coefficients (MFCCs). 
+    Each filter is shaped like a triangle and spans a range of FFT bins 
+    determined by the `bin_indices` array.
+
+    Parameters
+    ----------
+    n_filters : int
+        Number of filters in the filter bank.
+    
+    n_fft : int
+        FFT size used to compute the frequency bins. Determines the number of 
+        frequency bins available.
+    
+    bin_indices : ArrayLike
+        Array of bin indices (length = n_filters + 2) that specify the start, 
+        center, and end points of each triangular filter in the filter bank. 
+
+    Returns
+    -------
+    filterbank : ArrayLike
+        A 2D array of shape `(n_filters, n_fft // 2 + 1)` containing the filter 
+        bank matrix. Each row represents a single triangular filter applied 
+        across the FFT bins.
+
+    Notes
+    -----
+    The filters are normalized according to the method used in `librosa` to 
+    ensure energy preservation. 
     
     References: 
     ----------
-    
     McFee, Brian, Colin Raffel, Dawen Liang, Daniel PW Ellis, Matt McVicar, Eric Battenberg, 
     and Oriol Nieto. “librosa: Audio and music signal analysis in python.” In Proceedings 
     of the 14th python in science conference, pp. 18-25. 2015.
@@ -81,22 +112,41 @@ def mel_filterbank(
         sr : int, 
         fmin : float = 0.0, 
         fmax : Optional[float] = None,
-        corner_frequency : Optional[float] = None,
         **kwargs : Any
     ) -> ArrayLike:
+    """
+    Create a mel spaced triangular filterbank.
 
+    Parameters
+    ----------
+    n_filters : int
+        Number of triangular filters.
+    n_fft : int
+        FFT size (defines frequency resolution).
+    sr : int
+        Sampling rate of the signal in Hz.
+    fmin : float
+        Minimum frequency in Hz. Must be > 0.
+    fmax : float, optional
+        Maximum frequency in Hz. Defaults to Nyquist (sr/2).
+
+    Returns
+    -------
+    filterbank : np.ndarray
+        Array of shape (n_filters, n_fft//2 + 1), each row a filter.
+    """
     if fmax is None:
         fmax = sr / 2
 
     check_filterbank_parameters(n_filters, window_length, sr, fmin, fmax)
 
     # boundaries
-    mel_min = hz_to_mel(fmin, corner_frequency=corner_frequency, **kwargs)
-    mel_max = hz_to_mel(fmax, corner_frequency=corner_frequency, **kwargs)
+    mel_min = hz_to_mel(fmin, **kwargs)
+    mel_max = hz_to_mel(fmax, **kwargs)
 
     # evenly spaced in Mel scale, then convert to Hz
     mel_points = np.linspace(mel_min, mel_max, n_filters + 2)
-    hz_points = np.asarray(mel_to_hz(mel_points, corner_frequency=corner_frequency, **kwargs))
+    hz_points = np.asarray(mel_to_hz(mel_points, **kwargs))
 
     # FFT bin numbers
     bin_indices = np.floor((window_length + 1) * hz_points / sr).astype(int)
