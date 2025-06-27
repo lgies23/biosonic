@@ -3,7 +3,7 @@ from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 import numpy as np
 from numpy.typing import ArrayLike
-from typing import Optional, Any, Union, Literal, Tuple
+from typing import Optional, Any, Union, Literal, Tuple, List
 
 from biosonic.compute.spectrotemporal import cepstrum, spectrogram, cepstral_coefficients
 from biosonic.compute.spectral import spectrum
@@ -31,7 +31,7 @@ def plot_spectrogram(
         corner_frequency: Optional[float] = None,
         plot : Optional[Tuple[Figure, Axes]] = None,
         **kwargs: Any
-    ) -> None:
+    ) -> Tuple[Figure, Axes]:
     """
     Plot a time-frequency spectrogram with optional dB scaling and frequency axis transformations.
 
@@ -143,6 +143,8 @@ def plot_spectrogram(
 
     if plot is None:
         plt.show()
+    
+    return fig, ax
 
 
 def plot_cepstrum(
@@ -469,5 +471,24 @@ def plot_pitch_on_spectrogram(
         tlim=tlim,
         ax=ax,
         )
+    
+    plt.show()
+
+
+def plot_boundaries_on_spectrogram(
+    data : ArrayLike,
+    sr : int,
+    segments : List[dict],
+    **kwargs
+    ):
+
+    fig, ax = plt.subplots()
+    
+    plot_spectrogram(
+        data, sr, plot=(fig, ax), **kwargs)
+
+    for segment in segments: 
+        ax.axvline(segment["begin"], color='green', linestyle="--")
+        ax.axvline(segment["end"], color='orange', linestyle="-")
     
     plt.show()

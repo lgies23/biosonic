@@ -1,12 +1,12 @@
 from scipy.io import wavfile
 from scipy.signal import resample
-from numpy.typing import NDArray
+from numpy.typing import NDArray, ArrayLike
 import pandas as pd
 from pathlib import Path
 import numpy as np
 # from dataclasses import dataclass
 import traceback
-from typing import Literal, Union, Optional, get_args, Tuple, List
+from typing import Literal, Union, Optional, get_args, Tuple, List, Dict
 
 QuantizationStr = Literal["int8", "int16", "int32", "float32", "float64"]
 
@@ -303,10 +303,54 @@ def batch_extract_features(
     return out_df
 
 
-# def extract_segments_from_textgrid(
-#         filepath : Union[str, Path],
-#     ) -> List:
-#     """
-#     """
-#     segments : List[Any] = []
-#     # TODO
+def segments_from_signal(
+        data : NDArray, 
+        sr : int,
+        boundaries : Union[Dict, ArrayLike, Tuple[float, float]]
+    ) -> List[NDArray]:
+    segments = []
+    for boundary in boundaries:
+        segments.append(data[
+            np.floor(boundary["begin"]*sr) : np.ceil(boundary["end"]*sr)
+            ])
+    
+    return segments
+
+def boundaries_from_textgrid(
+        filepath : Union[str, Path],
+        tier_name : str
+    ) -> List:
+    """
+    """
+    from biosonic.praat import read_textgrid
+    from biosonic.plot import plot_boundaries_on_spectrogram
+
+    grid = read_textgrid(filepath)
+    segments = grid.interval_tier_to_array(tier_name=tier_name)
+    return [segment for segment in segments if len(segment["label"]) > 0] 
+
+
+def audio_segments_from_textgrid(
+        data : NDArray, 
+        sr : int,
+        filepath_textgrid : Union[str, Path],
+        tier_name : str
+    ) -> List[Dict[NDArray, str]]:
+    """
+    """
+    from biosonic.praat import read_textgrid
+    from biosonic.plot import plot_boundaries_on_spectrogram
+
+    boundaries = boundaries_from_textgrid(filepath_textgrid, tier_name)
+
+    plot_boundaries_on_spectrogram(data, sr, boundaries)
+    segments = []
+    for boundary in boundaries:
+        segment = {}
+        segment["data"] = data[
+            int(np.floor(boundary["begin"]*sr)) : int(np.ceil(boundary["end"]*sr))
+            ]
+        segment["label"] = boundary["label"]
+        segments.append(segment)
+    
+    return segments
