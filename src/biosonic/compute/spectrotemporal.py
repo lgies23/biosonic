@@ -217,7 +217,7 @@ def cepstral_coefficients(
     np.ndarray
         Cepstral coefficient array of shape (n_ceps,).
     """
-    def liftering(cc: np.ndarray, D: int = 22) -> np.ndarray:
+    def liftering(cc: ArrayLike, D: int = 22) -> ArrayLike:
         """
         Apply sinusoidal liftering to cepstral coefficients.
 

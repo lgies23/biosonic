@@ -26,12 +26,12 @@ def plot_spectrogram(
         window_length: int = 512,
         window: Union[str, ArrayLike] = "hann",
         overlap: float = 50,
-        noisereduction: Optional[int] = None,
+        noisereduction: Optional[Literal["time", "frequency"]] = None,
         n_bands: int = 40,
         corner_frequency: Optional[float] = None,
         plot : Optional[Tuple[Figure, Axes]] = None,
         **kwargs: Any
-    ) -> Axes:
+    ) -> None:
     """
     Plot a time-frequency spectrogram with optional dB scaling and frequency axis transformations.
 
@@ -150,7 +150,7 @@ def plot_cepstrum(
         sr : int, 
         max_quefrency: float = 0.05,
         log_scale : bool = True, 
-        ylim : Optional[Tuple] = None,
+        ylim : Optional[Tuple[float, float]] = None,
         title : Optional[str] = None,
         **kwargs : Any
 ) -> None:
@@ -199,7 +199,7 @@ def plot_cepstral_coefficients(
         fmin: float = 0.0,
         fmax: Optional[float] = None,
         filterbank_type: Literal["mel", "linear", "log"] = "mel",
-        **kwargs
+        **kwargs : Any
     ) -> None:
         #TODO axis labels
         ceps = cepstral_coefficients(

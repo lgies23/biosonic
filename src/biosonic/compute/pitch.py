@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 from biosonic.compute.utils import frame_signal
 
 
-def difference_function(x: np.ndarray, max_lag: int) -> np.ndarray:
+def difference_function(x: ArrayLike, max_lag: int) -> ArrayLike:
     """YIN difference function d(τ) = sum_j (x_j - x_{j+τ})^2"""
     N = len(x)
     d = np.zeros(max_lag + 1)
@@ -19,7 +19,7 @@ def difference_function(x: np.ndarray, max_lag: int) -> np.ndarray:
     return d
 
 
-def cumulative_mean_normalized_difference(d: np.ndarray) -> np.ndarray:
+def cumulative_mean_normalized_difference(d: ArrayLike) -> ArrayLike:
     """CMND function from the difference function."""
     cmndf = np.zeros_like(d)
     cmndf[0] = 1  # Avoid divide-by-zero
@@ -28,7 +28,7 @@ def cumulative_mean_normalized_difference(d: np.ndarray) -> np.ndarray:
     return cmndf
 
 
-def parabolic_interpolation(cmndf: np.ndarray, tau: int) -> float:
+def parabolic_interpolation(cmndf: ArrayLike, tau: int) -> float:
     """Refine τ estimate using parabolic interpolation."""
     if tau <= 0 or tau >= len(cmndf) - 1:
         return float(tau)
@@ -43,7 +43,7 @@ def parabolic_interpolation(cmndf: np.ndarray, tau: int) -> float:
 
 
 def fundamental_frequency(
-    x: np.ndarray,
+    x: ArrayLike,
     sr: int,
     window_length: int,
     time_step: int,
@@ -72,18 +72,18 @@ def fundamental_frequency(
 
 
 def yin(
-    data: np.ndarray,
+    data: ArrayLike,
     sr: int,
     window_length: int,
     time_step_sec: float,
     flim: Tuple[int, int],
     threshold: float = 0.1
-) -> Tuple[np.ndarray, np.ndarray]:
+) -> Tuple[ArrayLike, ArrayLike]:
     """YIN pitch tracking over an entire signal.
 
     Returns:
-        times (np.ndarray): time points (in seconds)
-        frequencies (np.ndarray): estimated f₀ at each time point
+        times (ArrayLike): time points (in seconds)
+        frequencies (ArrayLike): estimated f₀ at each time point
     """
     step_size = int(time_step_sec * sr)
     num_steps = (len(data) - window_length) // step_size
