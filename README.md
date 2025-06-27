@@ -15,7 +15,6 @@ BioSonic is written to be lightweight and only relies on numpy (>= 1.26) and sci
 
 ```
 pip install biosonic[plots]
-
 ```
 
 For full functionality, the current dependencies are:
@@ -29,19 +28,19 @@ Python 3.10 and above are supported. Python 3.9 may be prone to some errors due 
 
 ### Installing
 
-
-
-### Executing
-
-For now, inside your downloaded package root directory: 
+For now, clone the repository and run this command inside its root: 
 ```
 pip install -e . 
 ```
 
+### Executing
+
+See the jupyter notebook `example_usage.ipynb` for demonstrations of different functionalities. 
+
 ## Authors
 
 - Lena Gies (a12113965@unet.univie.ac.at)
-- Tecumseh Fitch ()
+- Tecumseh Fitch (tecumseh.fitch@unet.univie.ac.at)
 
 ## Acknowledgments and References
 
