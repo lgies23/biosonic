@@ -97,11 +97,11 @@ def test_read_wav(tmp_path):
     data = (np.sin(2 * np.pi * 440 * np.arange(44100) / sr) * 32767).astype(np.int16)
     wavfile.write(tmp_path / "test.wav", sr, data)
 
-    signal = read_wav(tmp_path / "test.wav", quantization="float32")
+    data, sr, n_channels, _ = read_wav(tmp_path / "test.wav", quantization="float32")
 
-    assert signal.sr == 44100
-    assert signal.n_channels == 1
-    assert signal.data.dtype == np.float32
+    assert sr == 44100
+    assert n_channels == 1
+    assert data.dtype == np.float32
 
 
 # @pytest.fixture
@@ -123,10 +123,9 @@ def test_batch_extract_feature(mock_extract, mock_read, mock_glob, tmp_path):
     mock_file.__str__.return_value = "mocked.wav"
     mock_glob.return_value = [mock_file]
 
-    mock_signal = MagicMock()
-    mock_signal.data = [0.1, 0.2, 0.3]
-    mock_signal.sr = 44100
-    mock_read.return_value = mock_signal
+    data = [0.1, 0.2, 0.3]
+    sr = 44100
+    mock_read.return_value = data, sr, 1, "float32"
     mock_extract.return_value = {'feature1': 1.0, 'feature2': 2.0}
 
     df = batch_extract_features(str(tmp_path))
@@ -136,7 +135,6 @@ def test_batch_extract_feature(mock_extract, mock_read, mock_glob, tmp_path):
     assert 'filename' in df.columns
     assert 'feature1' in df.columns
     assert df['filename'].iloc[0] == "mocked.wav"
-
     
     # csv output
     csv_path = tmp_path / "output.csv"
@@ -146,17 +144,14 @@ def test_batch_extract_feature(mock_extract, mock_read, mock_glob, tmp_path):
     assert saved_df.shape[0] == 2
     assert 'filename' in saved_df.columns
 
-
     # simulate exception in feature extraction
-    mock_signal = MagicMock()
-    mock_signal.data = [0.1, 0.2]
-    mock_signal.sr = 44100
-    mock_read.return_value = mock_signal
+    data = [0.1, 0.2]
+    sr = 44100
+    mock_read.return_value = data, sr, 1, "float32"
     mock_extract.side_effect = RuntimeError("Feature extraction failed")
 
     df = batch_extract_features(str(tmp_path))
     assert df.empty  # should skip failed file
-
 
     # empty folder
     mock_glob.return_value = []

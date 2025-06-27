@@ -299,11 +299,6 @@ def test_bandwidth():
     #TODO
     from biosonic.compute.spectral import bandwidth
 
-    # basic case
-    # data = [1, 2, 3, 4, 5]
-    # expected_std = np.std(np.abs(fft.rfft(data))**2, ddof=0)
-    # assert np.isclose(standard_deviation(data, sr=1), expected_std)
-
     # constant signal
     data = [3, 3, 3, 3]
     expected_std = 0.0
@@ -319,7 +314,7 @@ def test_bandwidth():
     # # with numpy array input
     # t = np.linspace(0, 1, 1000, endpoint=False)
     # data = np.sin(2 * np.pi * 100 * t)
-    # expected_std = 63.61767414
+    # expected_std = TODO
     # assert np.isclose(bandwidth(data, sr=1000), expected_std)
 
     # return type
@@ -512,16 +507,16 @@ class TestTemporalEntropy(unittest.TestCase):
         self.duration = 1.0  # seconds
         self.time = np.linspace(0, self.duration, int(self.sample_rate * self.duration), endpoint=False)
 
-    # TODO
+    # # TODO
     # def test_constant_signal_entropy(self):
     #     signal = np.full(self.sample_rate, 5)
-    #     H, H_max = entropy(signal)
+    #     H, H_max = temporal_entropy(signal)
     #     self.assertAlmostEqual(H, 0.0, places=6, msg="Entropy of a constant signal should be zero.")
 
     # def test_sine_wave_entropy(self):
     #     freq = 3 # Hz
     #     signal = np.sin(2 * np.pi * freq * self.time)
-    #     result = entropy(signal)
+    #     result = temporal_entropy(signal)
     #     self.assertGreater(result, 0.0, "Entropy of a sine wave should be greater than zero.")
 
     def test_chirp_entropy(self):

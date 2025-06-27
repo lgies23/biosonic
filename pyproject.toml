@@ -45,8 +45,8 @@ classifiers = [
 ]
 
 [project.optional-dependencies]
-praat = ["praat-parselmouth>=0.4.5"]
 plots = ["matplotlib.pyplot>=3.8"]
+praat = ["praat-textgrids>=1.4.0"]
 
 [project.urls]
 Homepage = "https://github.com/lenag23/biosonic.git"

@@ -218,7 +218,7 @@ def plot_cepstral_coefficients(
         times = np.linspace(0, len(data) / sr, ceps.shape[0])
         plt.xlabel("Time [s]")
         plt.ylabel("Cepstral Coefficient Index")
-        im = plt.imshow(ceps, origin="lower", aspect="auto", extent=[times[0], times[-1], 0, n_ceps], cmap=cmap)
+        im = plt.imshow(ceps, origin="lower", aspect="auto", extent=(times[0], times[-1], 0, n_ceps), cmap=cmap)
 
 def dominant_frequencies(
         times : ArrayLike, 

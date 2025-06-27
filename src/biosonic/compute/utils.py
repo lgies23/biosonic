@@ -183,20 +183,58 @@ def shannon_entropy(
         unit : Literal["bits", "nat", "dits", "bans", "hartleys"] = "bits",
         norm : bool = True
     ) -> Tuple[float, float]:
+    """
+    Calculate the Shannon entropy of a probability distribution.
 
+    Parameters
+    ----------
+    prob_dist : ArrayLike
+        A 1D array-like object representing a probability distribution. 
+        Values should be non-negative and typically sum to 1.
+        
+    unit : {'bits', 'nat', 'dits', 'bans', 'hartleys'}, default='bits'
+        The desired output unit, determining the logarithmic base to use for entropy calculation:
+        - 'bits': base 2 (Shannon entropy)
+        - 'nat' : base e (natural logarithm)
+        - 'dits', 'bans', 'hartleys': base 10
+        
+    norm : bool, default=True
+        Whether to normalize the entropy by dividing by the maximum possible entropy 
+        for the given distribution length, resulting in a value in [0, 1].
+
+    Returns
+    -------
+    entropy : float
+        The Shannon entropy of the distribution.
+        
+    max_entropy : float
+        The maximum possible entropy for the distribution length (either normalized to 1 or 
+        log-base(len(dist)) if not normalized).
+
+    Raises
+    ------
+    ValueError
+        If an invalid unit is specified.
+
+    Examples
+    --------
+    >>> shannon_entropy([0.5, 0.5])
+    (0.0, 1.0)
+
+    >>> shannon_entropy([0.9, 0.1], unit="nat", norm=False)
+    (0.3250829733914482, 0.6931471805599453)
+    """
     if unit == "bits":
         log_ : Any = np.log2
     elif unit == "nat":
         log_ = np.log
-        #H = np.negative(np.sum(prob_dist * np.log(prob_dist)))
     elif unit in ["dits", "bans", "hartleys"]:
         log_ = np.log10
-        #H = np.negative(np.sum(prob_dist * np.log10(prob_dist)))
     else:
         raise ValueError(f'Invalid unit for power spectral entropy: {unit} Must be in ["bits", "nat", "dits", "bans", "hartleys"]')
 
     if np.all(prob_dist == prob_dist[0]):
-        return 0.0, 1 if norm else log_(len(prob_dist))
+        return 0.0, 1.0 if norm else log_(len(prob_dist))
 
     if norm:
         H = np.negative(np.sum(prob_dist * (log_(prob_dist)/log_(len(prob_dist)))))

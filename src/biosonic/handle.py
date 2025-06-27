@@ -4,31 +4,31 @@ from numpy.typing import NDArray, ArrayLike
 import pandas as pd
 from pathlib import Path
 import numpy as np
-from dataclasses import dataclass
+# from dataclasses import dataclass
 import traceback
-from typing import Literal, Union, Optional, get_args
+from typing import Literal, Union, Optional, get_args, Tuple
 
 QuantizationStr = Literal["int8", "int16", "int32", "float32", "float64"]
 
-@dataclass
-class Signal:
-    """
-    A dataclass representing an audio signal.
+# @dataclass
+# class Signal:
+#     """
+#     A dataclass representing an audio signal.
 
-    Attributes:
-        data : NDArray
-            Audio samples as a NumPy array. 1D for mono, otherwise a 2D array with shape (n_samples, n_channels)
-        n_channels : int 
-            Number of audio channels (1 for mono, 2 for stereo, etc.).
-        sr : int
-            Sample rate in Hz.
-        quantization : QuantizationStr
-            Data format (bit depth) of the signal.
-    """
-    data: NDArray
-    n_channels: int
-    sr: int
-    quantization: QuantizationStr
+#     Attributes:
+#         data : NDArray
+#             Audio samples as a NumPy array. 1D for mono, otherwise a 2D array with shape (n_samples, n_channels)
+#         n_channels : int 
+#             Number of audio channels (1 for mono, 2 for stereo, etc.).
+#         sr : int
+#             Sample rate in Hz.
+#         quantization : QuantizationStr
+#             Data format (bit depth) of the signal.
+#     """
+#     data: NDArray
+#     n_channels: int
+#     sr: int
+#     quantization: QuantizationStr
 
 
 def convert_dtype(data: NDArray, target_dtype: QuantizationStr) -> NDArray:
@@ -159,7 +159,7 @@ def read_wav(
         sampling_rate : Optional[int] = None,
         quantization: QuantizationStr = "float32",
         n_channels : Optional[int] = None,
-    ) -> Signal:
+    ) -> Tuple[NDArray, int, int, QuantizationStr]:
     """
     Reads a WAV file and returns a Signal object, optionally converting sample rate, number of channels,
     and quantization format.
@@ -182,14 +182,13 @@ def read_wav(
 
     Returns
     -------
-    Signal
-        An audio Signal dataclass containing:
+    A tuple containing:
         - data : np.ndarray
             Audio samples, shape (n_samples,) for mono or (n_samples, n_channels) otherwise.
-        - n_channels : int
-            Number of audio channels.
         - sr : int
             Sample rate in Hz.
+        - n_channels : int
+            Number of audio channels.
         - quantization : str
             Data format of the signal.
 
@@ -219,7 +218,7 @@ def read_wav(
     if quantization != data.dtype.name:
         data = convert_dtype(data, quantization)
 
-    return Signal(data, n_ch, sr, quantization)
+    return data, sr, n_ch, quantization
 
 
 def batch_normalize_wav_files(
@@ -264,9 +263,9 @@ def batch_normalize_wav_files(
 
     wav_files = list(folder_path.glob("*.wav")) + list(folder_path.glob("*.WAV"))
     for wav_file in wav_files:
-        signal = read_wav(wav_file, target_sr, target_quantization, target_channels)
+        data, _, _, _ = read_wav(wav_file, target_sr, target_quantization, target_channels)
         out_path = output_dir / wav_file.name
-        wavfile.write(out_path, target_sr, signal.data.astype(np.dtype(target_quantization)))
+        wavfile.write(out_path, target_sr, data.astype(np.dtype(target_quantization)))
         print(f"Normalized: {wav_file.name} -> {out_path}")
 
 
@@ -284,8 +283,8 @@ def batch_extract_features(
     print(wav_files)
     for wav_file in wav_files:
         try:
-            signal = read_wav(wav_file)
-            features = extract_all_features(signal.data, signal.sr)
+            data, sr, _, _ = read_wav(wav_file)
+            features = extract_all_features(data, sr)
             features['filename'] = wav_file.name
             feature_rows.append(features)
         except Exception as e:
@@ -302,3 +301,6 @@ def batch_extract_features(
             print(f"[ERROR] Failed to save CSV: {e}")
 
     return out_df
+
+
+

@@ -133,3 +133,109 @@ def test_transform_spectrogram_for_nn():
     spectrogram = np.full((10, 10), fill_value=5)
     with pytest.warns(RuntimeWarning, match="Spectrogram contains no information"):
         transformed = transform_spectrogram_for_nn(spectrogram)
+
+
+def test_shannon_enropy():
+    from biosonic.compute.utils import shannon_entropy 
+
+    # uniform distribution
+    dist = np.array([0.25, 0.25, 0.25, 0.25])
+    entropy, max_val = shannon_entropy(dist, unit="bits", norm=False)
+    expected = np.log2(4)
+    assert entropy == 0.0
+    assert np.isclose(max_val, expected)
+
+    dist = np.array([0.25, 0.25, 0.25, 0.25])
+    entropy, max_val = shannon_entropy(dist, unit="bits", norm=True)
+    assert entropy == 0.0
+    assert max_val == 1.0
+
+    dist = np.array([1/3, 1/3, 1/3])
+    entropy, max_val = shannon_entropy(dist, unit="nat", norm=True)
+    assert entropy == 0.0
+    assert max_val == 1.0
+
+    # skewed distribution
+    dist = np.array([0.9, 0.1])
+    entropy, max_val = shannon_entropy(dist, unit="bits", norm=False)
+    assert 0.0 < entropy < max_val
+
+    dist = np.array([0.6, 0.4])
+    entropy, max_val = shannon_entropy(dist, unit="dits", norm=False)
+    expected = -np.sum(dist * np.log10(dist))
+    assert np.isclose(entropy, expected)
+    assert np.isclose(max_val, np.log10(2))
+
+    # invalid unit  
+    dist = np.array([0.5, 0.5])
+    try:
+        _ = shannon_entropy(dist, unit="invalid")
+        assert False, "Expected ValueError"
+    except ValueError as e:
+        assert "Invalid unit" in str(e)
+
+    # output type 
+    dist = np.array([0.7, 0.3])
+    entropy, max_val = shannon_entropy(dist)
+    assert isinstance(entropy, float)
+    assert isinstance(max_val, float)
+
+
+def test_hz_to_mel():
+    from biosonic.compute.utils import hz_to_mel
+
+    # scalar oshaughnessy
+    freq = 1000.0
+    mel = hz_to_mel(freq, after="oshaughnessy")
+    expected = 2595.0 * np.log(1 + freq / 700.0)
+    assert np.isclose(mel, expected)
+
+    # array oshaughnessy
+    freq = np.array([0.0, 500.0, 1000.0])
+    mel = hz_to_mel(freq, after="oshaughnessy")
+    expected = 2595.0 * np.log(1 + freq / 700.0)
+    np.testing.assert_allclose(mel, expected)
+
+    # fant defaults
+    freq = 1000.0
+    mel = hz_to_mel(freq, after="fant")
+    expected = 1000.0 * np.log(1 + freq / 1000.0)
+    assert np.isclose(mel, expected)
+
+    # corner frequency
+    freq = 1000.0
+    mel = hz_to_mel(freq, corner_frequency=500.0)
+    expected = 500.0 * np.log(1 + freq / 500.0)
+    assert np.isclose(mel, expected)
+
+    # umesh
+    freq = 1000.0
+    mel = hz_to_mel(freq, after="umesh")
+    expected = freq / (0.0004 * freq + 0.603)
+    assert np.isclose(mel, expected)
+
+    # custom params
+    freq = 1000.0
+    mel = hz_to_mel(freq, a=3000.0, b=800.0, after="oshaughnessy")
+    expected = 3000.0 * np.log(1 + freq / 800.0)
+    assert np.isclose(mel, expected)
+
+    # koenig
+    try:
+        hz_to_mel(1000.0, after="koenig")
+        assert False, "Expected NotImplementedError"
+    except NotImplementedError as e:
+        assert "koenig" in str(e)
+
+    # invalid string
+    try:
+        hz_to_mel(1000.0, after="invalid")
+        assert False, "Expected ValueError"
+    except ValueError as e:
+        assert "Unknown Mel scale method" in str(e)
+
+    # output type
+    scalar_result = hz_to_mel(500.0)
+    array_result = hz_to_mel(np.array([500.0, 1000.0]))
+    assert isinstance(scalar_result, float) or np.isscalar(scalar_result)
+    assert isinstance(array_result, np.ndarray)

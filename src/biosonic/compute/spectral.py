@@ -1,6 +1,6 @@
 import numpy as np
 from numpy.typing import NDArray, ArrayLike
-from scipy import fft, signal
+from scipy import fft
 from scipy.stats import gmean
 from typing import Optional, Tuple, Union, Any, Dict, Literal
 import warnings
@@ -104,7 +104,7 @@ def quartiles(data: ArrayLike, sr: int) -> Tuple[float, float, float]:
         at which the CDF crosses 25%, 50%, and 75%.
 
     See Also:
-        spectrum : Computes the frequency and spectral envelope of a signal.
+        spectrum : Computes the spectral envelope of a signal.
         cumulative_distribution_function : Computes the normalized cumulative sum of a spectrum.
 
     Examples:
@@ -154,7 +154,7 @@ def flatness(data: ArrayLike) -> Union[float, np.floating[Any]]:
             If input signal is empty, contains only zeros, or the computed flatness is not a float (from np.mean and scipy's gmean).
 
     References:
-        Sueur, J. (2018). *Sound Analysis and Synthesis with R*. Springer International Publishing, p. 299.
+        Sueur, J. (2018). Sound Analysis and Synthesis with R*. Springer International Publishing, p. 299.
         https://doi.org/10.1007/978-3-319-77647-7
     """
     data = check_signal_format(data)
