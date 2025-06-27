@@ -1,101 +1,35 @@
 import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
+from matplotlib.figure import Figure
 import numpy as np
-from numpy.typing import ArrayLike, NDArray
-from scipy.signal import windows
-from typing import Optional, Any, Union, Literal, Tuple, Dict
+from numpy.typing import ArrayLike
+from typing import Optional, Any, Union, Literal, Tuple
 
 from biosonic.compute.spectrotemporal import cepstrum, spectrogram, cepstral_coefficients
 from biosonic.compute.spectral import spectrum
 from biosonic.filter import mel_filterbank
 
-# from compute.spectrotemporal import spectrogram
-from biosonic.compute.utils import extract_all_features, check_signal_format, check_sr_format, hz_to_mel, mel_to_hz
+from biosonic.compute.utils import extract_all_features, check_signal_format, check_sr_format
 
-# def plot_spectrogram(
-#         data : ArrayLike, 
-#         sr: int, 
-#         db_scale : bool = True, 
-#         cmap : str = 'viridis', 
-#         vmin : Optional[float] = None, 
-#         vmax : Optional[float] = None, 
-#         title : str = "Spectrogram",
-#         db_ref : Optional[float] = None,
-#         flim: Optional[Tuple[float, float]] = None,
-#         tlim: Optional[Tuple[float, float]] = None,
-#         freq_scale: Literal["linear", "log", "mel"] = "linear",
-#         window_length: int = 512,
-#         window: Union[str, ArrayLike] = "hann",
-#         zero_padding: int = 0,
-#         overlap: float = 50,
-#         noisereduction: Optional[int] = None,
-#         n_fft: Optional[int] = None,
-#         n_bands: int = 40,
-#         corner_frequency: Optional[float] = None,
-#         ax : Optional[Axes] = None,
-#         mode : Optional[str] = None,
-#         **kwargs: Any
-#     ) -> Axes:
-
-#     noverlap = int(window_length * overlap / 100)
-
-#     # get window
-#     if window_length % 2 != 0:
-#         raise ValueError("'window_length' must be even")
-
-#     if isinstance(window, str):
-#         try:
-#             window = windows.get_window(window, window_length)
-#         except ValueError as e:
-#             raise ValueError(f"Invalid window type: {window}") from e
-#     else:
-#         window = np.asarray(window) 
-#         if not isinstance(window, np.ndarray):
-#             raise TypeError("'window' must be either a string or a 1D NumPy array.")
-
-#     plt.specgram(
-#         data, 
-#         Fs=sr, 
-#         NFFT=window_length, 
-#         noverlap=noverlap, 
-#         window=window, 
-#         mode=mode,
-#         cmap='gray_r', 
-#         vmin=vmin,
-#         vmax=vmax,
-#         **kwargs
-#         )
-#     plt.title("Spectrogram")
-#     plt.xlabel("Time [s]")
-#     plt.ylabel("Frequency [Hz]")
-#     plt.colorbar(label='Intensity [dB]')
-
-#     if freq_scale == "log":
-#         plt.yscale("log")
-#     elif freq_scale == "mel":
-#         plt.yscale("function", functions=(hz_to_mel, mel_to_hz))
-
-#     plt.show()
     
 def plot_spectrogram(
         data : ArrayLike, 
         sr: int, 
         db_scale : bool = True, 
-        cmap : str = 'viridis', 
+        cmap : str = 'grey', 
         title : Optional[str] = None,
         db_ref : Optional[float] = None,
+        dynamic_range: Optional[float] = 100,
         flim: Optional[Tuple[float, float]] = None,
         tlim: Optional[Tuple[float, float]] = None,
         freq_scale: Literal["linear", "log", "mel"] = "linear",
         window_length: int = 512,
         window: Union[str, ArrayLike] = "hann",
-        zero_padding: int = 0,
         overlap: float = 50,
         noisereduction: Optional[int] = None,
-        # n_fft: Optional[int] = None,
         n_bands: int = 40,
         corner_frequency: Optional[float] = None,
-        ax : Optional[Axes] = None,
+        plot : Optional[Tuple[Figure, Axes]] = None,
         **kwargs: Any
     ) -> Axes:
     """
@@ -108,36 +42,46 @@ def plot_spectrogram(
     sr : int
         Sampling rate in Hz.
     db_scale : bool, optional
-        Whether to convert the spectrogram to decibel scale.
+        Whether to convert the spectrogram to decibel scale. Default is True.
     cmap : str, optional
         Colormap for the spectrogram.
-    vmin, vmax : float or None
-        Color limits.
     title : str, optional
-        Title of the plot.
+        Title of the plot. If None, title is generated based on 'freq_scale'.
     db_ref : float or None
         Reference for dB scaling (max if None).
+    dynamic_range : float or None, optional
+        Clip values below (max_dB - dynamic_range) after dB conversion. Set to None if no clipping is desired.
+        Useful for suppressing low-amplitude noise. Default is 100.
     flim : tuple of float or None
         Frequency limits in Hz.
     tlim : tuple of float or None
         Time limits in seconds.
-    freq_scale : {"mel", "log", None}
-        Apply mel or log frequency scaling.
-    n_fft : int, optional
-        FFT size used to generate the spectrogram (required for mel/log scaling).
+    freq_scale : {"linear", "log", "mel"}, optional
+        Frequency axis scale. Choose "linear", "log", or "mel". Default is "linear".
+    window_length : int, optional
+        Length of the window for STFT (in samples). Default is 512.
+    window : str or ArrayLike, optional
+        Windowing function used for the STFT. Default is "hann".
+    zero_padding : int, optional
+        Number of zeros to pad each windowed frame. Default is 0.
+    overlap : float, optional
+        Percentage of overlap between successive windows (0 to 100). Default is 50.
+    noisereduction : int, optional
+        Level of noise reduction to apply, if any. Default is None (no reduction).
     n_bands : int, optional
-        Number of mel or log bands to use.
+        Number of frequency bands for mel or log scaling. Default is 40.
     corner_frequency : float, optional
-        Corner frequency used for perceptual scaling.
+        Corner frequency for perceptual frequency scaling (used in mel scale).
+    plot : tuple(matplotlib.figure.Figure, matplotlib.axes.Axes), optional
+        Existing matplotlib Figure and Axes objects to plot into. If None, a new figure and axes are created.
     **kwargs : dict
-        Extra arguments passed to imshow function.
+        Additional keyword arguments passed to `matplotlib.pyplot.imshow`.
     """
     Sx, t, f = spectrogram(
         data=data,
         sr=sr,
         window_length=window_length,
         window=window,
-        zero_padding=zero_padding,
         overlap=overlap,
         noisereduction=noisereduction,
         complex_output=False
@@ -150,7 +94,7 @@ def plot_spectrogram(
         fmin = flim[0] if flim else 0.0
         fmax = flim[1] if flim and flim[1] else sr / 2
         
-        fb, f_centers = mel_filterbank(n_bands, window_length + zero_padding, sr, fmin=fmin, fmax=fmax, corner_frequency=corner_frequency)
+        fb, f_centers = mel_filterbank(n_bands, window_length, sr, fmin=fmin, fmax=fmax, corner_frequency=corner_frequency)
         f = f_centers
         Sx = fb @ Sx
 
@@ -158,7 +102,10 @@ def plot_spectrogram(
     if db_scale:
         ref = np.max(Sx) if db_ref is None else db_ref
         Sx = 20 * np.log10(Sx / ref)
-        # Sx[Sx < -100] = -100
+        
+        if dynamic_range is not None:
+            if dynamic_range is not None:
+                Sx = np.maximum(Sx, -dynamic_range)
 
     # Apply frequency limits
     if flim is not None and freq_scale in ("linear", "log"):  # already handled in mel case
@@ -174,7 +121,9 @@ def plot_spectrogram(
         t = t[mask]
         Sx = Sx[:, mask]
 
-    if ax is None:
+    if plot is not None:
+        fig, ax = plot
+    else: 
         fig, ax = plt.subplots(figsize=(10, 5))
 
     im = ax.imshow(Sx, aspect='auto', origin='lower', extent=(t[0], t[-1], f[0], f[-1]), cmap=cmap, **kwargs)
@@ -189,13 +138,11 @@ def plot_spectrogram(
         title = f"{freq_scale}-scaled spectrogram"
     ax.set_title(title)
 
-    if ax is None:
-        fig.colorbar(im, ax=ax, label="Amplitude [dB]" if db_scale else "Magnitude")
-        plt.tight_layout()
+    fig.colorbar(im, ax=ax, label=("Amplitude [dB]" if db_scale else "Magnitude"))
+    plt.tight_layout()
+
+    if plot is None:
         plt.show()
-        return
-    
-    return ax
 
 
 def plot_cepstrum(
@@ -203,7 +150,7 @@ def plot_cepstrum(
         sr : int, 
         max_quefrency: float = 0.05,
         log_scale : bool = True, 
-        ylim : Optional[float] = None,
+        ylim : Optional[Tuple] = None,
         title : Optional[str] = None,
         **kwargs : Any
 ) -> None:
@@ -218,8 +165,10 @@ def plot_cepstrum(
         Sampling rate of the original signal.
     max_quefrency : float, optional
         Maximum quefrency (in seconds) to plot. Defaults to 0.05s.
-    log_scale : bool
+    log_scale : bool, optional
         Wether to log-scale the y-axis. Defaults to True.
+    ylim : tuple, optional
+        Limits for the y-axis.
     title : str or None
         Title for the plot. If None, a default will be generated.
     """
@@ -232,7 +181,7 @@ def plot_cepstrum(
     if log_scale:
         plt.yscale("log")
     if ylim:
-        plt.ylim(0, ylim)
+        plt.ylim(ylim)
     plt.ylabel("Cepstrum")
     plt.title(title or f"Cepstrum (Sampling rate: {sr} Hz)")
     plt.grid(True)
@@ -252,6 +201,7 @@ def plot_cepstral_coefficients(
         filterbank_type: Literal["mel", "linear", "log"] = "mel",
         **kwargs
     ) -> None:
+        #TODO axis labels
         ceps = cepstral_coefficients(
             data, 
             sr, 
@@ -263,8 +213,8 @@ def plot_cepstral_coefficients(
             fmax=fmax,
             filterbank_type=filterbank_type,
             **kwargs)
-        print(ceps.shape)
-        plt.imshow(ceps)
+        
+        plt.imshow(ceps, cmap="grey")
 
 
 def dominant_frequencies(
@@ -348,14 +298,17 @@ def plot_features(
     spec, times, freqs = spectrogram(data, sr)
     freq_ms, ms = spectrum(data, sr)#, mode="power")
     spectrogram_db = 20 * np.log10(np.abs(spec))
+    #dynamic range to 100 dB
+    spectrogram_db = np.maximum(spectrogram_db, -100)
 
     # Spectrogram with Dominant Frequencies
     plt.figure(figsize=(12, 12))
-    plt.subplot(3, 1, 1)
+    ax = plt.subplot(3, 1, 1)
     plt.title("Spectrogram with Dominant Frequencies")
-    plt.pcolormesh(times, freqs, spectrogram_db, shading='gouraud', cmap='viridis')
+    # plt.pcolormesh(times, freqs, spectrogram_db, shading='gouraud', cmap='grey')
+    im = ax.imshow(spectrogram_db, aspect='auto', origin='lower', extent=(times[0], times[-1], freqs[0], freqs[-1]), cmap="grey")
     plt.scatter(times, features["dominant_freqs"], color=(0.7, 0.1, 0.1, 0.3), marker="o", label='Dominant Frequency')
-    plt.colorbar(label="Amplitude (dB)")
+    plt.colorbar(im, ax=ax, label="Amplitude (dB)")
     plt.xlabel("Time (s)")
     plt.ylabel("Frequency (Hz)")
     plt.legend()
@@ -370,7 +323,6 @@ def plot_features(
     cutoff = len(freq_ms) // 3
     plt.plot(freq_ms[:-cutoff], ms[:-cutoff], label="Magnitude Spectrum", color='blue')
     
-    #plt.axvline(features["mean_frequency"], color='green', linestyle="--", label="Mean Frequency (kHz)")
     plt.axvline(features["peak_frequency"], color='orange', linestyle="-", label="Peak Frequency (kHz)")
     plt.axvline(features["fq_median"], color='red', linestyle="--", label="Median")
     plt.axvline(features["fq_q1"], color='yellow', linestyle="--", label="Q1")
@@ -412,7 +364,6 @@ def plot_features(
 
     plt.tight_layout()
     plt.show()
-
 
 
 def plot_pitch_candidates(
@@ -458,12 +409,11 @@ def plot_pitch_candidates(
                 pitches.append(best[0])
         ax.scatter(times, pitches, color=(0.7, 0.1, 0.1, 0.3), marker="o", label='Strongest pitch candidate')
     
-
     if tlim:
         ax.set_xlim(tlim)
         
     if ax is None:
-        plt.title("Praat-style Pitch Tracking")
+        plt.title("Autocorrelation based pitch tracking")
         plt.xlabel("Time [s]")
         plt.ylabel("Pitch [Hz]")
         plt.grid(True)
@@ -486,10 +436,15 @@ def plot_pitch_on_spectrogram(
     db_scale : bool = True,
     flim : Optional[Tuple[float, float]] = None,
     tlim : Optional[Tuple[float, float]] = None,
-    cmap : str = 'viridis'
+    title : str = "Spectrogram with Pitch Candidates",
+    cmap : str = 'grey',
+    plot : Optional[Tuple[Figure, Axes]] = None,
 ) -> None:
     
-    fig, ax = plt.subplots(figsize=(10, 5))
+    if plot is None:
+        fig, ax = plt.subplots(figsize=(10, 5))
+    else: 
+        fig, ax = plot
     
     plot_spectrogram(
         data,
@@ -499,9 +454,9 @@ def plot_pitch_on_spectrogram(
         cmap=cmap, 
         flim=flim,
         tlim=tlim,
-        title="Spectrogram with Pitch Candidates",
+        title=title,
         window_length=window_length,
-        ax=ax
+        plot=(fig, ax)
     )
 
     plot_pitch_candidates(
@@ -511,5 +466,5 @@ def plot_pitch_on_spectrogram(
         tlim=tlim,
         ax=ax,
         )
-
+    
     plt.show()

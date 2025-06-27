@@ -110,7 +110,6 @@ def extract_all_features(
     from .spectral import spectral_features
     from .temporal import temporal_features
     from .spectrotemporal import spectrotemporal_features
-    # TODO spectrotemporal
     
     data = check_signal_format(data)
     sr = check_sr_format(sr)

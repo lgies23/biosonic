@@ -17,9 +17,8 @@ def spectrogram(
     sr: int,
     window_length: int = 512,
     window: Union[str, ArrayLike] = "hann",
-    zero_padding: int = 0,
     overlap: float = 50,
-    noisereduction: Optional[int] = None,
+    noisereduction: Optional[Literal["time", "frequency"]] = None,
     complex_output: bool = False,
 ) -> Tuple[NDArray[np.float32], NDArray[np.float32], NDArray[np.float32]]:
     """
@@ -36,15 +35,13 @@ def spectrogram(
     window : str or tuple, optional
         Type of window to use (e.g., 'hann', 'hamming' of scipy.signal.windows) or a custom window array. 
         Defaults to 'hann'.
-    zero_padding : int, optional
-        Number of zeros to pad to each FFT window. Default is 0.
     overlap : float, optional
         Overlap between adjacent windows as a percentage (0–100). Default is 50.
-    noisereduction : int or None, optional
-        Noise reduction mode:
-        - `None`: no noise reduction
-        - `1`: subtract median across time
-        - `2`: subtract median across frequency
+    noisereduction : {"time", "frequency"}, optional
+        Apply noise reduction:
+        - "time": subtract median across time
+        - "frequency": subtract median across frequency
+        - None: no noise reduction (default)
     complex_output : bool, optional
         If True, return the complex STFT result. If False, return magnitude. Default is False.
 
@@ -76,12 +73,10 @@ def spectrogram(
     [2] J. Sueur, T. Aubin, C. Simonis (2008). “Seewave: a free modular tool for sound analysis and 
     synthesis.” Bioacoustics, 18, 213-226.
     """
-    # TODO more scaling, dynamic range, dB transform, invert, etc 
     if window_length % 2 != 0:
         raise ValueError("'window_length' must be even")
 
     noverlap = int(window_length * overlap / 100)
-    nfft = window_length + zero_padding
 
     if isinstance(window, str):
         try:
@@ -99,7 +94,7 @@ def spectrogram(
         window=window,
         nperseg=window_length,
         noverlap=noverlap,
-        nfft=nfft,
+        nfft=window_length,
         padded=False,
         boundary=None
     )
@@ -110,12 +105,12 @@ def spectrogram(
     S_real = np.abs(Sx)
 
     # Noise reduction
-    if noisereduction == 1:
+    if noisereduction == "time":
         noise = np.median(S_real, axis=0)
-        S_real = np.abs(S_real - noise[:, None])
-    elif noisereduction == 2:
-        noise = np.median(S_real, axis=1)
         S_real = np.abs(S_real - noise[None, :])
+    elif noisereduction == "frequency":
+        noise = np.median(S_real, axis=1)
+        S_real = np.abs(S_real - noise[:, None])
 
     return S_real, t, f
 
