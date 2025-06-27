@@ -2,8 +2,8 @@ from typing import Optional, Tuple, Union, Dict, Literal, Any
 import numpy as np
 from numpy.typing import NDArray, ArrayLike
 from scipy import signal
-from scipy.fft import fft, ifft
-
+from scipy.fft import fft, ifft, rfft
+from scipy.fftpack import dct
 import matplotlib.pyplot as plt
 
 from .temporal import temporal_entropy
@@ -185,11 +185,10 @@ def cepstral_coefficients(
     window_length: int = 512,
     n_filters: int = 32,
     n_ceps: int = 16,
+    pre_emphasis: float = 0.97,
     fmin: float = 0.0,
     fmax: Optional[float] = None,
     filterbank_type: Literal["mel", "linear", "log"] = "mel",
-    dct_type: int = 2,
-    norm: Optional[str] = "ortho",
     **kwargs : Any
 ) -> ArrayLike:
     """
@@ -201,54 +200,54 @@ def cepstral_coefficients(
         Input time-domain signal.
     sr : int
         Sampling rate in Hz.
-    n_fft : int
-        FFT size.
+    window_length : int
+        FFT size in samples.
     n_filters : int
         Number of filters in the filter bank.
     n_ceps : int
         Number of cepstral coefficients to return.
+    pre_emphasis : float
+        Pre-emphasis coefficient to apply. Default is 0.97
     fmin : float
         Minimum frequency for the filter bank.
     fmax : Optional[float]
         Maximum frequency for the filter bank. Defaults to Nyquist (sr/2).
     filterbank_type : {'mel', 'linear', 'log'}
         Type of filter bank to apply before DCT.
-    dct_type : int
-        Type of Discrete Cosine Transform. Typically 2 for MFCCs.
-    norm : Optional[str]
-        Norm parameter for `scipy.fftpack.dct`. Use 'ortho' for MFCCs.
-    corner_frequency : Optional[float]
-        Corner frequency for mel scaling if other than 1000 Hz is desired, given in Hz. If provided, calculations are based on Fant (1970).
-    after : Literal
-        Choice of Mel scale formula to use.
-        - 'fant': Classic formula: `f = b * (exp(m/a) - 1)` with `a=b=1000`
-        - 'oshaughnessy' or 'beranek': Common formula: `a=2595`, `b=700`
-        - 'umesh': Rational model: `f = b * m / (1 - a * m)`
-        - 'koenig': (Not yet implemented)
-    base : float
-        Base of the logarithmic spacing. Typically 2 (for octaves).
+    **kwargs : dict
+        Optional keyword arguments for the filter banks, e.g. corner frequency for mel.
 
     Returns
     -------
     np.ndarray
         Cepstral coefficient array of shape (n_ceps,).
     """
-    from scipy.fftpack import dct
+    def liftering(cc: np.ndarray, D: int = 22) -> np.ndarray:
+        """
+        Apply sinusoidal liftering to cepstral coefficients.
 
-    # power spectrum
-    data_windowed = window_signal(data, sr, window_length, "hann", 0.01)
+        Parameters:
+        - cc: Cepstral coefficients (2D array: frames x coefficients)
+        - D: Liftering parameter (default 22, typical for MFCCs)
 
-    spectrogram = np.empty((int(1 + window_length // 2), np.transpose(data_windowed).shape[1]))
-    for i in range(spectrogram.shape[1]):
-        spectrogram[:, i] = np.abs(np.fft.rfft(data_windowed.T[:, i], n=window_length)[:spectrogram.shape[0]]) ** 2
+        Returns:
+        - Lifted cepstral coefficients
+        """
+        cc_lift = np.zeros(cc.shape)
 
-    plt.figure(figsize=(15,6))
-    plt.imshow(np.transpose(spectrogram))
+        n = np.arange(1, cc_lift.shape[1] + 1)
+        D = 22
+        w = 1 + (D / 2) * np.sin(np.pi * n / D)
 
-    plt.close()
+        return cc * w
 
-    # log_energies = np.log(spectrum + 1e-30)
-    # print(log_energies.shape)
+    # pre-emphasis - from https://www.geeksforgeeks.org/nlp/mel-frequency-cepstral-coefficients-mfcc-for-speech-recognition/
+    data_preemphasized = np.append(data[0], data[1:] - pre_emphasis * data[:-1])
+
+    # window and fft
+    data_windowed = window_signal(data_preemphasized, sr, window_length)
+    mag_frames = np.abs(rfft(data_windowed, window_length))
+    pow_frames = (1/window_length) * mag_frames **2
 
     # filter bank selection
     if fmax is None:
@@ -259,23 +258,21 @@ def cepstral_coefficients(
     elif filterbank_type == "linear":
         fbanks, _ = linear_filterbank(n_filters, window_length, sr, fmin, fmax)
     elif filterbank_type == "log":
-        fbanks, _ = log_filterbank(n_filters, window_length, sr, fmin, fmax, **kwargs)
+        raise NotImplementedError("Log frequency scale is not yet implemented for cepstral coefficients in Version 0.")
+        #fbanks, _ = log_filterbank(n_filters, window_length, sr, fmin, fmax, **kwargs)
     else:
         raise ValueError(f"Unknown filterbank_type: {filterbank_type}")
 
-    audio_filtered = np.dot(fbanks, spectrogram)
-    audio_log = 10.0 * np.log10(audio_filtered + 1e-30)
+    audio_filtered = np.dot(pow_frames, fbanks.T)
+    audio_filtered = np.where(audio_filtered == 0, np.finfo(float).eps, audio_filtered) # avoid 0 division
+    audio_filtered = 20 * np.log10(audio_filtered)  # to dB
 
     # DCT to cepstral domain
-    ceps = dct(audio_log, type=dct_type, norm=norm)[:n_ceps]
+    ceps = dct(audio_filtered, type=2, norm="ortho", axis=1)
 
-    plt.figure(figsize=(15,5))
-    plt.plot(np.linspace(0, len(data) / sr, num=len(data)), data)
-    plt.imshow(ceps, aspect='auto', origin='lower')
+    ceps = liftering(ceps)[:, :n_ceps]
 
-    plt.close()
-
-    return np.asarray(ceps)
+    return np.asarray(ceps.T)[::-1]
 
 
 def spectrotemporal_entropy(

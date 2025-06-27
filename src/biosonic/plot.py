@@ -201,29 +201,41 @@ def plot_spectrogram(
 def plot_cepstrum(
         data : ArrayLike,
         sr : int, 
+        max_quefrency: float = 0.05,
+        log_scale : bool = True, 
+        ylim : Optional[float] = None,
+        title : Optional[str] = None,
         **kwargs : Any
 ) -> None:
-    
-    t = np.arange(len(data)) / sr
-    ceps, _ = cepstrum(data, sr, **kwargs)
+    """
+    Plot the cepstrum against quefrency (in seconds).
 
-    fig = plt.figure()
-    ax0 = fig.add_subplot(211)
-    ax0.plot(t, data)
-    ax0.set_xlabel('time in seconds')
-    # ax0.set_xlim(0.0, 0.05)
-    ax1 = fig.add_subplot(212)
-    ax1.plot(t, ceps)
-    ax1.set_xlabel('quefrency in seconds')
-    ax1.set_xlim(0.005, 0.015)
-    # ax1.set_ylim(-5., +10.)
-    # plt.figure(figsize=(14, 5))
-    # plt.plot(t, ceps)
-    # plt.title("Cepstrum")
-    # plt.xlabel("Coefficient Index")
-    # plt.ylabel("Amplitude")
-    # plt.grid(True)
+    Parameters
+    ----------
+    data : ArrayLike
+        Signal to use for cepstrum calculation.
+    sr : int
+        Sampling rate of the original signal.
+    max_quefrency : float, optional
+        Maximum quefrency (in seconds) to plot. Defaults to 0.05s.
+    log_scale : bool
+        Wether to log-scale the y-axis. Defaults to True.
+    title : str or None
+        Title for the plot. If None, a default will be generated.
+    """
+    ceps, quefs = cepstrum(data, sr, **kwargs)
 
+    mask = quefs <= max_quefrency
+
+    plt.plot(quefs[mask], ceps[mask], color='steelblue')
+    plt.xlabel("Quefrency (s)")
+    if log_scale:
+        plt.yscale("log")
+    if ylim:
+        plt.ylim(0, ylim)
+    plt.ylabel("Cepstrum")
+    plt.title(title or f"Cepstrum (Sampling rate: {sr} Hz)")
+    plt.grid(True)
     plt.tight_layout()
     plt.show()
 
@@ -231,12 +243,28 @@ def plot_cepstrum(
 def plot_cepstral_coefficients(
         data : ArrayLike, 
         sr : int, 
-        n_fft : int, 
+        window_length : int, 
         n_filters : int = 32, 
-        n_ceps : int = 40
+        n_ceps : int = 40,
+        pre_emphasis: float = 0.97,
+        fmin: float = 0.0,
+        fmax: Optional[float] = None,
+        filterbank_type: Literal["mel", "linear", "log"] = "mel",
+        **kwargs
     ) -> None:
-        ceps = cepstral_coefficients(data, sr, n_fft, n_filters, n_ceps)
+        ceps = cepstral_coefficients(
+            data, 
+            sr, 
+            window_length, 
+            n_filters, 
+            n_ceps, 
+            pre_emphasis=pre_emphasis, 
+            fmin=fmin,
+            fmax=fmax,
+            filterbank_type=filterbank_type,
+            **kwargs)
         print(ceps.shape)
+        plt.imshow(ceps)
 
 
 def dominant_frequencies(
@@ -428,7 +456,6 @@ def plot_pitch_candidates(
                 best = max(voiced, key=lambda x: x[1])
                 times.append(t)
                 pitches.append(best[0])
-        # ax.plot(times, pitches, 'b-', label="Strongest candidate", linewidth=1.5)
         ax.scatter(times, pitches, color=(0.7, 0.1, 0.1, 0.3), marker="o", label='Strongest pitch candidate')
     
 

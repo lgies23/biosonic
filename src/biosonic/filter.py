@@ -57,8 +57,7 @@ def filterbank(
         filterbank[i - 1, left:center] = (np.arange(left, center) - left) / (center - left)
         filterbank[i - 1, center:right] = (right - np.arange(center, right)) / (right - center)
 
-    # normalize
-    # taken from librosa
+    # normalize, from librosa
     enorm = 2.0 / (bin_indices[2:n_filters+2] - bin_indices[:n_filters])
     filterbank *= enorm[:, np.newaxis]
 
@@ -164,21 +163,25 @@ def log_filterbank(
 
     check_filterbank_parameters(n_filters, n_fft, sr, fmin, fmax)
 
+    if fmin <= 0:
+        raise ValueError("fmin must be greater than 0 for log-scaled filterbanks.")
+    
     # compute log-spaced center frequencies
-    log_min = np.log(fmin) / np.log(base) if fmin > 0 else 0
+    log_min = np.log(fmin) / np.log(base)
     log_max = np.log(fmax) / np.log(base)
     log_centers = np.linspace(log_min, log_max, n_filters + 2)
     hz_points = base ** log_centers
 
     # convert to FFT bin indices
     bin_indices = np.floor((n_fft + 1) * hz_points / sr).astype(int)
-
+    bin_indices = np.clip(bin_indices, 0, n_fft // 2)
+    
     f_centers = hz_points[1:-1]
 
     return filterbank(n_filters, n_fft, bin_indices), f_centers
 
 
-# TODO lowpass, highpass, bandpass, bandstop, weighted filter (seewave), rolloff like in audacity f-filter (tuneR)
+# TODO weighted filter (seewave), rolloff like in audacity f-filter (tuneR)
 def filter(
         data : ArrayLike, 
         sr : int,
@@ -226,18 +229,13 @@ def filter(
     Virtanen P et al. 2020 SciPy 1.0: fundamental algorithms for scientific computing in Python. 
     Nat Methods 17, 261–272. (doi:10.1038/s41592-019-0686-2)
     """
-    nyquist = sr / 2
-
-    normal_cutoff : Union[float, list[float]]
 
     if type in ['bandpass', 'bandstop']:
         if not isinstance(f_cutoff, (list, tuple)) or len(f_cutoff) != 2:
             raise ValueError("f_cutoff must be a tuple/list of two values for bandpass/bandstop filters.")
-        # normal_cutoff = [f / nyquist for f in f_cutoff]
     else:
         if isinstance(f_cutoff, (list, tuple)):
             raise ValueError("f_cutoff must be a scalar for lowpass/highpass filters.")
-        # normal_cutoff = f_cutoff / nyquist
 
     b, a = butter(order, f_cutoff, btype=type, analog=False, fs=sr)
     filtered_signal = filtfilt(b, a, data)

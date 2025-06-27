@@ -3,117 +3,114 @@ import numpy as np
 from scipy.fft import rfft, irfft
 from scipy.interpolate import interp1d
 from scipy.optimize import minimize_scalar, brent
-from scipy.signal import windows, correlate, find_peaks
+from scipy.signal import windows
 from typing import Tuple, List, Optional, Any
 import matplotlib.pyplot as plt
 
 from biosonic.compute.utils import frame_signal
 
 
-def afc(
-        data : ArrayLike, 
-        window_length : int, 
-        time_step : int, 
-        max_lag : int
-) -> ArrayLike:
-    """
-    Compute ACF values for all lags from 0 to max_lag with boundary checking.
-    """
-    acf_vals : list[float] = []
-    x = data[time_step : time_step + window_length]
-    if len(x) < window_length:
-        return np.zeros(max_lag + 1)
-
-    for lag in range(max_lag + 1):
-        start = time_step + lag
-        y = data[start : start + window_length]
-        if len(y) != window_length:
-            break  # avoid broadcasting error
-        acf_vals.append(np.sum(x * y))
-    
-    return np.array(acf_vals)
+def difference_function(x: np.ndarray, max_lag: int) -> np.ndarray:
+    """YIN difference function d(τ) = sum_j (x_j - x_{j+τ})^2"""
+    N = len(x)
+    d = np.zeros(max_lag + 1)
+    for lag in range(1, max_lag + 1):
+        d[lag] = np.sum((x[:N - lag] - x[lag:]) ** 2)
+    return d
 
 
-def cmnd(
-        data: ArrayLike, 
-        window_length: int, 
-        time_step: int, 
-        bounds: Tuple[int, int]
-) -> ArrayLike:
-    min_lag, max_lag = bounds
-
-    acf = afc(data, window_length, time_step, max_lag)
-
-    actual_max_lag = len(acf) - 1
-    if actual_max_lag < max_lag:
-        max_lag = actual_max_lag
-
-    df = []
-    for lag in range(min_lag, max_lag + 1):
-        seg = data[time_step + lag : time_step + lag + window_length]
-        if len(seg) < window_length:
-            break
-        df_val = acf[0] + np.sum(seg ** 2) - 2 * acf[lag]
-        df.append(df_val)
-
-    if len(df) == 0:
-        return np.asarray(df) 
-    df = np.array(df)
-    cmndf = np.zeros_like(df)
+def cumulative_mean_normalized_difference(d: np.ndarray) -> np.ndarray:
+    """CMND function from the difference function."""
+    cmndf = np.zeros_like(d)
     cmndf[0] = 1  # Avoid divide-by-zero
-    cumsum = np.cumsum(df)
-    cmndf[1:] = df[1:] * np.arange(1, len(df)) / cumsum[1:]
-
+    cumsum = np.cumsum(d[1:])
+    cmndf[1:] = d[1:] * np.arange(1, len(d)) / cumsum
     return cmndf
 
 
+def parabolic_interpolation(cmndf: np.ndarray, tau: int) -> float:
+    """Refine τ estimate using parabolic interpolation."""
+    if tau <= 0 or tau >= len(cmndf) - 1:
+        return float(tau)
+    alpha = cmndf[tau - 1]
+    beta = cmndf[tau]
+    gamma = cmndf[tau + 1]
+    denominator = alpha + gamma - 2 * beta
+    if denominator == 0:
+        return float(tau)
+    shift = 0.5 * (alpha - gamma) / denominator
+    return float(tau + shift)
+
+
 def fundamental_frequency(
-    data: ArrayLike,
+    x: np.ndarray,
     sr: int,
     window_length: int,
     time_step: int,
     bounds: Tuple[int, int],
     threshold: float = 0.1
 ) -> Optional[float]:
-    cmndf = cmnd(data, window_length, time_step, bounds)
-    if len(cmndf) == 0:
+    """Estimate fundamental frequency from a single frame using YIN."""
+    min_lag, max_lag = bounds
+    frame = x[time_step:time_step + window_length]
+    if len(frame) < window_length:
         return None
-    for i, val in enumerate(cmndf):
-        if val < threshold:
-            return sr / (i + bounds[0])
-    return float(sr / (np.argmin(cmndf) + bounds[0]))
+
+    # Optional: remove DC offset
+    frame = frame - np.mean(frame)
+
+    d = difference_function(frame, max_lag)
+    cmndf = cumulative_mean_normalized_difference(d)
+
+    max_lag = min(max_lag, len(cmndf) - 1)
+    for i in range(min_lag, max_lag):
+        if cmndf[i] < threshold:
+            refined_tau = parabolic_interpolation(cmndf, i)
+            return sr / refined_tau
+
+    return None
 
 
 def yin(
-    data: ArrayLike,
+    data: np.ndarray,
     sr: int,
     window_length: int,
     time_step_sec: float,
     flim: Tuple[int, int],
     threshold: float = 0.1
-) -> ArrayLike:
+) -> Tuple[np.ndarray, np.ndarray]:
+    """YIN pitch tracking over an entire signal.
+
+    Returns:
+        times (np.ndarray): time points (in seconds)
+        frequencies (np.ndarray): estimated f₀ at each time point
+    """
     step_size = int(time_step_sec * sr)
     num_steps = (len(data) - window_length) // step_size
 
     min_lag = int(sr / flim[0])
     max_lag = int(sr / flim[1])
 
+    times = []
     frequencies = []
+
     for i in range(num_steps):
-        freq = fundamental_frequency(
+        time_step = i * step_size
+        time_sec = time_step / sr
+        f0 = fundamental_frequency(
             data,
             sr,
             window_length,
-            i * step_size,
+            time_step,
             bounds=(min_lag, max_lag),
             threshold=threshold
         )
-        frequencies.append(freq)
+        if f0 is not None:
+            times.append(time_sec)
+            frequencies.append(f0)
 
-    strengths = np.zeros(len(frequencies)) # placeholder until implemented 
-    return (frequencies, strengths)
-        
-        
+    return np.array(times), np.array(frequencies)
+
 
 def preprocess_for_pitch_(
         data : ArrayLike, 
@@ -410,13 +407,13 @@ def boersma(
     #     for pitch, strength in cands:
     #         print(f"  Pitch: {pitch:.2f} Hz, Strength: {strength:.3f}")
 
-    fig, axs = plt.subplots(2, 3)
-    axs[0][0].plot(frame)
-    axs[0][1].plot(window)
-    axs[0][2].plot(windowed_frame)
-    axs[1][0].plot(lag_domain)
-    axs[1][1].plot(autocorr_hann)
-    axs[1][2].plot(sampled_autocorr)
+    # fig, axs = plt.subplots(2, 3)
+    # axs[0][0].plot(frame)
+    # axs[0][1].plot(window)
+    # axs[0][2].plot(windowed_frame)
+    # axs[1][0].plot(lag_domain)
+    # axs[1][1].plot(autocorr_hann)
+    # axs[1][2].plot(sampled_autocorr)
 
     time_points = np.arange(len(framed_signal)) * timestep
     pitch_track = viterbi_pitch_path(
