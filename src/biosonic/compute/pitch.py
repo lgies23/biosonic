@@ -349,7 +349,7 @@ def boersma(
     # max_pitch = min(max_pitch, sr / 4) 
 
     window_length = 3 * (1 / min_pitch) # three periods of minimum frequency
-    data_preprocessed = preprocess_for_pitch_(data, sr) # TODO am I doing this correctly?
+    data_preprocessed = preprocess_for_pitch_(data, sr)
     global_peak : float = np.max(np.abs(data_preprocessed))
     window_length_samples = int(window_length * sr)
 

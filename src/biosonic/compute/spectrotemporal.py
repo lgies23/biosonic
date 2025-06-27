@@ -175,15 +175,16 @@ def cepstrum(
 
 
 def cepstral_coefficients(
-    data: ArrayLike,
-    sr: int,
-    window_length: int = 512,
-    n_filters: int = 32,
-    n_ceps: int = 16,
-    pre_emphasis: float = 0.97,
-    fmin: float = 0.0,
-    fmax: Optional[float] = None,
-    filterbank_type: Literal["mel", "linear", "log"] = "mel",
+    data : ArrayLike,
+    sr : int,
+    window_length : int = 512,
+    n_filters : int = 32,
+    n_ceps : int = 16,
+    pre_emphasis : float = 0.97,
+    fmin : float = 0.0,
+    fmax : Optional[float] = None,
+    filterbank_type : Literal["mel", "linear", "log"] = "mel",
+    skip_first : bool = True,
     **kwargs : Any
 ) -> ArrayLike:
     """
@@ -209,6 +210,8 @@ def cepstral_coefficients(
         Maximum frequency for the filter bank. Defaults to Nyquist (sr/2).
     filterbank_type : {'mel', 'linear', 'log'}
         Type of filter bank to apply before DCT.
+    skip_first : bool
+        Wether to excluse the first cepstral coefficient. Defaults to True.
     **kwargs : dict
         Optional keyword arguments for the filter banks, e.g. corner frequency for mel.
 
@@ -265,9 +268,12 @@ def cepstral_coefficients(
     # DCT to cepstral domain
     ceps = dct(audio_filtered, type=2, norm="ortho", axis=1)
 
-    ceps = liftering(ceps)[:, :n_ceps]
+    if skip_first: 
+        ceps = liftering(ceps)[:, 1:n_ceps+1]  # skip C0
+    else:
+        ceps = liftering(ceps)[:, :n_ceps]
 
-    return np.asarray(ceps.T)[::-1]
+    return np.asarray(ceps.T)
 
 
 def spectrotemporal_entropy(

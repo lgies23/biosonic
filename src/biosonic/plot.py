@@ -199,6 +199,7 @@ def plot_cepstral_coefficients(
         fmin: float = 0.0,
         fmax: Optional[float] = None,
         filterbank_type: Literal["mel", "linear", "log"] = "mel",
+        cmap : Optional[str] = "grey",
         **kwargs : Any
     ) -> None:
         #TODO axis labels
@@ -214,8 +215,10 @@ def plot_cepstral_coefficients(
             filterbank_type=filterbank_type,
             **kwargs)
         
-        plt.imshow(ceps, cmap="grey")
-
+        times = np.linspace(0, len(data) / sr, ceps.shape[0])
+        plt.xlabel("Time [s]")
+        plt.ylabel("Cepstral Coefficient Index")
+        im = plt.imshow(ceps, origin="lower", aspect="auto", extent=[times[0], times[-1], 0, n_ceps], cmap=cmap)
 
 def dominant_frequencies(
         times : ArrayLike, 
@@ -308,8 +311,8 @@ def plot_features(
     # plt.pcolormesh(times, freqs, spectrogram_db, shading='gouraud', cmap='grey')
     im = ax.imshow(spectrogram_db, aspect='auto', origin='lower', extent=(times[0], times[-1], freqs[0], freqs[-1]), cmap="grey")
     plt.scatter(times, features["dominant_freqs"], color=(0.7, 0.1, 0.1, 0.3), marker="o", label='Dominant Frequency')
-    plt.colorbar(im, ax=ax, label="Amplitude (dB)")
-    plt.xlabel("Time (s)")
+    plt.colorbar(im, ax=ax, label="Amplitude [dB]")
+    plt.xlabel("Time [s]")
     plt.ylabel("Frequency (Hz)")
     plt.legend()
 
@@ -336,7 +339,7 @@ def plot_features(
         label='Bandwidth'
     )
     plt.axvline(features["spectral_centroid"], color='pink', linestyle="--", label="Centroid")
-    plt.xlabel("Frequency (Hz)")
+    plt.xlabel("Frequency [Hz]")
     plt.ylabel("Magnitude")
     plt.legend()
 
@@ -358,7 +361,7 @@ def plot_features(
         label='Bandwidth'
     )
     plt.axvline(features["temporal_centroid"], color='pink', linestyle="--", label="Centroid")
-    plt.xlabel("Time (s)")
+    plt.xlabel("Time [s]")
     plt.ylabel("Amplitude")
     plt.legend()
 
