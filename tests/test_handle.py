@@ -268,8 +268,8 @@ def test_audio_segments_from_textgrid(
 
     for item, ref in zip(segments, labeled):
         assert isinstance(item, dict)
-        assert "segment" in item and "label" in item
-        assert isinstance(item["segment"], np.ndarray)
+        assert "data" in item and "label" in item
+        assert isinstance(item["data"], np.ndarray)
         assert item["label"] == ref["label"]
 
     mock_plot.assert_called_once()
