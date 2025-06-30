@@ -411,4 +411,4 @@ def audio_segments_from_textgrid(
 
     plot_boundaries_on_spectrogram(data, sr, boundaries)
     segments = segments_from_signal(data, sr, boundaries)
-    return [{"segment": seg, "label": str(b["label"])} for seg, b in zip(segments, boundaries)]
+    return [{"data": seg, "label": str(b["label"])} for seg, b in zip(segments, boundaries)]
