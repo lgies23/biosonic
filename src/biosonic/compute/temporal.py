@@ -285,16 +285,18 @@ def temporal_features(
     """
     Extracts a set of temporal features from the amplitude envelope of a signal.
 
-    Returns:
-        dict: {
-            "t_q1": float,
-            "t_median": float,
-            "t_q3": float,
-            "temporal_sd": float,
-            "temporal_skew": float,
-            "temporal_kurtosis": float,
-            "amplitude_envelope": NDArray[np.float64],
-            "duration": float
+    Returns
+    -------
+        dict
+        {
+        "t_q1": float,
+        "t_median": float,
+        "t_q3": float,
+        "temporal_sd": float,
+        "temporal_skew": float,
+        "temporal_kurtosis": float,
+        "amplitude_envelope": NDArray[np.float64],
+        "duration": float
         }
     """
     envelope = amplitude_envelope(data)

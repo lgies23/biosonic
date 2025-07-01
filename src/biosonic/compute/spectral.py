@@ -17,10 +17,10 @@ def spectrum(data: ArrayLike,
              sr: Optional[int] = None,
              mode: Union[str, int, float] = 'amplitude') -> Tuple[Optional[NDArray[np.float64]], NDArray[np.float64]]:
     """
-    Computes the magnitude spectrum of a signal, allowing for amplitude, power,
-    or arbitrary exponentiation of the magnitude.
+    Computes the magnitude spectrum of a signal, allowing for amplitude, power, or arbitrary exponentiation of the magnitude.
 
-    Args:
+    Parameters
+    ----------
         data : ArrayLike
             The input time-domain signal as a 1D array-like. 
         sr: Optional Integer, default=None
@@ -28,17 +28,19 @@ def spectrum(data: ArrayLike,
             of the magnitude spectrum. Defaults to None.
         mode : Union[str, int], default='amplitude'
             Specifies how to compute the spectrum:
-            - 'amplitude': return the amplitude spectrum (|FFT|).
-            - 'power': return the power spectrum (|FFT|^2).
-            - int or float: raise the magnitude to the given power (e.g., 3 for |FFT|^3).
+            - 'amplitude': return the amplitude spectrum (\|FFT\|).
+            - 'power': return the power spectrum (\|FFT\|^2).
+            - int or float: raise the magnitude to the given power (e.g., 3 for \|FFT\|^3).
 
-    Retuns:
+    Returns
+    -------
         Tuple[NDArray[np.float64], NDArray[np.float64]]
             A tuple (frequencies, spectrum), where:
             - frequencies: If sr is provided. 1D array of frequency bins corresponding to the spectrum.
             - spectrum: 1D array of the transformed frequency-domain representation (magnitude raised to the specified power).
     
-    Raises:
+    Raises
+    ------
         ValueError
             If `mode` is a string but not one of the supported options.
         TypeError
@@ -76,13 +78,15 @@ def quartiles(data: ArrayLike, sr: int) -> Tuple[float, float, float]:
     """
     Compute the 1st, 2nd (median), and 3rd quartiles of the power spectrum of a signal.
 
-    Args:
+    Parameters
+    ----------
         data : ArrayLike
             Input signal as a 1D array-like.
         sr : int
             Sampling rate (in Hz).
 
-    Retuns:
+    Returns
+    -------
         q1 : float
             Frequency at which the cumulative power spectrum reaches the 25% mark.
         q2 : float
@@ -90,7 +94,8 @@ def quartiles(data: ArrayLike, sr: int) -> Tuple[float, float, float]:
         q3 : float
             Frequency at which the cumulative power spectrum reaches the 75% mark.
 
-    Raises:
+    Raises
+    ------
         ValueError
             If the input signal is empty.
         ValueError
@@ -98,16 +103,19 @@ def quartiles(data: ArrayLike, sr: int) -> Tuple[float, float, float]:
         ValueError
             If the spectrum output is inconsistent (e.g., mismatched lengths).
 
-    Notes:
+    Notes
+    -----
         This function calculates spectral quartiles using the cumulative distribution function (CDF)
         of the signal's power spectrum. Quartiles are determined by finding the frequencies
         at which the CDF crosses 25%, 50%, and 75%.
 
-    See Also:
+    See Also
+    --------
         spectrum : Computes the spectral envelope of a signal.
         cumulative_distribution_function : Computes the normalized cumulative sum of a spectrum.
 
-    Examples:
+    Examples
+    --------
         >>> import numpy as np
         >>> from mymodule import spectral_quartiles
         >>> sr = 1000
@@ -140,20 +148,24 @@ def flatness(data: ArrayLike) -> Union[float, np.floating[Any]]:
     indicates a flat (white noise-like) spectrum, whereas a value close to 0 indicates 
     a peaky (tonal) spectrum.
 
-    Args:
+    Parameters
+    ----------
         data : ArrayLike
             Time-domain input signal (1D array-like).
 
-    Retuns:
+    Returns
+    -------
         float
             Spectral flatness value, defined as the ratio of the geometric mean to the arithmetic mean 
             of the signal's power spectrum (excluding leading/trailing zeros).
 
-    Raises:
+    Raises
+    ------
         ValueError
             If input signal is empty, contains only zeros, or the computed flatness is not a float (from np.mean and scipy's gmean).
 
-    References:
+    References
+    ----------
         Sueur, J. (2018). Sound Analysis and Synthesis with R*. Springer International Publishing, p. 299.
         https://doi.org/10.1007/978-3-319-77647-7
     """
@@ -183,13 +195,17 @@ def spectral_moments(
             Union[float, np.floating[Any]]
             ]:
     """
-    Args:
+    Calculate the first four spectral moments.
+
+    Parameters
+    ----------
     data : ArrayLike
         1D array-like representing the input signal.
     sampling_rate : float 
         Sampling rate of the signal in Hz.
 
-    Retuns:
+    Returns
+    -------
         float or np.floating
             Spectral centroid in Hz
         float or np.floating
@@ -200,7 +216,8 @@ def spectral_moments(
             Spectral kurtosis
             
 
-    References:
+    References
+    ----------
         Klapuri A, Davy M. 2006 Signal processing methods for music transcription. 
         New York: Springer. p.136
     """
@@ -236,29 +253,34 @@ def centroid(data: ArrayLike, sr: int)-> Union[float, np.floating[Any]]:
         .. math::
             C_f=\sum_{k \epsilon K_+}k X(k)
     
-    Args:
+    Parameters
+    ----------
         data : ArrayLike
             Input time-domain signal. Must be one-dimensional and convertible to a NumPy array.
         
         sr : int
             Sampling rate of the input signal in Hz.
 
-    Retuns:
+    Returns
+    -------
         float or np.floating
             Spectral centroid in Hz. A higher value indicates that the signal's energy 
             is biased toward higher frequencies.
 
-    Raises:
+    Raises
+    ------
         ValueError
             If the computed centroid is not a scalar floating-point value.
 
-    Examples:
+    Examples
+    --------
         >>> signal = np.random.randn(1024)
         >>> sr = 44100
         >>> centroid(signal, sr)
         7101.56
 
-    References:
+    References
+    ----------
         Klapuri A, Davy M. 2006 Signal processing methods for music transcription. 
         New York: Springer. p.136
     """
@@ -275,23 +297,27 @@ def bandwidth(data: ArrayLike, sr: int) -> Union[float, np.floating[Any]]:
         .. math::
             S_f=S_f=\sqrt{\sum_{k \epsilon K_+}(k-C_f)^2 X(k)}
         
-    Args:
+    Parameters
+    ----------
         data : ArrayLike
             Input signal as a 1D array-like.
         sr : int
             Sampling rate of the signal, in Hz.
 
-    Retuns:
+    Returns
+    -------
         float or np.floating
             The standard deviation of the signal.
     
-    Examples:
+    Examples
+    --------
         >>> import numpy as np
         >>> signal = np.array([1.0, 2.0, 3.0, 4.0, 5.0])
         >>> bandwidth(signal, sr=1)
         1.4142135623730951
 
-    References:
+    References
+    ----------
         Klapuri A, Davy M. 2006 Signal processing methods for music transcription. 
         New York: Springer. p.136
     """
@@ -309,17 +335,20 @@ def skewness(data: ArrayLike, sr: int) -> Union[float, np.floating[Any]]:
         .. math::
             \gamma_1=\frac{\sum_{k \epsilon K_+}(k-C_f)^3 X(k)}{S_f^3}
         
-    Args:
+    Parameters
+    ----------
     data : ArrayLike
         Input signal as a 1D array-like.
     sr : int
         Sampling rate of the signal, in Hz.
 
-    Retuns:
+    Returns
+    -------
         float or np.floating
             The skewness of the signal.
     
-    References:
+    References
+    ----------
         Klapuri A, Davy M. 2006 Signal processing methods for music transcription. 
         New York: Springer. p.136
     """
@@ -339,17 +368,20 @@ def kurtosis(data: ArrayLike, sr: int) -> Union[float, np.floating[Any]]:
         .. math::
             \gamma_2=\frac{\sum_{k \epsilon K_+}(k-C_f)^4 X(k)}{S_f^4}
         
-    Args:
+    Parameters
+    ----------
     data : ArrayLike
         Input signal as a 1D array-like.
     sr : int
         Sampling rate of the signal, in Hz.
 
-    Retuns:
+    Returns
+    -------
         float or np.floating
             The kurtosis of the signal.
     
-    References:
+    References
+    ----------
         Klapuri A, Davy M. 2006 Signal processing methods for music transcription. 
         New York: Springer. p.136
     """
@@ -368,17 +400,20 @@ def peak_frequency(data: ArrayLike, sr: int) -> Union[float, np.floating[Any]]:
     It identifies the frequency corresponding to the maximum magnitude in the spectrum, which represents the dominant
     or peak frequency of the signal.
 
-    Args:
+    Parameters
+    ----------
     data : ArrayLike
         1D array-like representing the input signal.
     sampling_rate : float 
         Sampling rate of the signal in Hz.
 
-    Retuns:
+    Returns
+    -------
         float
             The peak frequency in Hz.
 
-    Example:
+    Example
+    -------
         >>> import numpy as np
         >>> from biosonic.compute.temporal import peak_frequency
         >>> sampling_rate = 1000.0  # 1000 Hz
@@ -388,7 +423,8 @@ def peak_frequency(data: ArrayLike, sr: int) -> Union[float, np.floating[Any]]:
         >>> print(freq)
         50.0
 
-    Notes:
+    Notes
+    -----
         - The function assumes the input signal is real-valued and uniformly sampled.
     """
     data = check_signal_format(data)

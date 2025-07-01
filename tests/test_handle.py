@@ -229,7 +229,7 @@ def sample_audio():
     data = np.random.randn(sr * duration)
     return data, sr
 
-@patch("biosonic.praat.read_textgrid")
+@patch("biosonic.praat._read_textgrid")
 def test_boundaries_from_textgrid(mock_read_textgrid, mock_textgrid_data):
     mock_grid = MagicMock()
     mock_grid.interval_tier_to_array.return_value = mock_textgrid_data

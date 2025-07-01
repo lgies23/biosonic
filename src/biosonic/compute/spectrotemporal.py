@@ -332,7 +332,8 @@ def dominant_frequencies(
     Extracts the dominant frequency or frequencies from each time frame of a spectrogram 
     based on the scipy.signal function find_peaks.
 
-    Parameters:
+    Parameters
+    ----------
     data : ArrayLike
         Input 1D audio signal.
     sr : int
@@ -355,7 +356,8 @@ def dominant_frequencies(
     *args, **kwargs :
         Additional arguments passed to the scipy.signal ShortTimeFFT class.
     
-    Returns:
+    Returns
+    -------
     NDArray[np.float64]
         - If n_freqs == 1:
             1D array of shape (time_frames,) containing the dominant frequency per frame.

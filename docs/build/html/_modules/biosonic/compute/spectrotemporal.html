@@ -1,0 +1,595 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>biosonic.compute.spectrotemporal &mdash; BioSonic v0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=90b5f367"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            BioSonic
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../biosonic.html">biosonic package</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">BioSonic</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">biosonic.compute.spectrotemporal</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for biosonic.compute.spectrotemporal</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">Any</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">numpy.typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">NDArray</span><span class="p">,</span> <span class="n">ArrayLike</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">scipy</span><span class="w"> </span><span class="kn">import</span> <span class="n">signal</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">scipy.fft</span><span class="w"> </span><span class="kn">import</span> <span class="n">fft</span><span class="p">,</span> <span class="n">ifft</span><span class="p">,</span> <span class="n">rfft</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">scipy.fftpack</span><span class="w"> </span><span class="kn">import</span> <span class="n">dct</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.temporal</span><span class="w"> </span><span class="kn">import</span> <span class="n">temporal_entropy</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.spectral</span><span class="w"> </span><span class="kn">import</span> <span class="n">power_spectral_entropy</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">check_signal_format</span><span class="p">,</span> <span class="n">check_sr_format</span><span class="p">,</span> <span class="n">window_signal</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..filter</span><span class="w"> </span><span class="kn">import</span> <span class="n">linear_filterbank</span><span class="p">,</span> <span class="n">mel_filterbank</span><span class="p">,</span> <span class="n">log_filterbank</span>
+
+
+<div class="viewcode-block" id="spectrogram">
+<a class="viewcode-back" href="../../../biosonic.compute.html#biosonic.compute.spectrotemporal.spectrogram">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">spectrogram</span><span class="p">(</span>
+    <span class="n">data</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">,</span>
+    <span class="n">sr</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">window_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">512</span><span class="p">,</span>
+    <span class="n">window</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ArrayLike</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;hann&quot;</span><span class="p">,</span>
+    <span class="n">overlap</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span>
+    <span class="n">noisereduction</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;time&quot;</span><span class="p">,</span> <span class="s2">&quot;frequency&quot;</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">complex_output</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">],</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">],</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Compute the spectrogram of a waveform. Uses scipy.signal.stft and is oriented on seewave.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    data : ArrayLike</span>
+<span class="sd">        Input signal as a 1D array.</span>
+<span class="sd">    sr : int</span>
+<span class="sd">        Sampling rate in Hz.</span>
+<span class="sd">    window_length : int, optional</span>
+<span class="sd">        Length of the window in samples. Must be even. Default is 512.</span>
+<span class="sd">    window : str or tuple, optional</span>
+<span class="sd">        Type of window to use (e.g., &#39;hann&#39;, &#39;hamming&#39; of scipy.signal.windows) or a custom window array. </span>
+<span class="sd">        Defaults to &#39;hann&#39;.</span>
+<span class="sd">    overlap : float, optional</span>
+<span class="sd">        Overlap between adjacent windows as a percentage (0–100). Default is 50.</span>
+<span class="sd">    noisereduction : {&quot;time&quot;, &quot;frequency&quot;}, optional</span>
+<span class="sd">        Apply noise reduction:</span>
+<span class="sd">        - &quot;time&quot;: subtract median across time</span>
+<span class="sd">        - &quot;frequency&quot;: subtract median across frequency</span>
+<span class="sd">        - None: no noise reduction (default)</span>
+<span class="sd">    complex_output : bool, optional</span>
+<span class="sd">        If True, return the complex STFT result. If False, return magnitude. Default is False.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    Sx : np.ndarray</span>
+<span class="sd">        Spectrogram array (complex or magnitude depending on `complex_output`).</span>
+<span class="sd">    t : np.ndarray</span>
+<span class="sd">        Time vector corresponding to the columns of `Sx`, in seconds.</span>
+<span class="sd">    f : np.ndarray</span>
+<span class="sd">        Frequency vector corresponding to the rows of `Sx`, in Hz.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    ValueError</span>
+<span class="sd">        If `window_length` is not an even number.</span>
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    [1] Pauli Virtanen, Ralf Gommers, Travis E. Oliphant, Matt Haberland, Tyler Reddy, David Cournapeau, </span>
+<span class="sd">    Evgeni Burovski, Pearu Peterson, Warren Weckesser, Jonathan Bright, Stéfan J. van der Walt, </span>
+<span class="sd">    Matthew Brett, Joshua Wilson, K. Jarrod Millman, Nikolay Mayorov, Andrew R. J. Nelson, Eric Jones, </span>
+<span class="sd">    Robert Kern, Eric Larson, CJ Carey, İlhan Polat, Yu Feng, Eric W. Moore, Jake VanderPlas, Denis </span>
+<span class="sd">    Laxalde, Josef Perktold, Robert Cimrman, Ian Henriksen, E.A. Quintero, Charles R Harris, Anne M. </span>
+<span class="sd">    Archibald, Antônio H. Ribeiro, Fabian Pedregosa, Paul van Mulbregt, and SciPy 1.0 Contributors. </span>
+<span class="sd">    (2020) SciPy 1.0: Fundamental Algorithms for Scientific Computing in Python. Nature Methods, 17(3), </span>
+<span class="sd">    261-272. DOI: 10.1038/s41592-019-0686-2.</span>
+
+<span class="sd">    [2] J. Sueur, T. Aubin, C. Simonis (2008). “Seewave: a free modular tool for sound analysis and </span>
+<span class="sd">    synthesis.” Bioacoustics, 18, 213-226.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">window_length</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;&#39;window_length&#39; must be even&quot;</span><span class="p">)</span>
+
+    <span class="n">noverlap</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">window_length</span> <span class="o">*</span> <span class="n">overlap</span> <span class="o">/</span> <span class="mi">100</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">window</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">window</span> <span class="o">=</span> <span class="n">signal</span><span class="o">.</span><span class="n">windows</span><span class="o">.</span><span class="n">get_window</span><span class="p">(</span><span class="n">window</span><span class="p">,</span> <span class="n">window_length</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Invalid window type: </span><span class="si">{</span><span class="n">window</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">window</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">window</span><span class="p">)</span> 
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">window</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;&#39;window&#39; must be either a string or a 1D NumPy array.&quot;</span><span class="p">)</span>
+
+    <span class="n">f</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">Sx</span> <span class="o">=</span> <span class="n">signal</span><span class="o">.</span><span class="n">stft</span><span class="p">(</span>
+        <span class="n">data</span><span class="p">,</span>
+        <span class="n">fs</span><span class="o">=</span><span class="n">sr</span><span class="p">,</span>
+        <span class="n">window</span><span class="o">=</span><span class="n">window</span><span class="p">,</span>
+        <span class="n">nperseg</span><span class="o">=</span><span class="n">window_length</span><span class="p">,</span>
+        <span class="n">noverlap</span><span class="o">=</span><span class="n">noverlap</span><span class="p">,</span>
+        <span class="n">nfft</span><span class="o">=</span><span class="n">window_length</span><span class="p">,</span>
+        <span class="n">padded</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">boundary</span><span class="o">=</span><span class="kc">None</span>
+    <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">complex_output</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">Sx</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">f</span>
+
+    <span class="n">S_real</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">Sx</span><span class="p">)</span>
+
+    <span class="c1"># Noise reduction</span>
+    <span class="k">if</span> <span class="n">noisereduction</span> <span class="o">==</span> <span class="s2">&quot;time&quot;</span><span class="p">:</span>
+        <span class="n">noise</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">S_real</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">S_real</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">S_real</span> <span class="o">-</span> <span class="n">noise</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:])</span>
+    <span class="k">elif</span> <span class="n">noisereduction</span> <span class="o">==</span> <span class="s2">&quot;frequency&quot;</span><span class="p">:</span>
+        <span class="n">noise</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">S_real</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">S_real</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">S_real</span> <span class="o">-</span> <span class="n">noise</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">])</span>
+
+    <span class="k">return</span> <span class="n">S_real</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">f</span></div>
+
+
+
+<div class="viewcode-block" id="cepstrum">
+<a class="viewcode-back" href="../../../biosonic.compute.html#biosonic.compute.spectrotemporal.cepstrum">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">cepstrum</span><span class="p">(</span>
+        <span class="n">data</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">,</span>  
+        <span class="n">sr</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">mode</span> <span class="p">:</span> <span class="n">Literal</span> <span class="p">[</span><span class="s2">&quot;amplitude&quot;</span><span class="p">,</span> <span class="s2">&quot;power&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;power&quot;</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">ArrayLike</span><span class="p">,</span> <span class="n">ArrayLike</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Compute the cepstrum of a real-valued time-domain signal.</span>
+
+<span class="sd">    The cepstrum is computed by taking the inverse Fourier transform </span>
+<span class="sd">    of the logarithm of the magnitude spectrum. Depending on the `mode`, </span>
+<span class="sd">    this function returns either the amplitude or power cepstrum.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    data : ArrayLike</span>
+<span class="sd">        Input real-valued time-domain signal (1D array).</span>
+<span class="sd">    sr : int</span>
+<span class="sd">        Sampling rate of the signal in Hz.</span>
+<span class="sd">    mode : {&quot;amplitude&quot;, &quot;power&quot;}, optional</span>
+<span class="sd">        Type of cepstrum to compute:</span>
+<span class="sd">        - &quot;amplitude&quot; : Returns the absolute value of the inverse FFT of the log-magnitude spectrum.</span>
+<span class="sd">        - &quot;power&quot;     : Returns the squared magnitude of the inverse FFT of the log-power spectrum.</span>
+<span class="sd">        Default is &quot;power&quot;.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    cepstrum : ArrayLike</span>
+<span class="sd">        The computed cepstrum (amplitude or power based on the selected mode).</span>
+<span class="sd">    quefrencies : ArrayLike</span>
+<span class="sd">        Array of quefrency values (in seconds), corresponding to each element in the cepstrum.</span>
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    Childers DG, Skinner DP, Kemerait RC. 1977 </span>
+<span class="sd">    The cepstrum: A guide to processing. Proc. IEEE 65, 1428–1443. </span>
+<span class="sd">    (doi:10.1109/PROC.1977.10747)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">check_signal_format</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+    <span class="n">sr</span> <span class="o">=</span> <span class="n">check_sr_format</span><span class="p">(</span><span class="n">sr</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">data</span> <span class="o">==</span> <span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Cannot compute cepstrum of flat signal.&quot;</span><span class="p">)</span>
+
+    <span class="n">cepstrum_</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">([])</span>
+
+    <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;power&quot;</span><span class="p">:</span>
+        <span class="n">cepstrum_</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">ifft</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">fft</span><span class="p">(</span><span class="n">data</span><span class="p">))</span><span class="o">**</span><span class="mi">2</span><span class="p">)))</span><span class="o">**</span><span class="mi">2</span>
+
+    <span class="k">elif</span> <span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;amplitude&quot;</span><span class="p">:</span>
+        <span class="n">cepstrum_</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">ifft</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">fft</span><span class="p">(</span><span class="n">data</span><span class="p">)))))</span>
+    
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Invalid mode for cepstrum calculation: </span><span class="si">{</span><span class="n">mode</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="n">quefrencies</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">))</span> <span class="o">/</span> <span class="n">sr</span>
+
+    <span class="k">return</span> <span class="n">cepstrum_</span><span class="p">,</span> <span class="n">quefrencies</span></div>
+
+
+
+<div class="viewcode-block" id="cepstral_coefficients">
+<a class="viewcode-back" href="../../../biosonic.compute.html#biosonic.compute.spectrotemporal.cepstral_coefficients">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">cepstral_coefficients</span><span class="p">(</span>
+    <span class="n">data</span> <span class="p">:</span> <span class="n">ArrayLike</span><span class="p">,</span>
+    <span class="n">sr</span> <span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">window_length</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">512</span><span class="p">,</span>
+    <span class="n">n_filters</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">32</span><span class="p">,</span>
+    <span class="n">n_ceps</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">16</span><span class="p">,</span>
+    <span class="n">pre_emphasis</span> <span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.97</span><span class="p">,</span>
+    <span class="n">fmin</span> <span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
+    <span class="n">fmax</span> <span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">filterbank_type</span> <span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;mel&quot;</span><span class="p">,</span> <span class="s2">&quot;linear&quot;</span><span class="p">,</span> <span class="s2">&quot;log&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;mel&quot;</span><span class="p">,</span>
+    <span class="n">skip_first</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">kwargs</span> <span class="p">:</span> <span class="n">Any</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ArrayLike</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Compute cepstral coefficients from a signal using the specified filter bank.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    signal : ArrayLike</span>
+<span class="sd">        Input time-domain signal.</span>
+<span class="sd">    sr : int</span>
+<span class="sd">        Sampling rate in Hz.</span>
+<span class="sd">    window_length : int</span>
+<span class="sd">        FFT size in samples.</span>
+<span class="sd">    n_filters : int</span>
+<span class="sd">        Number of filters in the filter bank.</span>
+<span class="sd">    n_ceps : int</span>
+<span class="sd">        Number of cepstral coefficients to return.</span>
+<span class="sd">    pre_emphasis : float</span>
+<span class="sd">        Pre-emphasis coefficient to apply. Default is 0.97</span>
+<span class="sd">    fmin : float</span>
+<span class="sd">        Minimum frequency for the filter bank.</span>
+<span class="sd">    fmax : Optional[float]</span>
+<span class="sd">        Maximum frequency for the filter bank. Defaults to Nyquist (sr/2).</span>
+<span class="sd">    filterbank_type : {&#39;mel&#39;, &#39;linear&#39;, &#39;log&#39;}</span>
+<span class="sd">        Type of filter bank to apply before DCT.</span>
+<span class="sd">    skip_first : bool</span>
+<span class="sd">        Wether to excluse the first cepstral coefficient. Defaults to True.</span>
+<span class="sd">    **kwargs : dict</span>
+<span class="sd">        Optional keyword arguments for the filter banks, e.g. corner frequency for mel.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    np.ndarray</span>
+<span class="sd">        Cepstral coefficient array of shape (n_ceps,).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">liftering</span><span class="p">(</span><span class="n">cc</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">,</span> <span class="n">D</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">22</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ArrayLike</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Apply sinusoidal liftering to cepstral coefficients.</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">        - cc: Cepstral coefficients (2D array: frames x coefficients)</span>
+<span class="sd">        - D: Liftering parameter (default 22, typical for MFCCs)</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">        - Lifted cepstral coefficients</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">cc_lift</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">cc</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+
+        <span class="n">n</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">cc_lift</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">D</span> <span class="o">=</span> <span class="mi">22</span>
+        <span class="n">w</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">+</span> <span class="p">(</span><span class="n">D</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">n</span> <span class="o">/</span> <span class="n">D</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">cc</span> <span class="o">*</span> <span class="n">w</span>
+
+    <span class="c1"># pre-emphasis - from https://www.geeksforgeeks.org/nlp/mel-frequency-cepstral-coefficients-mfcc-for-speech-recognition/</span>
+    <span class="n">data_preemphasized</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">data</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">-</span> <span class="n">pre_emphasis</span> <span class="o">*</span> <span class="n">data</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+
+    <span class="c1"># window and fft</span>
+    <span class="n">data_windowed</span> <span class="o">=</span> <span class="n">window_signal</span><span class="p">(</span><span class="n">data_preemphasized</span><span class="p">,</span> <span class="n">sr</span><span class="p">,</span> <span class="n">window_length</span><span class="p">)</span>
+    <span class="n">mag_frames</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">rfft</span><span class="p">(</span><span class="n">data_windowed</span><span class="p">,</span> <span class="n">window_length</span><span class="p">))</span>
+    <span class="n">pow_frames</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="o">/</span><span class="n">window_length</span><span class="p">)</span> <span class="o">*</span> <span class="n">mag_frames</span> <span class="o">**</span><span class="mi">2</span>
+
+    <span class="c1"># filter bank selection</span>
+    <span class="k">if</span> <span class="n">fmax</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">fmax</span> <span class="o">=</span> <span class="n">sr</span> <span class="o">/</span> <span class="mi">2</span>
+
+    <span class="k">if</span> <span class="n">filterbank_type</span> <span class="o">==</span> <span class="s2">&quot;mel&quot;</span><span class="p">:</span>
+        <span class="n">fbanks</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">mel_filterbank</span><span class="p">(</span><span class="n">n_filters</span><span class="p">,</span> <span class="n">window_length</span><span class="p">,</span> <span class="n">sr</span><span class="p">,</span> <span class="n">fmin</span><span class="p">,</span> <span class="n">fmax</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">filterbank_type</span> <span class="o">==</span> <span class="s2">&quot;linear&quot;</span><span class="p">:</span>
+        <span class="n">fbanks</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">linear_filterbank</span><span class="p">(</span><span class="n">n_filters</span><span class="p">,</span> <span class="n">window_length</span><span class="p">,</span> <span class="n">sr</span><span class="p">,</span> <span class="n">fmin</span><span class="p">,</span> <span class="n">fmax</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">filterbank_type</span> <span class="o">==</span> <span class="s2">&quot;log&quot;</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Log frequency scale is not yet implemented for cepstral coefficients in Version 0.&quot;</span><span class="p">)</span>
+        <span class="c1">#fbanks, _ = log_filterbank(n_filters, window_length, sr, fmin, fmax, **kwargs)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unknown filterbank_type: </span><span class="si">{</span><span class="n">filterbank_type</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="n">audio_filtered</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">pow_frames</span><span class="p">,</span> <span class="n">fbanks</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+    <span class="n">audio_filtered</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">audio_filtered</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">finfo</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span><span class="o">.</span><span class="n">eps</span><span class="p">,</span> <span class="n">audio_filtered</span><span class="p">)</span> <span class="c1"># avoid 0 division</span>
+    <span class="n">audio_filtered</span> <span class="o">=</span> <span class="mi">20</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">audio_filtered</span><span class="p">)</span>  <span class="c1"># to dB</span>
+
+    <span class="c1"># DCT to cepstral domain</span>
+    <span class="n">ceps</span> <span class="o">=</span> <span class="n">dct</span><span class="p">(</span><span class="n">audio_filtered</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">norm</span><span class="o">=</span><span class="s2">&quot;ortho&quot;</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">skip_first</span><span class="p">:</span> 
+        <span class="n">ceps</span> <span class="o">=</span> <span class="n">liftering</span><span class="p">(</span><span class="n">ceps</span><span class="p">)[:,</span> <span class="mi">1</span><span class="p">:</span><span class="n">n_ceps</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span>  <span class="c1"># skip C0</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">ceps</span> <span class="o">=</span> <span class="n">liftering</span><span class="p">(</span><span class="n">ceps</span><span class="p">)[:,</span> <span class="p">:</span><span class="n">n_ceps</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">ceps</span><span class="o">.</span><span class="n">T</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="spectrotemporal_entropy">
+<a class="viewcode-back" href="../../../biosonic.compute.html#biosonic.compute.spectrotemporal.spectrotemporal_entropy">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">spectrotemporal_entropy</span><span class="p">(</span>
+        <span class="n">data</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">,</span>  
+        <span class="n">sr</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> 
+        <span class="o">*</span><span class="n">args</span> <span class="p">:</span> <span class="n">Any</span><span class="p">,</span> 
+        <span class="o">**</span><span class="n">kwargs</span> <span class="p">:</span> <span class="n">Any</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Compute the product of temporal_entropy and power spectral entropy of the input data.</span>
+
+<span class="sd">    This function computes two information-theoretic measures — temporal temporal_entropy and</span>
+<span class="sd">    power spectral entropy — using the same unit and multiplies their values </span>
+<span class="sd">    to produce a combined spectrotemporal complexity measure.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    data : ArrayLike</span>
+<span class="sd">        Input signal as a 1D ArrayLike.</span>
+<span class="sd">    sr : int</span>
+<span class="sd">        Sampling rate in Hz.</span>
+<span class="sd">    unit : {&quot;bits&quot;, &quot;nat&quot;, &quot;dits&quot;, &quot;bans&quot;, &quot;hartleys&quot;}, optional</span>
+<span class="sd">        The logarithmic base to use for temporal_entropy calculations.</span>
+<span class="sd">        Default is &quot;bits&quot;.</span>
+<span class="sd">    *args : Any</span>
+<span class="sd">        Additional positional arguments passed to `temporal_entropy` and `power_spectral_entropy`.</span>
+<span class="sd">    **kwargs : Any</span>
+<span class="sd">        Additional keyword arguments passed to `temporal_entropy` and `power_spectral_entropy`.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    float</span>
+<span class="sd">        The temporal_entropy of the input data.</span>
+
+<span class="sd">    See Also</span>
+<span class="sd">    --------</span>
+<span class="sd">    temporal_entropy : Computes the temporal entropy of the data.</span>
+<span class="sd">    power_spectral_entropy : Computes the spectral entropy of the data.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">H_t</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">temporal_entropy</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="n">H_f</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">power_spectral_entropy</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sr</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">H_t</span> <span class="o">*</span> <span class="n">H_f</span></div>
+
+
+
+<div class="viewcode-block" id="dominant_frequencies">
+<a class="viewcode-back" href="../../../biosonic.compute.html#biosonic.compute.spectrotemporal.dominant_frequencies">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">dominant_frequencies</span><span class="p">(</span>
+        <span class="n">data</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">,</span> 
+        <span class="n">sr</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> 
+        <span class="n">n_freqs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> 
+        <span class="n">min_height</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.05</span><span class="p">,</span>
+        <span class="n">min_distance</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.05</span><span class="p">,</span>
+        <span class="n">min_prominence</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.05</span><span class="p">,</span>
+        <span class="n">peak_kwargs</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> 
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">]:</span> 
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Extracts the dominant frequency or frequencies from each time frame of a spectrogram </span>
+<span class="sd">    based on the scipy.signal function find_peaks.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    data : ArrayLike</span>
+<span class="sd">        Input 1D audio signal.</span>
+<span class="sd">    sr : int</span>
+<span class="sd">        Sample rate of the input signal in Hz.</span>
+<span class="sd">    n_freqs : Optional[int], default=3</span>
+<span class="sd">        Number of dominant frequencies to extract per time frame.</span>
+<span class="sd">        If 1, a 1D array is returned. If &gt;1, a 2D array of shape (time_frames, n_freqs) is returned.</span>
+<span class="sd">    min_height : Optional[float], default=0.05</span>
+<span class="sd">        Minimum normalized height of a peak (as a fraction of the spectral magnitude range).</span>
+<span class="sd">        Must be between 0 and 1.</span>
+<span class="sd">    min_distance : Optional[float], default=0.05</span>
+<span class="sd">        Minimum normalized distance between peaks (as a fraction of the total number of frequency bins).</span>
+<span class="sd">        Must be between 0 and 1.</span>
+<span class="sd">    min_prominence : Optional[float], default=0.05</span>
+<span class="sd">        Minimum normalized prominence of a peak (as a fraction of the spectral magnitude range).</span>
+<span class="sd">        Must be between 0 and 1.</span>
+<span class="sd">    peak_kwargs : Optional[dict], default=None</span>
+<span class="sd">        Additional keyword arguments passed directly to `scipy.signal.find_peaks`.</span>
+<span class="sd">        These override any values calculated from `min_height`, `min_distance`, and `min_prominence`.</span>
+<span class="sd">    *args, **kwargs :</span>
+<span class="sd">        Additional arguments passed to the scipy.signal ShortTimeFFT class.</span>
+<span class="sd">    </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    NDArray[np.float64]</span>
+<span class="sd">        - If n_freqs == 1:</span>
+<span class="sd">            1D array of shape (time_frames,) containing the dominant frequency per frame.</span>
+<span class="sd">        - If n_freqs &gt; 1:</span>
+<span class="sd">            2D array of shape (time_frames, n_freqs) containing the top `n_freqs` dominant</span>
+<span class="sd">            frequencies per frame. NaNs are used to pad frames with fewer than `n_freqs` detected peaks.</span>
+<span class="sd">    &quot;&quot;&quot;</span>   
+    <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="mf">0.0</span> <span class="o">&lt;=</span> <span class="n">min_height</span> <span class="o">&lt;=</span> <span class="mf">1.0</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;min_height must be between 0 and 1&quot;</span><span class="p">)</span>
+    
+    <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="mf">0.0</span> <span class="o">&lt;=</span> <span class="n">min_distance</span> <span class="o">&lt;=</span> <span class="mf">1.0</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;min_distance must be between 0 and 1&quot;</span><span class="p">)</span>
+    
+    <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="mf">0.0</span> <span class="o">&lt;=</span> <span class="n">min_prominence</span> <span class="o">&lt;=</span> <span class="mf">1.0</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;min_prominence must be between 0 and 1&quot;</span><span class="p">)</span>
+
+    <span class="n">spec</span><span class="p">,</span> <span class="n">times</span><span class="p">,</span> <span class="n">freqs</span> <span class="o">=</span> <span class="n">spectrogram</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sr</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="n">spec_real</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">spec</span><span class="p">)</span>
+    <span class="c1"># num_frames = spec_real.shape[1]</span>
+
+    <span class="k">if</span> <span class="n">n_freqs</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">dominant_freqs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">times</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">dominant_freqs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">times</span><span class="p">),</span> <span class="n">n_freqs</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+
+    <span class="n">peak_kwargs</span> <span class="o">=</span> <span class="n">peak_kwargs</span> <span class="ow">or</span> <span class="p">{}</span>
+
+    <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">times</span><span class="p">)):</span>
+        <span class="n">spectrum</span> <span class="o">=</span> <span class="n">spec_real</span><span class="p">[:,</span> <span class="n">t</span><span class="p">]</span>
+        <span class="n">magnitude_range</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">spectrum</span><span class="p">))</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">spectrum</span><span class="p">)</span>
+
+        <span class="n">default_peak_params</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;height&quot;</span> <span class="p">:</span> <span class="n">magnitude_range</span><span class="o">*</span><span class="n">min_height</span><span class="p">,</span> 
+            <span class="s2">&quot;distance&quot;</span> <span class="p">:</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">freqs</span><span class="p">)</span><span class="o">//</span><span class="p">(</span><span class="mi">1</span><span class="o">/</span><span class="n">min_distance</span><span class="p">)),</span> 
+            <span class="s2">&quot;prominence&quot;</span> <span class="p">:</span> <span class="n">magnitude_range</span><span class="o">*</span><span class="n">min_prominence</span>
+        <span class="p">}</span>
+
+        <span class="n">peak_params</span> <span class="o">=</span> <span class="p">{</span><span class="o">**</span><span class="n">default_peak_params</span><span class="p">,</span> <span class="o">**</span><span class="n">peak_kwargs</span><span class="p">}</span>
+        <span class="n">peaks</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">signal</span><span class="o">.</span><span class="n">find_peaks</span><span class="p">(</span><span class="n">spectrum</span><span class="p">,</span> <span class="o">**</span><span class="n">peak_params</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">peaks</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">sorted_peaks</span> <span class="o">=</span> <span class="n">peaks</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">spectrum</span><span class="p">[</span><span class="n">peaks</span><span class="p">])[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span>
+            <span class="n">top_peaks</span> <span class="o">=</span> <span class="n">sorted_peaks</span><span class="p">[:</span><span class="n">n_freqs</span><span class="p">]</span>
+            <span class="n">top_freqs</span> <span class="o">=</span> <span class="n">freqs</span><span class="p">[</span><span class="n">top_peaks</span><span class="p">]</span>
+
+            <span class="k">if</span> <span class="n">n_freqs</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">dominant_freqs</span><span class="p">[</span><span class="n">t</span><span class="p">]</span> <span class="o">=</span> <span class="n">top_freqs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">dominant_freqs</span><span class="p">[</span><span class="n">t</span><span class="p">,</span> <span class="p">:</span><span class="nb">len</span><span class="p">(</span><span class="n">top_freqs</span><span class="p">)]</span> <span class="o">=</span> <span class="n">top_freqs</span>
+
+    <span class="k">return</span> <span class="n">dominant_freqs</span></div>
+
+
+
+<div class="viewcode-block" id="calculate_dominant_frequency_features">
+<a class="viewcode-back" href="../../../biosonic.compute.html#biosonic.compute.spectrotemporal.calculate_dominant_frequency_features">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">calculate_dominant_frequency_features</span><span class="p">(</span>
+        <span class="n">data</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">,</span> 
+        <span class="n">sr</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> 
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">]]]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Calculate dominant frequency features.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">dominant_freqs</span> <span class="o">=</span> <span class="n">dominant_frequencies</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sr</span><span class="p">,</span> <span class="n">n_freqs</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        
+        <span class="c1"># exclude 0 values (no peak detected) from calculations</span>
+        <span class="n">dom_freqs_detected</span> <span class="o">=</span> <span class="n">dominant_freqs</span><span class="p">[</span><span class="n">dominant_freqs</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">]</span>
+        <span class="n">min_dom</span> <span class="p">:</span> <span class="nb">float</span>
+        <span class="n">max_dom</span> <span class="p">:</span> <span class="nb">float</span>
+        <span class="n">min_dom</span><span class="p">,</span> <span class="n">max_dom</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">dom_freqs_detected</span><span class="p">)),</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">dom_freqs_detected</span><span class="p">))</span>
+        <span class="n">range_dom</span> <span class="o">=</span> <span class="n">max_dom</span> <span class="o">-</span> <span class="n">min_dom</span>
+        <span class="n">cumulative_diff</span> <span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">dom_freqs_detected</span><span class="p">)))</span>
+        <span class="n">mod_dom</span> <span class="o">=</span> <span class="n">cumulative_diff</span> <span class="o">/</span> <span class="n">range_dom</span> <span class="k">if</span> <span class="n">range_dom</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="mi">0</span>
+
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;mean_dom&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">dom_freqs_detected</span><span class="p">),</span>
+            <span class="s2">&quot;min_dom&quot;</span><span class="p">:</span> <span class="n">min_dom</span><span class="p">,</span>
+            <span class="s2">&quot;max_dom&quot;</span><span class="p">:</span> <span class="n">max_dom</span><span class="p">,</span>
+            <span class="s2">&quot;range_dom&quot;</span><span class="p">:</span> <span class="n">range_dom</span><span class="p">,</span>
+            <span class="s2">&quot;mod_dom&quot;</span><span class="p">:</span> <span class="n">mod_dom</span>
+        <span class="p">}</span></div>
+
+
+<div class="viewcode-block" id="spectrotemporal_features">
+<a class="viewcode-back" href="../../../biosonic.compute.html#biosonic.compute.spectrotemporal.spectrotemporal_features">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">spectrotemporal_features</span><span class="p">(</span>
+        <span class="n">data</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">,</span> 
+        <span class="n">sr</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">n_dominant_freqs</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span> <span class="p">:</span> <span class="n">Any</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">floating</span><span class="p">,</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">]]]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Extracts a set of spectrotemporal features from a signal.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        data : ArrayLike</span>
+<span class="sd">            The input signal as a 1D ArrayLike.</span>
+<span class="sd">        sr : int </span>
+<span class="sd">            Sampling rate of the signal in Hz.</span>
+<span class="sd">        n_dominant_frequencies : int</span>
+<span class="sd">            Number of dominant frequencies to extract. Default is 1.</span>
+
+<span class="sd">    Retuns:</span>
+<span class="sd">        dict</span>
+<span class="sd">        {&quot;spectrotemporal_entropy&quot;: float,</span>
+<span class="sd">        &quot;dominant_frequencies&quot;: ArrayLike}</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">check_signal_format</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+    <span class="n">check_sr_format</span><span class="p">(</span><span class="n">sr</span><span class="p">)</span>
+    
+    <span class="n">features</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;spectrotemporal_entropy&quot;</span><span class="p">:</span> <span class="n">spectrotemporal_entropy</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sr</span><span class="p">),</span>
+        <span class="s2">&quot;dominant_freqs&quot;</span><span class="p">:</span> <span class="n">dominant_frequencies</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sr</span><span class="p">,</span> <span class="n">n_dominant_freqs</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">),</span>
+    <span class="p">}</span>
+
+    <span class="n">dom_freq_feats</span> <span class="o">=</span> <span class="n">calculate_dominant_frequency_features</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sr</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">{</span><span class="o">**</span><span class="n">features</span><span class="p">,</span> <span class="o">**</span><span class="n">dom_freq_feats</span><span class="p">}</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Lena Gies, Tecumseh Fitch.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

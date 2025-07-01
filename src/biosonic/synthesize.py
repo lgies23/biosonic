@@ -25,6 +25,28 @@ def amplitude_modulated(
         modulator_freq : float, 
         depth : float = .3
 ) -> ArrayLike:
+    """
+    Generate an amplitude-modulated (AM) signal.
+
+    The signal is produced by modulating a carrier sine wave with another sine wave 
+    (the modulator).
+
+    Parameters
+    ----------
+    t : ArrayLike
+        Time array over which to compute the signal (in seconds).
+    carrier_freq : float
+        Frequency of the carrier sine wave (Hz).
+    modulator_freq : float
+        Frequency of the modulating sine wave (Hz).
+    depth : float, optional
+        Modulation depth (0 to 1), controlling the amplitude variation. Default is 0.3.
+
+    Returns
+    -------
+    ArrayLike
+        Amplitude-modulated signal values at times `t`.
+    """
     modulator = (1 - depth) + depth * np.sin(2 * np.pi * modulator_freq * t)
     carrier = np.sin(2 * np.pi * carrier_freq * t)
     return modulator * carrier

@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 from biosonic.compute.utils import frame_signal
 
 
-def difference_function(x: ArrayLike, max_lag: int) -> ArrayLike:
+def _difference_function(x: ArrayLike, max_lag: int) -> ArrayLike:
     """YIN difference function d(τ) = sum_j (x_j - x_{j+τ})^2"""
     N = len(x)
     d = np.zeros(max_lag + 1)
@@ -19,7 +19,7 @@ def difference_function(x: ArrayLike, max_lag: int) -> ArrayLike:
     return d
 
 
-def cumulative_mean_normalized_difference(d: ArrayLike) -> ArrayLike:
+def _cumulative_mean_normalized_difference(d: ArrayLike) -> ArrayLike:
     """CMND function from the difference function."""
     cmndf = np.zeros_like(d)
     cmndf[0] = 1  # Avoid divide-by-zero
@@ -28,7 +28,7 @@ def cumulative_mean_normalized_difference(d: ArrayLike) -> ArrayLike:
     return cmndf
 
 
-def parabolic_interpolation(cmndf: ArrayLike, tau: int) -> float:
+def _parabolic_interpolation(cmndf: ArrayLike, tau: int) -> float:
     """Refine τ estimate using parabolic interpolation."""
     if tau <= 0 or tau >= len(cmndf) - 1:
         return float(tau)
@@ -42,7 +42,7 @@ def parabolic_interpolation(cmndf: ArrayLike, tau: int) -> float:
     return float(tau + shift)
 
 
-def fundamental_frequency(
+def _yin_single_window(
     x: ArrayLike,
     sr: int,
     window_length: int,
@@ -59,13 +59,13 @@ def fundamental_frequency(
     # Optional: remove DC offset
     frame = frame - np.mean(frame)
 
-    d = difference_function(frame, max_lag)
-    cmndf = cumulative_mean_normalized_difference(d)
+    d = _difference_function(frame, max_lag)
+    cmndf = _cumulative_mean_normalized_difference(d)
 
     max_lag = min(max_lag, len(cmndf) - 1)
     for i in range(min_lag, max_lag):
         if cmndf[i] < threshold:
-            refined_tau = parabolic_interpolation(cmndf, i)
+            refined_tau = _parabolic_interpolation(cmndf, i)
             return sr / refined_tau
 
     return None
@@ -81,9 +81,12 @@ def yin(
 ) -> Tuple[ArrayLike, ArrayLike]:
     """YIN pitch tracking over an entire signal.
 
-    Returns:
-        times (ArrayLike): time points (in seconds)
-        frequencies (ArrayLike): estimated f₀ at each time point
+    Returns
+    -------
+        times : ArrayLike
+            time points (in seconds)
+        frequencies : ArrayLike
+            estimated f₀ at each time point
     """
     step_size = int(time_step_sec * sr)
     num_steps = (len(data) - window_length) // step_size
@@ -97,7 +100,7 @@ def yin(
     for i in range(num_steps):
         time_step = i * step_size
         time_sec = time_step / sr
-        f0 = fundamental_frequency(
+        f0 = _yin_single_window(
             data,
             sr,
             window_length,
@@ -112,7 +115,7 @@ def yin(
     return np.array(times), np.array(frequencies)
 
 
-def preprocess_for_pitch_(
+def _preprocess_for_pitch_(
         data : ArrayLike, 
         sr : int
     ) -> ArrayLike:
@@ -146,7 +149,7 @@ def preprocess_for_pitch_(
     return filtered_signal
 
 
-def find_pitch_candidates_(
+def _find_pitch_candidates_(
         ac : ArrayLike, 
         sr : int, 
         min_pitch : int, 
@@ -215,7 +218,7 @@ def find_pitch_candidates_(
     return candidates
 
 
-def transition_cost(
+def _transition_cost(
         F1 : float, 
         F2 : float, 
         voiced_unvoiced_cost : float, 
@@ -229,7 +232,7 @@ def transition_cost(
         return float(octave_jump_cost * abs(np.log2(F1 / F2)))
 
 
-def viterbi_pitch_path(
+def _viterbi_pitch_path(
         all_candidates: List[List[Tuple[float, float]]],
         voiced_unvoiced_cost: float = 0.2,
         octave_jump_cost: float = 0.2
@@ -237,15 +240,16 @@ def viterbi_pitch_path(
     """
     Finds the globally optimal pitch path using dynamic programming.
     
-    Parameters:
-    -----------
+    Parameters
+    ----------
     all_candidates : List of lists of (pitch in Hz, strength)
     voiced_unvoiced_cost : Cost of voiced/unvoiced transition
     octave_jump_cost : Cost of pitch discontinuity in octaves
 
-    Returns:
-    --------
-    path : List of chosen pitch values, one per frame
+    Returns
+    -------
+    path 
+        List of chosen pitch values, one per frame
     """
     num_frames = len(all_candidates)
     path_costs = []
@@ -264,7 +268,7 @@ def viterbi_pitch_path(
             best_cost = float('inf')
             best_prev_idx = None
             for i, (prev_pitch, _) in enumerate(all_candidates[t-1]):
-                trans_cost = transition_cost(
+                trans_cost = _transition_cost(
                     prev_pitch, curr_pitch,
                     voiced_unvoiced_cost, octave_jump_cost
                 )
@@ -296,7 +300,7 @@ def viterbi_pitch_path(
     # return 10 * np.log10(r_tmax/1-r_tmax)
 
 
-def autocorr_(
+def _autocorr(
         frame : ArrayLike,
         pad_width_for_pow2 : int
     ) -> NDArray:
@@ -328,7 +332,7 @@ def boersma(
         octave_cost : float = 0.01
     ) -> Tuple[ArrayLike, ArrayLike]:
     """
-    References:
+    References
     ----------
     1. Boersma P. 1993 Accurate short-term analysis of the fundamental 
     frequency and the harmonics-to-noise ratio of a sampled sound. 
@@ -349,7 +353,7 @@ def boersma(
     # max_pitch = min(max_pitch, sr / 4) 
 
     window_length = 3 * (1 / min_pitch) # three periods of minimum frequency
-    data_preprocessed = preprocess_for_pitch_(data, sr)
+    data_preprocessed = _preprocess_for_pitch_(data, sr)
     global_peak : float = np.max(np.abs(data_preprocessed))
     window_length_samples = int(window_length * sr)
 
@@ -362,7 +366,7 @@ def boersma(
     # 1. windowing
     framed_signal = frame_signal(data_preprocessed, sr, window_length_samples, timestep, normalize=False)
     window = windows.get_window("hann", window_length_samples)
-    autocorr_hann = autocorr_(window, pad_width_for_pow2)
+    autocorr_hann = _autocorr(window, pad_width_for_pow2)
     autocorr_hann /= np.max(autocorr_hann)
     all_candidates = []
 
@@ -377,7 +381,7 @@ def boersma(
         windowed_frame = frame * window
 
         # 3.5-3.9
-        lag_domain = autocorr_(windowed_frame, pad_width_for_pow2)
+        lag_domain = _autocorr(windowed_frame, pad_width_for_pow2)
         # normalize to range [-1,1]
         lag_domain = 2 * (lag_domain-float(np.min(lag_domain))) / (float(np.max(lag_domain))-float(np.min(lag_domain))) - 1 
 
@@ -390,7 +394,7 @@ def boersma(
         unvoiced_strength = voicing_thresh + max(0, 2 - ((local_peak / global_peak) / \
                             (silence_thresh / (1 + voicing_thresh))))
         
-        voiced_candidates = find_pitch_candidates_(
+        voiced_candidates = _find_pitch_candidates_(
                 sampled_autocorr, 
                 sr, 
                 min_pitch, 
@@ -416,7 +420,7 @@ def boersma(
     # axs[1][2].plot(sampled_autocorr)
 
     time_points = np.arange(len(framed_signal)) * timestep
-    pitch_track = viterbi_pitch_path(
+    pitch_track = _viterbi_pitch_path(
         all_candidates,
         voiced_unvoiced_cost=0.2,
         octave_jump_cost=0.2

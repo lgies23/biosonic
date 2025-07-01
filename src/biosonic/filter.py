@@ -2,20 +2,18 @@ import numpy as np
 from numpy.typing import ArrayLike
 from typing import Optional, Any, Literal, Union, Tuple
 
-import warnings
-
 from scipy.signal import butter, filtfilt
 from biosonic.compute.utils import hz_to_mel, mel_to_hz
 
 
-def check_filterbank_parameters(
+def _check_filterbank_parameters(
         n_filters : int, 
         n_fft : int, 
         sr : int, 
         fmin : float, 
         fmax : float,
         ) -> None:
-    
+
     if fmax > sr / 2:
         raise ValueError(f"fmax must be <= Nyquist frequency (sr/2 = {sr/2}), but got fmax={fmax}")
 
@@ -71,7 +69,7 @@ def filterbank(
     The filters are normalized according to the method used in `librosa` to 
     ensure energy preservation. 
     
-    References: 
+    References
     ----------
     McFee, Brian, Colin Raffel, Dawen Liang, Daniel PW Ellis, Matt McVicar, Eric Battenberg, 
     and Oriol Nieto. “librosa: Audio and music signal analysis in python.” In Proceedings 
@@ -138,7 +136,7 @@ def mel_filterbank(
     if fmax is None:
         fmax = sr / 2
 
-    check_filterbank_parameters(n_filters, window_length, sr, fmin, fmax)
+    _check_filterbank_parameters(n_filters, window_length, sr, fmin, fmax)
 
     # boundaries
     mel_min = hz_to_mel(fmin, **kwargs)
@@ -187,7 +185,7 @@ def linear_filterbank(
     if fmax is None:
         fmax = sr / 2
 
-    check_filterbank_parameters(n_filters, n_fft, sr, fmin, fmax)
+    _check_filterbank_parameters(n_filters, n_fft, sr, fmin, fmax)
 
     hz_points = np.linspace(fmin, fmax, n_filters + 2)
     bin_indices = np.floor((n_fft + 1) * hz_points / sr).astype(int)
@@ -232,7 +230,7 @@ def log_filterbank(
     if fmax is None:
         fmax = sr / 2
 
-    check_filterbank_parameters(n_filters, n_fft, sr, fmin, fmax)
+    _check_filterbank_parameters(n_filters, n_fft, sr, fmin, fmax)
 
     if fmin <= 0:
         raise ValueError("fmin must be greater than 0 for log-scaled filterbanks.")
@@ -267,7 +265,7 @@ def filter(
     It designs a digital Butterworth filter of the specified type and order,
     then applies it using forward-backward filtering for zero phase distortion.
 
-    Parameters:
+    Parameters
     ----------
     signal : np.ndarray
         1D input signal to filter.
@@ -277,25 +275,25 @@ def filter(
         Type of filter to apply. Defaults to 'lowpass'.
     f_cutoff : float or tuple of float
         Cutoff frequency/frequencies in Hz:
-            - Single int for 'lowpass' or 'highpass'
-            - Tuple of two floats for 'bandpass' or 'bandstop'
+        - Single int for 'lowpass' or 'highpass'
+        - Tuple of two floats for 'bandpass' or 'bandstop'
         Values must be within (0, Nyquist), where Nyquist = sr / 2.
     order : int
         Filter order. Higher values result in a steeper frequency cutoff, 
         but can introduce more edge artifacts and potential instability. 
         Defaults to 2, resulting in a slope of 40 dB per decade (i.e. ten-fold change in frequency). 
 
-    Returns:
+    Returns
     -------
     filtered_signal : np.ndarray
         The filtered signal, same shape as the input.
 
-    Notes:
+    Notes
     -----
     - This uses `scipy.signal.butter` and `scipy.signal.filtfilt` to apply the filter forward and backward, 
       ensuring zero-phase distortion.
-
-    References: 
+      
+    References
     ----------
     Virtanen P et al. 2020 SciPy 1.0: fundamental algorithms for scientific computing in Python. 
     Nat Methods 17, 261–272. (doi:10.1038/s41592-019-0686-2)

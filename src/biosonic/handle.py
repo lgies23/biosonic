@@ -35,15 +35,42 @@ def convert_dtype(data: NDArray, target_dtype: QuantizationStr) -> NDArray:
     """
     Converts audio data to the specified quantization format.
 
-    Args:
+    Parameters
+    ----------
         data : NDArray
             Input audio data.
         target_dtype : QuantizationStr
-            Target NumPy dtype as a string.
+            Target NumPy dtype as a string. Options are: "int8", "int16", "int32", "float32", "float64"
 
-    Returns:
+    Returns
+    -------
         NDArray 
             Converted audio data with appropriate scaling and clipping.
+    
+    Notes
+    -----
+
+    The table below summarizes the value ranges and corresponding NumPy dtypes 
+    for common WAV audio formats. See the SciPy io.wavfile documentation for more details.
+    
+    +------------------------+--------------+---------------+-------------+
+    | WAV format             | Min          | Max           | NumPy dtype |
+    +========================+==============+===============+=============+
+    | 32-bit floating-point  | -1.0         | +1.0          | float32     |
+    +------------------------+--------------+---------------+-------------+
+    | 32-bit integer PCM     | -2147483648  | +2147483647   | int32       |
+    +------------------------+--------------+---------------+-------------+
+    | 24-bit integer PCM     | -2147483648  | +2147483392   | int32       |
+    +------------------------+--------------+---------------+-------------+
+    | 16-bit integer PCM     | -32768       | +32767        | int16       |
+    +------------------------+--------------+---------------+-------------+
+    | 8-bit integer PCM      | 0            | 255           | uint8       |
+    +------------------------+--------------+---------------+-------------+
+
+    References
+    ----------
+    Virtanen P et al. 2020 SciPy 1.0: fundamental algorithms for scientific computing in Python. 
+    Nat Methods 17, 261–272. (doi:10.1038/s41592-019-0686-2)
     """
     if target_dtype not in get_args(QuantizationStr):
         raise ValueError(f"Invalid quantization: {target_dtype}. Must be one of {get_args(QuantizationStr)}")
@@ -98,6 +125,11 @@ def resample_audio(data: NDArray, orig_sr: int, target_sr: int) -> NDArray:
     -----
     - If `orig_sr` is equal to `target_sr`, the original data is returned unchanged.
     - Uses `scipy.signal.resample` internally for resampling each channel independently.
+
+    References
+    ----------
+    Virtanen P et al. 2020 SciPy 1.0: fundamental algorithms for scientific computing in Python. 
+    Nat Methods 17, 261–272. (doi:10.1038/s41592-019-0686-2)
     """
     if orig_sr == target_sr:
         return data
@@ -254,8 +286,7 @@ def batch_normalize_wav_files(
     -----
     - Input WAV files with extensions '.wav' and '.WAV' are processed.
     - Uses `read_wav` for loading and converting audio files. This attaches to scipys wavfile.io.read function.
-    - Output files are saved with the same filename in the output directory. 
-    So if you set output_dir to your folder_path, **all origninal files will be overwritten!**
+    - Output files are saved with the same filename in the output directory. So if you set output_dir to your folder_path, **all origninal files will be overwritten!**
     """
     folder_path = Path(folder_path)
     output_dir = Path(output_dir) if output_dir else folder_path / "normalized"
@@ -273,7 +304,40 @@ def batch_extract_features(
         folder_path : Union[str, Path],
         save_csv_path: Optional[str] = None
 ) -> pd.DataFrame :
-    
+    """
+    Extract features from all WAV files in a folder.
+
+    This function processes all `.wav` and `.WAV` files in the specified folder,
+    applies feature extraction to each file using `extract_all_features`, and
+    returns a DataFrame containing the extracted features. Optionally, the
+    results can be saved to a CSV file.
+
+    Parameters
+    ----------
+    folder_path : str or pathlib.Path
+        Path to the folder containing `.wav` audio files.
+
+    save_csv_path : str, optional
+        Path to save the resulting feature DataFrame as a CSV file.
+        If None (default), the CSV is not saved.
+
+    Returns
+    -------
+    pandas.DataFrame
+        A DataFrame where each row contains features extracted from one WAV file.
+        Includes a `filename` column with the original file name.
+
+    Raises
+    ------
+    This function handles file-level errors internally and prints tracebacks,
+    but it does not raise exceptions during feature extraction or saving.
+
+    Notes
+    -----
+    - This function relies on `read_wav` and `extract_all_features`.
+    - Files that fail to process are skipped, and their errors are printed.
+    - All features are returned in a single DataFrame.
+    """
     from biosonic.compute.utils import extract_all_features
 
     folder_path = Path(folder_path)
@@ -311,21 +375,21 @@ def segments_from_signal(
     """
     Extract segments from an audio signal based on time boundaries.
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     data : NDArray
         The audio signal array.
     sr : int
         Sampling rate of the audio signal.
     boundaries : Union[Dict[str, float], Tuple[float, float], ArrayLike, List[Dict[str, float]]]
         Segment boundaries. Supported formats:
-            - Single dict with 'begin' and 'end' keys
-            - Tuple of (begin, end)
-            - 2D ArrayLike of shape (n, 2), each row as (begin, end)
-            - List of dicts with 'begin' and 'end' keys
+        - Single dict with 'begin' and 'end' keys
+        - Tuple of (begin, end)
+        - 2D ArrayLike of shape (n, 2), each row as (begin, end)
+        - List of dicts with 'begin' and 'end' keys
 
-    Returns:
-    --------
+    Returns
+    -------
     List[NDArray]
         A list of segmented portions of the audio signal.
     """
@@ -357,22 +421,21 @@ def boundaries_from_textgrid(
     """
     Extracts segment boundaries from a specified tier in a TextGrid file.
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     filepath : Union[str, Path]
         Path to the TextGrid file.
     tier_name : str
         The name of the tier from which to extract intervals.
 
-    Returns:
-    --------
+    Returns
+    -------
     List[Dict[str, float]]
-        A list of dictionaries, each containing 'begin', 'end', and 'label' keys 
-        for non-empty intervals in the specified tier.
+        A list of dictionaries, each containing 'begin', 'end', and 'label' keys for non-empty intervals in the specified tier.
     """
-    from biosonic.praat import read_textgrid
+    from biosonic.praat import _read_textgrid
 
-    grid = read_textgrid(filepath)
+    grid = _read_textgrid(filepath)
     segments = grid.interval_tier_to_array(tier_name=tier_name)
     return [segment for segment in segments if len(segment["label"]) > 0] 
 
@@ -387,8 +450,8 @@ def audio_segments_from_textgrid(
     Extracts and visualizes audio segments corresponding to labeled intervals 
     in a TextGrid file.
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     data : NDArray
         The audio signal array.
     sr : int
@@ -398,12 +461,12 @@ def audio_segments_from_textgrid(
     tier_name : str
         Name of the tier to extract labeled segments from.
 
-    Returns:
-    --------
+    Returns
+    -------
     List[Dict[NDArray, str]]
         A list of dictionaries, each containing:
-            - The audio segment (NDArray) for each labeled interval.
-            - The corresponding label (str).
+        - The audio segment (NDArray) for each labeled interval.
+        - The corresponding label (str).
     """
     from biosonic.plot import plot_boundaries_on_spectrogram
 

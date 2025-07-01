@@ -204,6 +204,39 @@ def plot_cepstral_coefficients(
         cmap : Optional[str] = "grey",
         **kwargs : Any
     ) -> None:
+        """
+        Compute and plot cepstral coefficients over time from audio data.
+
+        This function calculates cepstral coefficients using a specified filterbank 
+        type and visualizes them with time on the x-axis and 
+        cepstral coefficient indices on the y-axis.
+
+        Parameters
+        ----------
+        data : ArrayLike
+            Input audio signal (1D array-like).
+        sr : int
+            Sampling rate of the audio signal in Hz.
+        window_length : int
+            Length of the analysis window in samples.
+        n_filters : int, optional
+            Number of filters in the filterbank. Default is 32.
+        n_ceps : int, optional
+            Number of cepstral coefficients to compute and plot. Default is 40.
+        pre_emphasis : float, optional
+            Pre-emphasis filter coefficient. Default is 0.97.
+        fmin : float, optional
+            Minimum frequency for the filterbank in Hz. Default is 0.0.
+        fmax : float, optional
+            Maximum frequency for the filterbank in Hz. Defaults to Nyquist frequency if None.
+        filterbank_type : {'mel', 'linear', 'log'}, optional
+            Type of filterbank to use for cepstral coefficient calculation.
+            Default is 'mel'.
+        cmap : str or None, optional
+            Matplotlib colormap name for plotting. Default is 'grey'.
+        **kwargs : dict, optional
+            Additional keyword arguments passed to the cepstral_coefficients function.
+        """
         #TODO axis labels
         ceps = cepstral_coefficients(
             data, 
@@ -220,74 +253,7 @@ def plot_cepstral_coefficients(
         times = np.linspace(0, len(data) / sr, ceps.shape[0])
         plt.xlabel("Time [s]")
         plt.ylabel("Cepstral Coefficient Index")
-        im = plt.imshow(ceps, origin="lower", aspect="auto", extent=(times[0], times[-1], 0, n_ceps), cmap=cmap)
-
-def dominant_frequencies(
-        times : ArrayLike, 
-        freqs : ArrayLike,
-        ax : Optional[Axes]
-        ) -> Optional[Axes]:
-    if ax is None: 
-        fig, ax = plt.subplots(figsize=(10, 5))
-    ax.scatter(times, freqs, color=(0.7, 0.1, 0.1, 0.3), marker="o", label='Dominant Frequency')
-
-    if ax is None: 
-        plt.show()
-        
-    return ax
-
-
-def plot_filterbank_and_cepstrum(
-        fbanks : ArrayLike, 
-        sr : int, 
-        n_fft : int, 
-        ceps : ArrayLike, 
-        fmax : Optional[float] = None, 
-        title_prefix : str = ""
-    ) -> None:
-    """
-    Plots:
-    1. The filter bank filters (rows of the filter bank matrix)
-    2. The resulting cepstral coefficients
-
-    Parameters:
-        fbanks (np.ndarray): Filter bank matrix of shape (n_filters, n_fft//2+1)
-        sr (int): Sampling rate
-        n_fft (int): FFT size
-        ceps (np.ndarray): Cepstral coefficients (1D array)
-        fmax (float): Optional frequency max for plotting x-axis
-        title_prefix (str): Optional prefix for plot titles
-    """
-    # Set frequency axis (only positive freqs from rfft)
-    freqs = np.linspace(0, sr / 2, n_fft // 2 + 1)
-
-    # Limit frequency axis
-    if fmax is not None:
-        max_bin = np.searchsorted(freqs, fmax)
-        freqs = freqs[:max_bin]
-        fbanks = fbanks[:, :max_bin]
-
-    # Plot filter bank
-    plt.figure(figsize=(14, 5))
-
-    plt.subplot(1, 2, 1)
-    for i in range(fbanks.shape[0]):
-        plt.plot(freqs, fbanks[i])
-    plt.title(f"{title_prefix}Filter Bank")
-    plt.xlabel("Frequency (Hz)")
-    plt.ylabel("Amplitude")
-    plt.grid(True)
-
-    # Plot cepstral coefficients
-    plt.subplot(1, 2, 2)
-    plt.plot(np.arange(len(ceps)), ceps, marker='o')
-    plt.title(f"{title_prefix}Cepstral Coefficients")
-    plt.xlabel("Coefficient Index")
-    plt.ylabel("Amplitude")
-    plt.grid(True)
-
-    plt.tight_layout()
-    plt.show()
+        plt.imshow(ceps, origin="lower", aspect="auto", extent=(times[0], times[-1], 0, n_ceps), cmap=cmap)
 
 
 def plot_features(
@@ -296,6 +262,13 @@ def plot_features(
     ) -> None:
     """
     Plot audio signal features using precomputed feature dictionary.
+
+    Parameters
+    ----------
+    data : ArrayLike
+        Audio time series data.
+    sr : int
+        Sampling rate of the audio data in Hz.
     """
     data = check_signal_format(data)
     sr = check_sr_format(sr)
@@ -381,10 +354,14 @@ def plot_pitch_candidates(
     """
     Plot pitch candidates over time.
     
-    Parameters:
-    - time_points: list of time stamps for each frame.
-    - all_candidates: list of lists of (pitch, strength) tuples.
-    - show_strongest: if True, highlight the strongest voiced candidate per frame.
+    Parameters
+    ----------
+    time_points : list of float
+        Time stamps for each frame.
+    all_candidates : list of list of tuple(float, float)
+        List containing, for each frame, a list of (pitch, strength) tuples.
+    show_strongest : bool
+        If True, highlight the strongest voiced candidate per frame.
     """    
     if ax is None:
         fig, ax = plt.subplots(figsize=(10, 5))
@@ -445,7 +422,42 @@ def plot_pitch_on_spectrogram(
     cmap : str = 'grey',
     plot : Optional[Tuple[Figure, Axes]] = None,
 ) -> None:
-    
+    """
+    Plot a spectrogram of the input audio data and overlay pitch candidates.
+
+    This function computes and displays a spectrogram of the given audio data,
+    then overlays pitch candidates over time. It can optionally highlight the
+    strongest pitch candidate per time frame.
+
+    Parameters
+    ----------
+    data : ArrayLike
+        Audio time series data.
+    sr : int
+        Sampling rate of the audio data in Hz.
+    time_points : ArrayLike
+        Time stamps corresponding to each frame of pitch candidates.
+    all_candidates : ArrayLike
+        List or array of pitch candidate tuples (pitch, strength) for each time frame.
+    window_length : int, optional
+        Window length (in samples) for the spectrogram. Default is 512.
+    overlap : int, optional
+        Overlap between windows (in samples) for the spectrogram. Default is 50.
+    show_strongest : bool, optional
+        If True, highlights the strongest voiced pitch candidate per frame. Default is True.
+    db_scale : bool, optional
+        Whether to display the spectrogram in decibel scale. Default is True.
+    flim : tuple of float, optional
+        Frequency limits (min_freq, max_freq) to display in the spectrogram. Default is None (no limit).
+    tlim : tuple of float, optional
+        Time limits (start_time, end_time) for the plot. Default is None (full duration).
+    title : str, optional
+        Title of the plot. Default is "Spectrogram with Pitch Candidates".
+    cmap : str, optional
+        Colormap to use for the spectrogram. Default is 'grey'.
+    plot : tuple of (Figure, Axes), optional
+        Existing matplotlib Figure and Axes to plot on. If None, a new figure is created.
+    """
     if plot is None:
         fig, ax = plt.subplots(figsize=(10, 5))
     else: 
@@ -482,11 +494,10 @@ def plot_boundaries_on_spectrogram(
     **kwargs : Any
     ) -> None:
     """
-    Plot a spectrogram of the input audio data and overlay vertical lines
-    indicating segment boundaries.
+    Plot a spectrogram of the input audio data and overlay vertical lines indicating segment boundaries.
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     data : ArrayLike
         Audio time series data.
     sr : int
