@@ -214,7 +214,7 @@ def test_segments_from_signal(sample_data):
 from biosonic.handle import boundaries_from_textgrid, audio_segments_from_textgrid
 
 @pytest.fixture
-def mock_textgrid_data():
+def mock_selection_data():
     return [
         {"begin": 0.0, "end": 0.5, "label": "a"},
         {"begin": 0.5, "end": 1.0, "label": "b"},
@@ -230,9 +230,9 @@ def sample_audio():
     return data, sr
 
 @patch("biosonic.praat._read_textgrid")
-def test_boundaries_from_textgrid(mock_read_textgrid, mock_textgrid_data):
+def test_boundaries_from_textgrid(mock_read_textgrid, mock_selection_data):
     mock_grid = MagicMock()
-    mock_grid.interval_tier_to_array.return_value = mock_textgrid_data
+    mock_grid.interval_tier_to_array.return_value = mock_selection_data
     mock_read_textgrid.return_value = mock_grid
 
     result = boundaries_from_textgrid("dummy_path.TextGrid", "words")
@@ -248,12 +248,12 @@ def test_boundaries_from_textgrid(mock_read_textgrid, mock_textgrid_data):
 @patch("biosonic.handle.boundaries_from_textgrid")
 @patch("biosonic.plot.plot_boundaries_on_spectrogram")  # mock plotting to avoid display
 def test_audio_segments_from_textgrid(
-    mock_plot, mock_boundaries_from_textgrid, sample_audio, mock_textgrid_data
+    mock_plot, mock_boundaries_from_textgrid, sample_audio, mock_selection_data
 ):
     data, sr = sample_audio
 
     # Only keep labeled intervals
-    labeled = [seg for seg in mock_textgrid_data if seg["label"]]
+    labeled = [seg for seg in mock_selection_data if seg["label"]]
     mock_boundaries_from_textgrid.return_value = labeled
 
     segments = audio_segments_from_textgrid(
@@ -267,6 +267,73 @@ def test_audio_segments_from_textgrid(
     assert len(segments) == len(labeled)
 
     for item, ref in zip(segments, labeled):
+        assert isinstance(item, dict)
+        assert "data" in item and "label" in item
+        assert isinstance(item["data"], np.ndarray)
+        assert item["label"] == ref["label"]
+
+    mock_plot.assert_called_once()
+
+
+from biosonic.handle import boundaries_from_raven, audio_segments_from_raven
+
+@pytest.fixture
+def mock_selection_df():
+    return pd.DataFrame({
+        "Selection": [1, 2, 3, 4],
+        "Begin Time (s)": [0.0, 0.5, 1.0, 1.5],
+        "End Time (s)": [0.5, 1.0, 1.5, 2.0],
+        "Annotation": ["a", "b", "", "c"],
+    })
+
+
+@pytest.fixture
+def sample_audio():
+    sr = 1000
+    duration = 2  # seconds
+    data = np.random.randn(sr * duration)
+    return data, sr
+
+
+def test_boundaries_from_raven(mock_selection_df):
+    with patch("biosonic.handle.pd.read_csv", return_value=mock_selection_df):
+        result = boundaries_from_raven("dummy_path.txt")
+
+    assert isinstance(result, list)
+    assert all("begin" in r and "end" in r and "label" in r for r in result)
+    assert len(result) == 4
+    assert result[0]["label"] == "a"
+    assert result[1]["label"] == "b"
+    assert result[2]["label"] == ""
+    assert result[3]["label"] == "c"
+
+
+@patch("biosonic.handle.boundaries_from_raven")
+@patch("biosonic.plot.plot_boundaries_on_spectrogram")  # mock plotting to avoid display
+def test_audio_segments_from_raven(
+    mock_plot, mock_boundaries, sample_audio, mock_selection_df
+):
+    data, sr = sample_audio
+
+    # Only keep labeled intervals
+    labeled = mock_selection_df[mock_selection_df["Annotation"] != ""]
+    mock_boundaries.return_value = [
+        {"begin": b, "end": e, "label": lab}
+        for b, e, lab in zip(
+            labeled["Begin Time (s)"], labeled["End Time (s)"], labeled["Annotation"]
+        )
+    ]
+
+    segments = audio_segments_from_raven(
+        data,
+        sr,
+        "dummy_path.txt"
+    )
+
+    assert isinstance(segments, list)
+    assert len(segments) == len(mock_boundaries.return_value)
+
+    for item, ref in zip(segments, mock_boundaries.return_value):
         assert isinstance(item, dict)
         assert "data" in item and "label" in item
         assert isinstance(item["data"], np.ndarray)

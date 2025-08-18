@@ -17,7 +17,7 @@ def spectrogram(
     window_length: int = 512,
     window: Union[str, ArrayLike] = "hann",
     overlap: float = 50,
-    noisereduction: Optional[Literal["time", "frequency"]] = None,
+    noisereduction: Optional[bool] = False,
     complex_output: bool = False,
 ) -> Tuple[NDArray[np.float32], NDArray[np.float32], NDArray[np.float32]]:
     """
@@ -36,11 +36,9 @@ def spectrogram(
         Defaults to 'hann'.
     overlap : float, optional
         Overlap between adjacent windows as a percentage (0–100). Default is 50.
-    noisereduction : {"time", "frequency"}, optional
+    noisereduction : bool, optional
         Apply noise reduction:
-        - "time": subtract median across time
-        - "frequency": subtract median across frequency
-        - None: no noise reduction (default)
+        if True, subtract median from spectrogram values. Default is False.
     complex_output : bool, optional
         If True, return the complex STFT result. If False, return magnitude. Default is False.
 
@@ -104,12 +102,8 @@ def spectrogram(
     S_real = np.abs(Sx)
 
     # Noise reduction
-    if noisereduction == "time":
-        noise = np.median(S_real, axis=0)
-        S_real = np.abs(S_real - noise[None, :])
-    elif noisereduction == "frequency":
-        noise = np.median(S_real, axis=1)
-        S_real = np.abs(S_real - noise[:, None])
+    if noisereduction == True:
+        S_real = S_real - np.median(S_real, axis=0)
 
     return S_real, t, f
 

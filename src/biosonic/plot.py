@@ -26,7 +26,7 @@ def plot_spectrogram(
         window_length: int = 512,
         window: Union[str, ArrayLike] = "hann",
         overlap: float = 50,
-        noisereduction: Optional[Literal["time", "frequency"]] = None,
+        noisereduction: Optional[bool] = False,
         n_bands: int = 40,
         corner_frequency: Optional[float] = None,
         plot : Optional[Tuple[Figure, Axes]] = None,
@@ -66,8 +66,8 @@ def plot_spectrogram(
         Number of zeros to pad each windowed frame. Default is 0.
     overlap : float, optional
         Percentage of overlap between successive windows (0 to 100). Default is 50.
-    noisereduction : int, optional
-        Level of noise reduction to apply, if any. Default is None (no reduction).
+    noisereduction : bool, optional
+        Whether to apply noise reduction. Default is False (no reduction).
     n_bands : int, optional
         Number of frequency bands for mel or log scaling. Default is 40.
     corner_frequency : float, optional

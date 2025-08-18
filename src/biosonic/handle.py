@@ -393,6 +393,7 @@ def segments_from_signal(
     List[NDArray]
         A list of segmented portions of the audio signal.
     """
+    # TODO handle multiple channels
     segments = []
 
     # Normalize boundaries to a list of (begin, end) tuples
@@ -419,7 +420,7 @@ def boundaries_from_textgrid(
         tier_name : str
     ) -> List[Dict[str, float]]:
     """
-    Extracts segment boundaries from a specified tier in a TextGrid file.
+    Extracts segment boundaries from a specified tier in a praat TextGrid file.
 
     Parameters
     ----------
@@ -440,6 +441,50 @@ def boundaries_from_textgrid(
     return [segment for segment in segments if len(segment["label"]) > 0] 
 
 
+def boundaries_from_raven(
+        filepath: Union[str, Path]
+    ) -> List[Dict[str, float]]:
+    """
+    Extracts one segment per selection from a Raven selection table (.txt).
+
+    Parameters
+    ----------
+    filepath : str or Path
+        Path to the Raven selection table file.
+
+    Returns
+    -------
+    List[Dict[str, float]]
+        A list of dicts, each containing:
+        - 'begin': start time in seconds
+        - 'end': end time in seconds
+        - 'label': merged annotation text from all rows of that selection
+    """
+    df = pd.read_csv(filepath, sep="\t")
+
+    # Group by selection number, merge times & annotations
+    grouped = (
+        df.groupby("Selection")
+          .agg({
+              "Begin Time (s)": "min",
+              "End Time (s)": "max",
+              "Annotation": lambda ann: "; ".join(
+                  sorted(set(str(v).strip() for v in ann if pd.notna(v) and str(v).strip()))
+              )
+          })
+          .reset_index()
+    )
+
+    boundaries = []
+    for _, row in grouped.iterrows():
+        boundaries.append({
+            "begin": float(row["Begin Time (s)"]),
+            "end": float(row["End Time (s)"]),
+            "label": row["Annotation"]
+        })
+    return boundaries
+
+
 def audio_segments_from_textgrid(
         data : NDArray, 
         sr : int,
@@ -448,7 +493,7 @@ def audio_segments_from_textgrid(
     ) -> List[Dict[NDArray, str]]:
     """
     Extracts and visualizes audio segments corresponding to labeled intervals 
-    in a TextGrid file.
+    in a praat TextGrid file.
 
     Parameters
     ----------
@@ -471,6 +516,40 @@ def audio_segments_from_textgrid(
     from biosonic.plot import plot_boundaries_on_spectrogram
 
     boundaries = boundaries_from_textgrid(filepath_textgrid, tier_name)
+
+    plot_boundaries_on_spectrogram(data, sr, boundaries)
+    segments = segments_from_signal(data, sr, boundaries)
+    return [{"data": seg, "label": str(b["label"])} for seg, b in zip(segments, boundaries)]
+
+
+def audio_segments_from_raven(
+        data : NDArray, 
+        sr : int,
+        filepath_raven : Union[str, Path]
+    ) -> List[Dict[NDArray, str]]:
+    """
+    Extracts and visualizes audio segments corresponding to intervals 
+    in a Raven selection table.
+
+    Parameters
+    ----------
+    data : NDArray
+        The audio signal array.
+    sr : int
+        Sampling rate of the audio signal.
+    filepath_raven : Union[str, Path]
+        Path to the txt file containing segmentation information.
+
+    Returns
+    -------
+    List[Dict[NDArray, str]]
+        A list of dictionaries, each containing:
+        - The audio segment (NDArray) for each labeled interval.
+        - The corresponding label (str).
+    """
+    from biosonic.plot import plot_boundaries_on_spectrogram
+
+    boundaries = boundaries_from_raven(filepath_raven)
 
     plot_boundaries_on_spectrogram(data, sr, boundaries)
     segments = segments_from_signal(data, sr, boundaries)
