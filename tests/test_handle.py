@@ -114,7 +114,7 @@ def test_read_wav(tmp_path):
 @patch("biosonic.handle.Path.glob")
 @patch("biosonic.handle.read_wav")
 @patch("biosonic.compute.utils.extract_all_features")
-def test_batch_extract_feature(mock_extract, mock_read, mock_glob, tmp_path):
+def test_batch_extract_features(mock_extract, mock_read, mock_glob, tmp_path):
     from biosonic.handle import batch_extract_features
     # success
     mock_file = MagicMock(spec=Path)
@@ -156,6 +156,53 @@ def test_batch_extract_feature(mock_extract, mock_read, mock_glob, tmp_path):
     # empty folder
     mock_glob.return_value = []
     df = batch_extract_features(str(tmp_path))
+    assert df.empty
+
+
+@patch("biosonic.handle.Path.glob")
+@patch("biosonic.handle.read_wav")
+def test_batch_read_files(mock_read, mock_glob, tmp_path):
+    from biosonic.handle import batch_read_files_to_df
+
+    # success
+    mock_file = MagicMock(spec=Path)
+    mock_file.name = "mocked.wav"
+    mock_file.suffix = ".wav"
+    mock_file.__str__.return_value = "mocked.wav"
+    mock_glob.return_value = [mock_file]
+
+    data = [0.1, 0.2, 0.3]
+    sr = 44100
+    mock_read.return_value = data, sr, 1, "float32"
+
+    df = batch_read_files_to_df(str(tmp_path))
+
+    assert isinstance(df, pd.DataFrame)
+    assert df.shape[0] == 2 # because glob is called two times
+    assert 'filename' in df.columns
+    assert 'sr' in df.columns
+    assert 'waveform' in df.columns
+    assert df['filename'].iloc[0] == "mocked.wav"
+    
+    # csv output
+    csv_path = tmp_path / "output.csv"
+    df = batch_read_files_to_df(str(tmp_path), save_csv_path=str(csv_path))
+    assert csv_path.exists()
+    saved_df = pd.read_csv(csv_path)
+    assert saved_df.shape[0] == 2
+    assert 'filename' in saved_df.columns
+
+    # simulate exception in feature extraction
+    data = [0.1, 0.2]
+    sr = 44100
+    mock_read.side_effect = RuntimeError("Reading file failed")
+
+    df = batch_read_files_to_df(str(tmp_path))
+    assert df.empty  # should skip failed file
+
+    # empty folder
+    mock_glob.return_value = []
+    df = batch_read_files_to_df(str(tmp_path))
     assert df.empty
 
 

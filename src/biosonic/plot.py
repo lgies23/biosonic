@@ -1,9 +1,11 @@
+import os
 import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 import numpy as np
 from numpy.typing import ArrayLike
 from typing import Optional, Any, Union, Literal, Tuple, List, Dict
+from pandas import DataFrame
 
 from biosonic.compute.spectrotemporal import cepstrum, spectrogram, cepstral_coefficients
 from biosonic.compute.spectral import spectrum
@@ -13,10 +15,10 @@ from biosonic.compute.utils import extract_all_features, check_signal_format, ch
 
     
 def plot_spectrogram(
-        data : ArrayLike, 
+        data: Union[np.ndarray, Tuple[np.ndarray, np.ndarray, np.ndarray]],
         sr: int, 
         db_scale : bool = True, 
-        cmap : str = 'grey', 
+        cmap : str = 'binary', 
         title : Optional[str] = None,
         db_ref : Optional[float] = None,
         dynamic_range: Optional[float] = 100,
@@ -37,8 +39,8 @@ def plot_spectrogram(
 
     Parameters
     ----------
-    data : ArrayLike
-        Input signal.
+    data : Union[np.ndarray, Tuple[np.ndarray, np.ndarray, np.ndarray]],
+        Input signal. Either as precomputed spectrogram (S, t, f) or 1D signal array.
     sr : int
         Sampling rate in Hz.
     db_scale : bool, optional
@@ -77,7 +79,15 @@ def plot_spectrogram(
     **kwargs : dict
         Additional keyword arguments passed to `matplotlib.pyplot.imshow`.
     """
-    Sx, t, f = spectrogram(
+    # Precomputed spectrogram
+    if isinstance(data, tuple) and len(data) == 3:
+        Sx, t, f = data
+    
+    # Raw signal + sr
+    elif isinstance(data, np.ndarray):
+        if sr is None:
+            raise ValueError("sr must be provided when passing a signal array.")
+        Sx, t, f = spectrogram(
         data=data,
         sr=sr,
         window_length=window_length,
@@ -86,6 +96,9 @@ def plot_spectrogram(
         noisereduction=noisereduction,
         complex_output=False
     )
+    
+    else:
+        raise TypeError("data must be either a (S, t, f) tuple or a 1D np.ndarray signal")
 
     if freq_scale=="mel":
         if sr is None:
@@ -121,18 +134,26 @@ def plot_spectrogram(
         t = t[mask]
         Sx = Sx[:, mask]
 
+    # Plot
     if plot is not None:
         fig, ax = plot
     else: 
         fig, ax = plt.subplots(figsize=(10, 5))
 
-    im = ax.imshow(Sx, aspect='auto', origin='lower', extent=(t[0], t[-1], f[0], f[-1]), cmap=cmap, **kwargs)
+    extent = (
+        float(t[0]),
+        float(t[-1]),
+        float(f[0]),
+        float(f[-1]),
+    )
+
+    im = ax.imshow(Sx, aspect='auto', origin='lower', extent=extent, cmap=cmap, **kwargs)
     ax.set_ylabel("Frequency [Hz]")
     ax.set_xlabel("Time [s]")
 
     if freq_scale == "log":
         ax.set_yscale("log")
-        ax.set_ylim(min(f[f>0]), f[-1])
+        ax.set_ylim(float(min(f[f>0])), float(f[-1]))
 
     if title is None:
         title = f"{freq_scale}-scaled spectrogram"
@@ -518,3 +539,113 @@ def plot_boundaries_on_spectrogram(
         ax.axvline(segment["end"], color='orange', linestyle="-")
     
     plt.show()
+
+
+def plot_spectrogram_catalogue(
+    df: DataFrame,
+    column: str = "waveform",
+    per_page: int = 20,
+    ncols: int = 2,
+    save_dir: Optional[str] = None,
+    show: bool = True,
+    prefix: str = "spectrograms",
+    title_columns: List[str] = ["filename"],
+    **kwargs: Any
+) -> None:
+    """
+    Plot a catalogue of spectrograms from a DataFrame.
+
+    This function generates spectrogram plots for waveforms stored in a DataFrame.
+    The plots are arranged in a paginated grid and can be saved to disk.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        Input DataFrame containing waveform data and associated metadata.
+    column : str, default="waveform"
+        Column name in `df` that contains the waveform arrays.
+    per_page : int, default=20
+        Number of spectrograms to display per page.
+    ncols : int, default=2
+        Number of subplot columns per page.
+    save_dir : str or None, optional
+        Directory to save the generated figure pages. If None, figures are not saved.
+    show : bool, default=True
+        If True, display the figures interactively. If False, figures are closed after saving.
+    prefix : str, default="spectrograms"
+        Prefix for saved figure filenames if `save_dir` is provided.
+    title_columns : list of str, default=["filename"]
+        List of column names from `df` to include in subplot titles, joined by a vertical bar (`|`).
+    **kwargs : dict, optional
+        Additional keyword arguments passed to the underlying `plot_spectrogram` function.
+
+    Returns
+    -------
+    None
+        This function does not return anything. It produces matplotlib figures,
+        optionally displaying them or saving them to disk.
+
+    Notes
+    -----
+    - The function expects each row of the DataFrame to contain:
+        * `df[column]`: waveform array-like
+        * `df["sr"]`: sampling rate (int)
+    - If a waveform entry is `None`, its subplot will be empty.
+
+    Examples
+    --------
+    >>> import pandas as pd
+    >>> data = {
+    ...     "ID": [1, 2],
+    ...     "waveform": [wave1, wave2],
+    ...     "sr": [16000, 16000]
+    ... }
+    >>> df = pd.DataFrame(data)
+    >>> plot_spectrogram_catalogue(df, per_page=2, ncols=2, show=False, save_dir="plots")
+    Saved plots/spectrograms_001.png
+    """
+    if save_dir is not None:
+        os.makedirs(save_dir, exist_ok=True)
+
+    n = len(df)
+    n_pages = int(np.ceil(n / per_page))
+
+    for page in range(n_pages):
+        start = page * per_page
+        end = min((page + 1) * per_page, n)
+        subset = df.iloc[start:end]
+
+        nrows = int(np.ceil(len(subset) / ncols))
+        fig, axes = plt.subplots(nrows, ncols, figsize=(5*ncols, 2*nrows))
+        axes = np.atleast_1d(axes).reshape(nrows, ncols)
+
+        for idx, (_, row) in enumerate(subset.iterrows()):
+            r, c = divmod(idx, ncols)
+            ax_spec = axes[r, c]   
+
+            snippet = row[column]
+            if snippet is None:
+                ax_spec.axis("off")
+                continue
+
+            sr = row["sr"]
+
+            plot_spectrogram(
+                row["waveform"],
+                sr,
+                title="|".join(str(row[col]) for col in title_columns),
+                plot=(fig, ax_spec), 
+                **kwargs
+            )
+
+        plt.tight_layout()
+
+        if save_dir is not None:
+            filename = os.path.join(save_dir, f"{prefix}_{page+1:03d}.png")
+            fig.savefig(filename, dpi=150)
+            print(f"Saved {filename}")
+
+        if show:
+            plt.show()
+        else:
+            plt.close(fig)

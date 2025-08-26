@@ -366,6 +366,69 @@ def batch_extract_features(
 
     return out_df
 
+def batch_read_files_to_df(
+        folder_path : Union[str, Path],
+        save_csv_path: Optional[str] = None,
+) -> pd.DataFrame:
+    """
+    Extract features from all WAV files in a folder.
+
+    This function processes all `.wav` and `.WAV` files in the specified folder,
+    and returns a DataFrame containing the waveforms and filenames. Optionally, the
+    results can be saved to a CSV file.
+
+    Parameters
+    ----------
+    folder_path : str or pathlib.Path
+        Path to the folder containing `.wav` audio files.
+
+    save_csv_path : str, optional
+        Path to save the resulting DataFrame as a CSV file.
+        If None (default), the CSV is not saved.
+
+    Returns
+    -------
+    pandas.DataFrame
+        A DataFrame where each row contains waveform, sample rate and filename from one WAV file.
+
+    Raises
+    ------
+    This function handles file-level errors internally and prints tracebacks,
+    but it does not raise exceptions during feature extraction or saving.
+
+    Notes
+    -----
+    - This function relies on `read_wav`.
+    - Files that fail to process are skipped, and their errors are printed.
+    """
+    folder_path = Path(folder_path)
+    rows = []
+
+    wav_files = list(folder_path.glob("*.wav")) + list(folder_path.glob("*.WAV"))
+    for wav_file in wav_files:
+        print(f"processing {wav_file.name}")
+        try:
+            data, sr, _, _ = read_wav(wav_file)
+            columns : dict[str, Any] = {}
+            columns['filename'] = wav_file.name
+            columns['sr'] = sr
+            columns['waveform'] = data
+            rows.append(columns)
+        except Exception as e:
+            print(f"Failed to process {wav_file.name}: {e}")
+            traceback.print_exc()
+    
+    out_df = pd.DataFrame(rows)
+
+    if save_csv_path:
+        try:
+            out_df.to_csv(save_csv_path, index=False)
+            print(f"Features saved to: {save_csv_path}")
+        except Exception as e:
+            print(f"Failed to save CSV: {e}")
+
+    return out_df
+
 
 def segments_from_signal(
         data : NDArray, 
