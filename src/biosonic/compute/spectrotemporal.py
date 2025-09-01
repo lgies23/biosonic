@@ -420,7 +420,7 @@ def _nearest_neighbors(
         ss: np.ndarray, 
         c: int, 
         exclusion: int
-    ) -> np.ndarray:
+    ) -> Any:
     """Find nearest neighbors for index c based on embedding distance."""
     # Build embedding windows
     target = ss[c - dim + 1 : c + 1][None, :]  # shape (1, dim)
@@ -441,7 +441,7 @@ def lpc_estimate(
         nnn: int, 
         ss: np.ndarray, 
         nb: np.ndarray
-    ) -> np.ndarray:
+    ) -> Any:
     """Estimate LPC coefficients using nearest neighbors (solves Ax = b)."""
     # Cross-correlation vector
     vt = np.array([sum(ss[nb[k] - i] * ss[nb[k] + 1] for k in range(nnn)) for i in range(dim)])
@@ -478,10 +478,14 @@ def SNR(
     # Variance of original and residual signals
     vs = _variance(ss, dim)
     vr = _variance(rr, dim)
-    return 10.0 * np.log10(vs / vr)
+    return float(10.0 * np.log10(vs / vr))
 
 
-def tokuda_nlm(dim: int, data: np.ndarray, exclusion: int = 15) -> Tuple[List[Tuple[float, float]], float]:
+def tokuda_nlm(
+        dim: int, 
+        data: np.ndarray, 
+        exclusion: int = 15
+        ) -> Tuple[List[Tuple[float, float]], float, float]:
     """
     Compute the DVS plot values and the nonlinear measure (NLM).
 
@@ -510,7 +514,7 @@ def tokuda_nlm(dim: int, data: np.ndarray, exclusion: int = 15) -> Tuple[List[Tu
     step = max(1, int(0.025 * length))
 
     results: List[Tuple[float, float]] = []
-    max_snr: float | None = None
+    max_snr: Optional[float] = None
 
     # Sweep number of neighbors from dim+1 up to max allowed
     for nnn in range(dim + 1, length - dim - 2 * exclusion, step):
@@ -522,7 +526,7 @@ def tokuda_nlm(dim: int, data: np.ndarray, exclusion: int = 15) -> Tuple[List[Tu
 
     # Fallback if loop produced no results
     if max_snr is None:
-        return [], float("nan")
+        return [], float("nan"), float("nan")
 
     # Compute SNR using all admissible neighbors (upper bound)
     nnn = length - dim - 2 * exclusion - 1
