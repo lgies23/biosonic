@@ -1,9 +1,11 @@
-from typing import Optional, Tuple, Union, Dict, Literal, Any
+from typing import Optional, Tuple, Union, Dict, Literal, Any, List
 import numpy as np
 from numpy.typing import NDArray, ArrayLike
 from scipy import signal
 from scipy.fft import fft, ifft, rfft
 from scipy.fftpack import dct
+from scipy.spatial.distance import cdist
+from scipy.linalg import solve
 
 from .temporal import temporal_entropy
 from .spectral import power_spectral_entropy
@@ -403,6 +405,135 @@ def dominant_frequencies(
                 dominant_freqs[t, :len(top_freqs)] = top_freqs
 
     return dominant_freqs
+
+# --------- Tokuda ----------
+# https://www.ritsumei.ac.jp/~isao/NLM/
+
+def _variance(x: np.ndarray, dim: int) -> float:
+    """Standard deviation of signal after skipping first `dim` points."""
+    return float(np.std(x[dim:], ddof=0))
+
+
+def _nearest_neighbors(
+        length: int, 
+        dim: int, 
+        ss: np.ndarray, 
+        c: int, 
+        exclusion: int
+    ) -> np.ndarray:
+    """Find nearest neighbors for index c based on embedding distance."""
+    # Build embedding windows
+    target = ss[c - dim + 1 : c + 1][None, :]  # shape (1, dim)
+    windows = [ss[l - dim + 1 : l + 1] for l in range(dim - 1, length - 1) if abs(l - c) > exclusion]
+    windows = np.array(windows)
+
+    # Compute distances and sort
+    distances = cdist(target, windows, metric="euclidean").ravel()
+    sorted_idx = np.argsort(distances)
+
+    # Return indices aligned to original l values
+    valid_indices = [l for l in range(dim - 1, length - 1) if abs(l - c) > exclusion]
+    return np.array(valid_indices)[sorted_idx]
+
+
+def lpc_estimate(
+        dim: int, 
+        nnn: int, 
+        ss: np.ndarray, 
+        nb: np.ndarray
+    ) -> np.ndarray:
+    """Estimate LPC coefficients using nearest neighbors (solves Ax = b)."""
+    # Cross-correlation vector
+    vt = np.array([sum(ss[nb[k] - i] * ss[nb[k] + 1] for k in range(nnn)) for i in range(dim)])
+
+    # Covariance matrix
+    A = np.array([[sum(ss[nb[k] - i] * ss[nb[k] - j] for k in range(nnn))
+                   for j in range(dim)] for i in range(dim)])
+
+    # Solve A * wd = vt
+    try:
+        wd = solve(A, vt, assume_a="sym")  # covariance is symmetric
+    except np.linalg.LinAlgError:
+        wd = np.zeros(dim)  # fallback: predict nothing
+    return wd
+
+
+def SNR(
+        length: int, 
+        dim: int, 
+        nnn: int, 
+        xx: np.ndarray, 
+        exclusion: int
+    ) -> float:
+    ss = xx.copy()
+    rr = np.zeros_like(ss)
+
+    # Predict each point using local linear model
+    for i in range(dim - 1, length - 1):
+        rr[i + 1] = ss[i + 1]
+        nb = _nearest_neighbors(length, dim, ss, i, exclusion)
+        wd = lpc_estimate(dim, nnn, ss, nb)
+        rr[i + 1] -= np.dot(wd, ss[i - dim + 1 : i + 1][::-1])
+
+    # Variance of original and residual signals
+    vs = _variance(ss, dim)
+    vr = _variance(rr, dim)
+    return 10.0 * np.log10(vs / vr)
+
+
+def tokuda_nlm(dim: int, data: np.ndarray, exclusion: int = 15) -> Tuple[List[Tuple[float, float]], float]:
+    """
+    Compute the DVS plot values and the nonlinear measure (NLM).
+
+    Parameters
+    ----------
+    dim : int
+        Embedding dimension.
+    data : array-like
+        Time series data (1D).
+    exclusion : int, default=15
+        Minimum temporal separation for nearest neighbors.
+
+    Returns
+    -------
+    results : list of tuple of (float, float)
+        List of (percentage of neighbors, SNR) pairs.
+    nlm_value : float
+        Nonlinear measure in dB (difference between max SNR and full-data SNR).
+    """
+    xx = np.asarray(data, dtype=float)
+    length = len(xx)
+    if length <= 2 * exclusion + dim + 1:
+        raise ValueError("Time series too short for given dim and exclusion.")
+
+    # step size for sweeping nearest neighbor counts
+    step = max(1, int(0.025 * length))
+
+    results: List[Tuple[float, float]] = []
+    max_snr: float | None = None
+
+    # Sweep number of neighbors from dim+1 up to max allowed
+    for nnn in range(dim + 1, length - dim - 2 * exclusion, step):
+        snr = SNR(length, dim, nnn, xx, exclusion)
+        p_nnn = 100.0 * nnn / length  # percentage of neighbors
+        results.append((p_nnn, snr))
+        if max_snr is None or snr > max_snr:
+            max_snr = snr
+
+    # Fallback if loop produced no results
+    if max_snr is None:
+        return [], float("nan")
+
+    # Compute SNR using all admissible neighbors (upper bound)
+    nnn = length - dim - 2 * exclusion - 1
+    snr_all = SNR(length, dim, nnn, xx, exclusion)
+
+    # Nonlinear measure = difference between maximal SNR and full-data SNR
+    nlm_value = max_snr - snr_all
+
+    return results, nlm_value, snr_all
+
+# ----------- Tokuda End --------------
 
 
 def calculate_dominant_frequency_features(
