@@ -409,7 +409,7 @@ def dominant_frequencies(
 # --------- Tokuda ----------
 # https://www.ritsumei.ac.jp/~isao/NLM/
 
-def _variance(x: np.ndarray, dim: int) -> float:
+def _variance(x: NDArray[np.float32], dim: int) -> float:
     """Standard deviation of signal after skipping first `dim` points."""
     return float(np.std(x[dim:], ddof=0))
 
@@ -417,7 +417,7 @@ def _variance(x: np.ndarray, dim: int) -> float:
 def _nearest_neighbors(
         length: int, 
         dim: int, 
-        ss: np.ndarray, 
+        ss: NDArray[np.float32], 
         c: int, 
         exclusion: int
     ) -> Any:
@@ -439,8 +439,8 @@ def _nearest_neighbors(
 def lpc_estimate(
         dim: int, 
         nnn: int, 
-        ss: np.ndarray, 
-        nb: np.ndarray
+        ss: NDArray[np.float32], 
+        nb: NDArray[np.float32]
     ) -> Any:
     """Estimate LPC coefficients using nearest neighbors (solves Ax = b)."""
     # Cross-correlation vector
@@ -462,7 +462,7 @@ def SNR(
         length: int, 
         dim: int, 
         nnn: int, 
-        xx: np.ndarray, 
+        xx: NDArray[np.float32], 
         exclusion: int
     ) -> float:
     ss = xx.copy()
@@ -483,7 +483,7 @@ def SNR(
 
 def tokuda_nlm(
         dim: int, 
-        data: np.ndarray, 
+        data: NDArray[np.float32], 
         exclusion: int = 15
         ) -> Tuple[List[Tuple[float, float]], float, float]:
     """

@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 import numpy as np
-from numpy.typing import ArrayLike
+from numpy.typing import ArrayLike, NDArray
 from typing import Optional, Any, Union, Literal, Tuple, List, Dict
 from pandas import DataFrame
 
@@ -15,7 +15,7 @@ from biosonic.compute.utils import extract_all_features, check_signal_format, ch
 
     
 def plot_spectrogram(
-        data: Union[np.ndarray, Tuple[np.ndarray, np.ndarray, np.ndarray]],
+        data: Union[NDArray[np.float32], Tuple[NDArray[np.float32], NDArray[np.float32], NDArray[np.float32]]],
         sr: int, 
         db_scale : bool = True, 
         cmap : str = 'binary', 
@@ -534,10 +534,15 @@ def plot_boundaries_on_spectrogram(
     
     plot_spectrogram(data, sr, plot=(fig, ax), **kwargs)
 
+    tlim = kwargs.get("tlim", None)
+
     for segment in segments: 
-        ax.axvline(segment["begin"], color='green', linestyle="--")
-        ax.axvline(segment["end"], color='orange', linestyle="-")
-    
+        if tlim is None or (segment["begin"] >= tlim[0] and segment["end"] <= tlim[1]):
+            ax.axvline(segment["begin"], color='green', linestyle="--")
+            ax.axvline(segment["end"], color='orange', linestyle="-")
+            
+        # TODO labels
+        
     plt.show()
 
 
