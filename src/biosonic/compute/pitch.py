@@ -56,7 +56,7 @@ def _yin_single_window(
     if len(frame) < window_length:
         return None
 
-    # Optional: remove DC offset
+    # remove DC offset
     frame = frame - np.mean(frame)
 
     d = _difference_function(frame, max_lag)
@@ -79,7 +79,7 @@ def yin(
     flim: Tuple[int, int],
     threshold: float = 0.1
 ) -> Tuple[ArrayLike, ArrayLike]:
-    """YIN pitch tracking over an entire signal.
+    """YIN pitch tracking over an entire signal. **Not yet finished**
 
     Returns
     -------

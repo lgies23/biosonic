@@ -94,7 +94,7 @@ def extract_all_features(
     kernel_size : Optional[int] = None,
     n_dominant_freqs : int = 1, 
     **kwargs : dict[str, Any]
-) -> dict[str, Union[float, NDArray[np.float64]]]:
+) -> dict[str, Union[float, NDArray[np.float32]]]:
     """
     Extracts a comprehensive set of temporal and spectral features from a signal.
 
@@ -284,7 +284,7 @@ def hz_to_mel(
         3. D. O'Shaughnessy, ”Speech Communication - Human and Machine” Addison- Wesley, New York, 1987. As cited in [2]
 
     """
-    f_arr = np.asarray(f, dtype=np.float64)
+    f_arr = np.asarray(f, dtype=np.float32)
 
     if corner_frequency is not None:
         a, b = corner_frequency, corner_frequency
@@ -350,7 +350,7 @@ def mel_to_hz(
     2. Umesh S, Cohen L, Nelson D. 1999 Fitting the Mel scale. ICASSP.
     3. D. O'Shaughnessy, "Speech Communication - Human and Machine", 1987.
     """
-    m_arr = np.asarray(m, dtype=np.float64)
+    m_arr = np.asarray(m, dtype=np.float32)
 
     if corner_frequency is not None:
         a = corner_frequency
