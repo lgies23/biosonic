@@ -296,7 +296,8 @@ def temporal_features(
         "temporal_skew": float,
         "temporal_kurtosis": float,
         "amplitude_envelope": NDArray[np.float64],
-        "duration": float
+        "duration": float,
+        "temporal_entropy": float
         }
     """
     envelope = amplitude_envelope(data)
@@ -312,7 +313,8 @@ def temporal_features(
         "temporal_skew": skewness(data, sr, kernel_size),
         "temporal_kurtosis": temporal_kurtosis(data, sr, kernel_size),
         "amplitude_envelope": envelope,
-        "duration": duration(data, sr, exclude_surrounding_silences=True)
+        "duration": duration(data, sr, exclude_surrounding_silences=True),
+        "temporal_entropy": temporal_entropy(data)
     }
 
     return features

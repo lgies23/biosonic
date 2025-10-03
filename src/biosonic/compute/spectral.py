@@ -507,7 +507,9 @@ def spectral_features(data: ArrayLike,
         "spectral_skew": float,
         "spectral_kurtosis": float,
         "spectral_sd": float,
-        "peak_frequency": float}
+        "peak_frequency": float,
+        "pse": float
+        }
     """
     data = check_signal_format(data)
     check_sr_format(sr)
@@ -526,6 +528,7 @@ def spectral_features(data: ArrayLike,
         "spectral_skew" : skewness(data, sr),
         "spectral_kurtosis" : kurtosis(data, sr),
         "peak_frequency": peak_frequency(data, sr),
+        "pse": power_spectral_entropy(data, sr)
     }
 
     return features

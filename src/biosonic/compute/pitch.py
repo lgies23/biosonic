@@ -297,7 +297,7 @@ def _viterbi_pitch_path(
 #     Calculate harmonics-to-noise ratio as in Boersma 1993. Returns value in dB.
 #     """
 #     r_tmax = 
-    # return 10 * np.log10(r_tmax/1-r_tmax)
+#     return 10 * np.log10(r_tmax/1-r_tmax)
 
 
 def _autocorr(

@@ -406,6 +406,50 @@ def dominant_frequencies(
 
     return dominant_freqs
 
+
+def zero_crossings(data: ArrayLike) -> NDArray[np.int64]:
+    #TODO
+    """
+    Calculate the indices of zero crossings in a 1D signal.
+    
+    Parameters
+    ----------
+    data : ArrayLike
+        Input 1D audio signal.
+        
+    Returns
+    -------
+    NDArray[np.int64]
+        Indices where zero crossings occur.
+    """
+    pass
+
+def zero_crossing_rate(
+        data: ArrayLike, 
+        frame_length: int = 2048, 
+        hop_length: int = 512
+        ) -> np.float32:
+    # TODO
+    """
+    Calculate the zero crossing rate of a 1D signal.
+    
+    Parameters  
+    ----------
+    data : ArrayLike
+        Input 1D audio signal.
+    frame_length : int, optional
+        Length of each frame in samples. Default is 2048.
+    hop_length : int, optional
+        Number of samples to advance between frames. Default is 512.
+    
+    Returns     
+    -------
+    np.float32
+        Zero crossing rate of the signal.
+    """
+    pass
+
+
 # --------- Tokuda ----------
 # https://www.ritsumei.ac.jp/~isao/NLM/
 
