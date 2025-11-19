@@ -32,6 +32,7 @@ def plot_spectrogram(
         n_bands: int = 40,
         corner_frequency: Optional[float] = None,
         plot : Optional[Tuple[Figure, Axes]] = None,
+        show_amplitude_bar: Optional[bool] = True,
         **kwargs: Any
     ) -> Tuple[Figure, Axes]:
     """
@@ -160,7 +161,8 @@ def plot_spectrogram(
         title = f"{freq_scale}-scaled spectrogram"
     ax.set_title(title)
 
-    fig.colorbar(im, ax=ax, label=("Amplitude [dB]" if db_scale else "Magnitude"))
+    if show_amplitude_bar:
+        fig.colorbar(im, ax=ax, label=("Amplitude [dB]" if db_scale else "Magnitude"))
     plt.tight_layout()
 
     if plot is None:
@@ -281,6 +283,8 @@ def plot_cepstral_coefficients(
 def plot_features(
         data: ArrayLike, 
         sr: int,
+        features : Optional[dict[str, Any]] = None,
+        **kwargs,
     ) -> None:
     """
     Plot audio signal features using precomputed feature dictionary.
@@ -291,10 +295,13 @@ def plot_features(
         Audio time series data.
     sr : int
         Sampling rate of the audio data in Hz.
+     **kwargs : dict[str, Any]
+            Optional parameters for dominant frequency estimation.
     """
     data = check_signal_format(data)
     sr = check_sr_format(sr)
-    features = extract_all_features(data, sr)
+    if not features:
+        features = extract_all_features(data, sr, **kwargs)
     spec, times, freqs = spectrogram(data, sr)
     freq_ms, ms = spectrum(data, sr)#, mode="power")
     spectrogram_db = 20 * np.log10(np.abs(spec + 1e-30)) # avoid divide by zero #TODO double check
@@ -640,6 +647,7 @@ def plot_spectrogram_catalogue(
                 sr,
                 title="|".join(str(row[col]) for col in title_columns),
                 plot=(fig, ax_spec), 
+                show_amplitude_bar=False,
                 **kwargs
             )
 

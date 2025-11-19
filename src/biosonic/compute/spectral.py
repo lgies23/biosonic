@@ -15,7 +15,7 @@ from .utils import  (
 
 def spectrum(data: ArrayLike, 
              sr: Optional[int] = None,
-             mode: Union[str, int, float] = 'amplitude') -> Tuple[Optional[NDArray[np.float64]], NDArray[np.float64]]:
+             mode: Union[str, int, float] = 'amplitude') -> Tuple[Optional[NDArray[np.float32]], NDArray[np.float32]]:
     """
     Computes the magnitude spectrum of a signal, allowing for amplitude, power, or arbitrary exponentiation of the magnitude.
 
@@ -28,9 +28,9 @@ def spectrum(data: ArrayLike,
             of the magnitude spectrum. Defaults to None.
         mode : Union[str, int], default='amplitude'
             Specifies how to compute the spectrum:
-            - 'amplitude': return the amplitude spectrum (\|FFT\|).
-            - 'power': return the power spectrum (\|FFT\|^2).
-            - int or float: raise the magnitude to the given power (e.g., 3 for \|FFT\|^3).
+            - 'amplitude': return the amplitude spectrum (|FFT|).
+            - 'power': return the power spectrum (|FFT|^2).
+            - int or float: raise the magnitude to the given power (e.g., 3 for |FFT|^3).
 
     Returns
     -------
@@ -52,7 +52,7 @@ def spectrum(data: ArrayLike,
 
     if data.size == 0:
         warnings.warn("Input signal is empty; returning an empty spectrum.", RuntimeWarning)
-        return freqs, np.array([], dtype=np.float64)
+        return freqs, np.array([], dtype=np.float32)
     
     if sr is not None:
         sr = check_sr_format(sr)
@@ -324,7 +324,7 @@ def bandwidth(data: ArrayLike, sr: int) -> Union[float, np.floating[Any]]:
     """
     _,bandwidth_,_,_ = spectral_moments(data, sr)
 
-    return bandwidth_
+    return bandwidth_ # TODO change to variance and let people define bandwidth through percentiles
 
 
 def skewness(data: ArrayLike, sr: int) -> Union[float, np.floating[Any]]:

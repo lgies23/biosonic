@@ -278,10 +278,10 @@ def temporal_entropy(
 
 
 def temporal_features(
-        data: NDArray[np.float64], 
+        data: NDArray[np.float32], 
         sr: int, 
         kernel_size: Optional[int] = None,
-        ) -> Dict[str, Union[float, NDArray[np.float64]]]:
+        ) -> Dict[str, Union[float, NDArray[np.float32]]]:
     """
     Extracts a set of temporal features from the amplitude envelope of a signal.
 

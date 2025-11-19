@@ -359,8 +359,8 @@ def batch_extract_features(
 
     if save_csv_path:
         try:
-            out_df.to_csv(save_csv_path, index=False)
-            print(f"Features saved to: {save_csv_path}")
+            out_df.to_csv(folder_path/save_csv_path, index=False)
+            print(f"Features saved to: {folder_path/save_csv_path}")
         except Exception as e:
             print(f"Failed to save CSV: {e}")
 

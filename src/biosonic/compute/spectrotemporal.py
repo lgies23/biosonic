@@ -322,12 +322,13 @@ def dominant_frequencies(
         sr: int, 
         n_freqs: int = 1, 
         min_height: float = 0.05,
+        threshold: float = 0.05,
         min_distance: float = 0.05,
         min_prominence: float = 0.05,
-        peak_kwargs: Optional[Dict[str, Any]] = None,
+        noise_threshold: float = 0.1,
         *args: Any, 
         **kwargs: Any
-    ) -> NDArray[np.float64]: 
+    ) -> NDArray[np.float32]: 
     """
     Extracts the dominant frequency or frequencies from each time frame of a spectrogram 
     based on the scipy.signal function find_peaks.
@@ -350,15 +351,15 @@ def dominant_frequencies(
     min_prominence : Optional[float], default=0.05
         Minimum normalized prominence of a peak (as a fraction of the spectral magnitude range).
         Must be between 0 and 1.
-    peak_kwargs : Optional[dict], default=None
-        Additional keyword arguments passed directly to `scipy.signal.find_peaks`.
-        These override any values calculated from `min_height`, `min_distance`, and `min_prominence`.
+    noise_threshold : Optional[float], default=0.1
+        Threshold for a frequency bin to be treated as silent in percent of the median spectrum.
+        Must be between 0 and 1.
     *args, **kwargs :
         Additional arguments passed to the scipy.signal ShortTimeFFT class.
     
     Returns
     -------
-    NDArray[np.float64]
+    NDArray[np.float32]
         - If n_freqs == 1:
             1D array of shape (time_frames,) containing the dominant frequency per frame.
         - If n_freqs > 1:
@@ -373,31 +374,39 @@ def dominant_frequencies(
     
     if not (0.0 <= min_prominence <= 1.0):
         raise ValueError("min_prominence must be between 0 and 1")
-
+    
+    if not (0.0 <= threshold <= 1.0):
+        raise ValueError("threshold must be between 0 and 1")
+    
+    if not (0.0 <= noise_threshold <= 1.0):
+        raise ValueError("noise_threshold must be between 0 and 1")
+    
     spec, times, freqs = spectrogram(data, sr, *args, **kwargs)
     spec_real = np.abs(spec)
-    # num_frames = spec_real.shape[1]
 
     if n_freqs == 1:
         dominant_freqs = np.full(len(times), np.nan)
     else:
         dominant_freqs = np.full((len(times), n_freqs), np.nan)
 
-    peak_kwargs = peak_kwargs or {}
+    median_range = np.median([np.max(spec_real[:, t]) - np.min(spec_real[:, t]) for t in range(len(times))])
+    noise_threshold = median_range * noise_threshold
 
     for t in range(len(times)):
         spectrum = spec_real[:, t]
         magnitude_range = float(np.max(spectrum)) - np.min(spectrum)
+        if magnitude_range <= noise_threshold:
+            continue
 
         default_peak_params = {
             "height" : magnitude_range*min_height, 
+            "threshold" : magnitude_range*threshold,
             "distance" : max(1, len(freqs)//(1/min_distance)), 
             "prominence" : magnitude_range*min_prominence
         }
 
-        peak_params = {**default_peak_params, **peak_kwargs}
-        peaks, _ = signal.find_peaks(spectrum, **peak_params)
-
+        peaks, _ = signal.find_peaks(spectrum, **default_peak_params)
+        
         if len(peaks) > 0:
             sorted_peaks = peaks[np.argsort(spectrum[peaks])[::-1]]
             top_peaks = sorted_peaks[:n_freqs]
@@ -592,7 +601,7 @@ def calculate_dominant_frequency_features(
         data: ArrayLike, 
         sr: int, 
         **kwargs: Any
-    ) -> Dict[str, Union[float, NDArray[np.float64]]]:
+    ) -> Dict[str, Union[float, NDArray[np.float32]]]:
         """
         Calculate dominant frequency features.
         """
@@ -620,7 +629,7 @@ def spectrotemporal_features(
         sr: int,
         n_dominant_freqs : int = 1,
         **kwargs : Any
-    ) -> dict[str, Union[float, np.floating, NDArray[np.float64]]]:
+    ) -> dict[str, Union[float, np.floating, NDArray[np.float32]]]:
     """
     Extracts a set of spectrotemporal features from a signal.
 
@@ -631,6 +640,8 @@ def spectrotemporal_features(
             Sampling rate of the signal in Hz.
         n_dominant_frequencies : int
             Number of dominant frequencies to extract. Default is 1.
+        **kwargs : dict[str, Any]
+            Optional parameters for dominant frequency estimation.
 
     Retuns:
         dict
@@ -639,12 +650,11 @@ def spectrotemporal_features(
     """
     data = check_signal_format(data)
     check_sr_format(sr)
-    
     features = {
         "spectrotemporal_entropy": spectrotemporal_entropy(data, sr),
-        "dominant_freqs": dominant_frequencies(data, sr, n_dominant_freqs, **kwargs),
+        "dominant_freqs": dominant_frequencies(data, sr, n_freqs=n_dominant_freqs, **kwargs),
     }
 
-    dom_freq_feats = calculate_dominant_frequency_features(data, sr)
+    dom_freq_feats = calculate_dominant_frequency_features(data, sr, **kwargs)
 
     return {**features, **dom_freq_feats}

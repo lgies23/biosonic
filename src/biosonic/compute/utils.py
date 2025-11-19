@@ -94,7 +94,7 @@ def extract_all_features(
     kernel_size : Optional[int] = None,
     n_dominant_freqs : int = 1, 
     **kwargs : dict[str, Any]
-) -> dict[str, Union[float, NDArray[np.float32]]]:
+) -> dict[str, Any]:
     """
     Extracts a comprehensive set of temporal and spectral features from a signal.
 
@@ -103,6 +103,7 @@ def extract_all_features(
         sr (int): Sampling rate in Hz.
         kernel_size (Optional[int]): Size of smoothing kernel for amplitude envelope.
         n_dominant_freqs (int): Number of dominant frequencies to extract per frame.
+        **kwargs (dict[str, Any]): Optional parameters for dominant frequency estimation.
 
     Returns:
         dict: Dictionary of extracted features.
