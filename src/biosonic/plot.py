@@ -16,7 +16,7 @@ from biosonic.compute.utils import extract_all_features, check_signal_format, ch
     
 def plot_spectrogram(
         data: ArrayLike,
-        sr: int, 
+        sr: Optional[int] = None, 
         db_scale : bool = True, 
         cmap : str = 'binary', 
         title : Optional[str] = None,
@@ -31,7 +31,7 @@ def plot_spectrogram(
         noisereduction: Optional[bool] = False,
         n_bands: int = 40,
         corner_frequency: Optional[float] = None,
-        plot : Optional[Tuple[Figure, Axes]] = None,
+        plot: Optional[Tuple[Figure, Axes]] = None,
         show_amplitude_bar: Optional[bool] = True,
         **kwargs: Any
     ) -> Tuple[Figure, Axes]:
@@ -290,7 +290,7 @@ def plot_features(
         data: ArrayLike, 
         sr: int,
         features : Optional[dict[str, Any]] = None,
-        **kwargs,
+        **kwargs : Any,
     ) -> None:
     """
     Plot audio signal features using precomputed feature dictionary.

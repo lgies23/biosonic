@@ -4,6 +4,7 @@ import logging
 from typing import Optional, Literal, Union, Tuple, Any
 import warnings
 from scipy.signal import windows
+from scipy.ndimage import zoom
 
 def check_sr_format(sr: Union[int, float]) -> int:
     try:
@@ -123,18 +124,25 @@ def extract_all_features(
 
 
 def transform_spectrogram_for_nn(
-        spectrogram: ArrayLike,
+        data: ArrayLike,
+        sr: Optional[int] = None, 
         values_type: str = 'float32', 
         add_channel: bool = True,
-        data_format: Literal['channels_last', 'channels_first'] = 'channels_first'
+        data_format: Literal['channels_last', 'channels_first'] = 'channels_first',
+        f_min: Optional[float] = None,
+        f_max: Optional[float] = None,
+        resize: Optional[Tuple[int, int]] = None,
+        **kwargs: Any,
     ) -> ArrayLike:
     """
     Prepares a spectrogram for input into a neural network by normalizing, casting type,
     and optionally adding a channel dimension.
 
     Parameters:
-        spectrogram : ArrayLike 
-            The input spectrogram as a 2D array (frequency x time).
+        data : Union[np.ndarray, Tuple[np.ndarray, np.ndarray, np.ndarray]],
+            Input signal. Either as precomputed spectrogram (S, t, f) or 1D signal array.
+        sr : Optional[int]
+            Sampling rate in Hz. Needed when passing signal as 1D array.
         values_type : str
             Data type to cast the spectrogram to (e.g., 'float32', 'float64'). Defaults to 'float32'
         add_channel : bool
@@ -143,7 +151,14 @@ def transform_spectrogram_for_nn(
             Specifies channel dimension placement when `add_channel` is True. 
             - 'channels_last' results in shape (H, W, 1) - e.g. for TensorFlow/Keras
             - 'channels_first' results in shape (1, H, W) - e.g. for PyTorch
-
+        fmin : Optional[float]
+            Lower frequency bound in Hz.
+        fmax : Optional[float]
+            Upper frequency bound in Hz.
+        resize : Optional[Tuple[int, int]]
+            Resize output to (height, width).
+        **kwargs : dict
+            Additional keyword arguments for spectrogram calculation.
     Returns:
         ArrayLike : 
             The transformed spectrogram, normalized to [0, 1], cast to the specified
@@ -159,24 +174,51 @@ def transform_spectrogram_for_nn(
         >>> processed.dtype
         dtype('float32')
     """
-    # TODO Error handling, type checks
-    if spectrogram.max() - spectrogram.min() == 0:
-        warnings.warn(f"Spectrogram contains no information (values in range [{spectrogram.min()}, {spectrogram.max()}]).", RuntimeWarning)
+    from .spectrotemporal import spectrogram
+    # Precomputed spectrogram
+    if isinstance(data, tuple) and len(data) == 3:
+        spec, t, f = data
+    
+    # Raw signal + sr
+    elif isinstance(data, np.ndarray):
+        if sr is None:
+            raise ValueError("sr must be provided when passing a signal array.")
+        spec, t, f = spectrogram(
+            data=data,
+            sr=sr,
+            complex_output=False,
+            **kwargs
+        )
+    
+    if f_min is not None or f_max is not None:
+        freq_mask = np.ones_like(f, dtype=bool)
+        if f_min is not None:
+            freq_mask &= f >= f_min
+        if f_max is not None:
+            freq_mask &= f <= f_max
+        spec = spec[freq_mask, :]
+        f = f[freq_mask]
+
+    if spec.max() - spec.min() == 0:
+        warnings.warn(f"Spectrogram contains no information (values in range [{spec.min()}, {spec.max()}]).", RuntimeWarning)
     else:
         # min-max-scale to range [0, 1]
-        spectrogram = (spectrogram - spectrogram.min()) / (spectrogram.max() - spectrogram.min())
+        spec = (spec - spec.min()) / (spec.max() - spec.min())
 
-    # convert to desired bit depth
-    spectrogram = spectrogram.astype(values_type)
-    
+    if resize is not None:
+        target_height, target_width = resize
+        zoom_factors = (target_height / spec.shape[0], target_width / spec.shape[1])
+        spec = zoom(spec, zoom_factors, order=1)  # bilinear interpolation
+
     # add channel dimension (e.g., grayscale)
     if add_channel:
         if data_format == 'channels_last':
-            spectrogram = np.expand_dims(spectrogram, axis=-1)  # (H, W, 1)
+            spec = np.expand_dims(spec, axis=-1)  # (H, W, 1)
         else:
-            spectrogram = np.expand_dims(spectrogram, axis=0)   # (1, H, W)
+            spec = np.expand_dims(spec, axis=0)   # (1, H, W)
 
-    return spectrogram.astype(values_type)
+    # convert to desired bit depth
+    return spec.astype(values_type)
 
 
 def shannon_entropy(
