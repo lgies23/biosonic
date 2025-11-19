@@ -552,8 +552,9 @@ def audio_segments_from_textgrid(
         data : NDArray, 
         sr : int,
         filepath_textgrid : Union[str, Path],
-        tier_name : str
-    ) -> List[Dict[NDArray, str]]:
+        tier_name : str,
+        as_df : bool = True,
+    ) -> pd.DataFrame | list[dict[str, Any]]:
     """
     Extracts and visualizes audio segments corresponding to labeled intervals 
     in a praat TextGrid file.
@@ -568,21 +569,28 @@ def audio_segments_from_textgrid(
         Path to the TextGrid file containing segmentation information.
     tier_name : str
         Name of the tier to extract labeled segments from.
+    as_df : Optional[bool]
+        Whether to return as pandas DataFrame or list of dictionaries. Defaults to true.
 
     Returns
     -------
-    List[Dict[NDArray, str]]
+    List[Dict[NDArray, str]] or DataFrame
         A list of dictionaries, each containing:
         - The audio segment (NDArray) for each labeled interval.
         - The corresponding label (str).
+        Or a homologue dataframe, additionally holding sr and filepath.
     """
     from biosonic.plot import plot_boundaries_on_spectrogram
+
+    filepath_textgrid = Path(filepath_textgrid)
 
     boundaries = boundaries_from_textgrid(filepath_textgrid, tier_name)
 
     plot_boundaries_on_spectrogram(data, sr, boundaries)
     segments = segments_from_signal(data, sr, boundaries)
-    return [{"data": seg, "label": str(b["label"])} for seg, b in zip(segments, boundaries)]
+    if as_df:
+        return pd.DataFrame([{"waveform": seg, "label": str(b["label"]), "sr": sr, "filename": str(filepath_textgrid.name)} for seg, b in zip(segments, boundaries)])
+    return [{"waveform": seg, "label": str(b["label"])} for seg, b in zip(segments, boundaries)]
 
 
 def audio_segments_from_raven(

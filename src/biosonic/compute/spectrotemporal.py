@@ -2,7 +2,7 @@ from typing import Optional, Tuple, Union, Dict, Literal, Any, List
 import numpy as np
 from numpy.typing import NDArray, ArrayLike
 from scipy import signal
-from scipy.fft import fft, ifft, rfft
+from scipy.fft import ifft, fft, rfft
 from scipy.fftpack import dct
 from scipy.spatial.distance import cdist
 from scipy.linalg import solve
@@ -113,7 +113,7 @@ def spectrogram(
 def cepstrum(
         data: ArrayLike,  
         sr: int,
-        mode : Literal ["amplitude", "power"] = "power",
+        mode : Literal ["amplitude", "power"] = "amplitude",
     ) -> Tuple[ArrayLike, ArrayLike]:
     """
     Compute the cepstrum of a real-valued time-domain signal.
@@ -132,7 +132,7 @@ def cepstrum(
         Type of cepstrum to compute:
         - "amplitude" : Returns the absolute value of the inverse FFT of the log-magnitude spectrum.
         - "power"     : Returns the squared magnitude of the inverse FFT of the log-power spectrum.
-        Default is "power".
+        Default is "amplitude".
 
     Returns
     -------
@@ -153,20 +153,16 @@ def cepstrum(
     if np.all(data == data[0]):
         raise ValueError("Cannot compute cepstrum of flat signal.")
 
-    cepstrum_ = np.asarray([])
+    quefrencies = np.array(range(len(data))) / sr
 
     if mode == "power":
-        cepstrum_ = np.abs(ifft(np.log(np.abs(fft(data))**2)))**2
+        return np.abs(ifft(np.log(np.abs(fft(data))**2)))**2, quefrencies
 
     elif mode == "amplitude":
-        cepstrum_ = np.abs(ifft(np.log(np.abs(fft(data)))))
+        return np.abs(ifft(np.log(np.abs(fft(data))))), quefrencies
     
     else:
         raise ValueError(f"Invalid mode for cepstrum calculation: {mode}")
-
-    quefrencies = np.arange(len(data)) / sr
-
-    return cepstrum_, quefrencies
 
 
 def cepstral_coefficients(

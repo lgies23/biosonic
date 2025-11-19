@@ -174,8 +174,9 @@ def plot_spectrogram(
 def plot_cepstrum(
         data : ArrayLike,
         sr : int, 
-        max_quefrency: float = 0.05,
-        log_scale : bool = True, 
+        min_quefrency : Optional[float] = None,
+        max_quefrency: Optional[float] = None,
+        log_scale : bool = False, 
         ylim : Optional[Tuple[float, float]] = None,
         title : Optional[str] = None,
         **kwargs : Any
@@ -192,7 +193,7 @@ def plot_cepstrum(
     max_quefrency : float, optional
         Maximum quefrency (in seconds) to plot. Defaults to 0.05s.
     log_scale : bool, optional
-        Wether to log-scale the y-axis. Defaults to True.
+        Wether to log-scale the y-axis. Defaults to False.
     ylim : tuple, optional
         Limits for the y-axis.
     title : str or None
@@ -200,7 +201,13 @@ def plot_cepstrum(
     """
     ceps, quefs = cepstrum(data, sr, **kwargs)
 
-    mask = quefs <= max_quefrency
+    if max_quefrency is None:
+        max_quefrency = len(data) / sr
+
+    if min_quefrency is None:
+        min_quefrency = 0
+
+    mask = (quefs >= min_quefrency) & (quefs <= max_quefrency)
 
     plt.plot(quefs[mask], ceps[mask], color='steelblue')
     plt.xlabel("Quefrency (s)")
@@ -208,7 +215,7 @@ def plot_cepstrum(
         plt.yscale("log")
     if ylim:
         plt.ylim(ylim)
-    plt.ylabel("Cepstrum")
+    plt.ylabel("Amplitude")
     plt.title(title or f"Cepstrum (Sampling rate: {sr} Hz)")
     plt.grid(True)
     plt.tight_layout()
@@ -261,7 +268,6 @@ def plot_cepstral_coefficients(
         **kwargs : dict, optional
             Additional keyword arguments passed to the cepstral_coefficients function.
         """
-        #TODO axis labels
         ceps = cepstral_coefficients(
             data, 
             sr, 
