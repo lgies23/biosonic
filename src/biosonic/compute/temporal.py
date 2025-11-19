@@ -314,7 +314,7 @@ def temporal_features(
         "temporal_kurtosis": temporal_kurtosis(data, sr, kernel_size),
         "amplitude_envelope": envelope,
         "duration": duration(data, sr, exclude_surrounding_silences=True),
-        "temporal_entropy": temporal_entropy(data)
+        "temporal_entropy": temporal_entropy(data)[0]
     }
 
     return features

@@ -15,7 +15,7 @@ from biosonic.compute.utils import extract_all_features, check_signal_format, ch
 
     
 def plot_spectrogram(
-        data: Union[NDArray[np.float32], Tuple[NDArray[np.float32], NDArray[np.float32], NDArray[np.float32]]],
+        data: ArrayLike,
         sr: int, 
         db_scale : bool = True, 
         cmap : str = 'binary', 
@@ -71,7 +71,7 @@ def plot_spectrogram(
     noisereduction : bool, optional
         Whether to apply noise reduction. Default is False (no reduction).
     n_bands : int, optional
-        Number of frequency bands for mel or log scaling. Default is 40.
+        Number of frequency bands for mel scaling. Default is 40.
     corner_frequency : float, optional
         Corner frequency for perceptual frequency scaling (used in mel scale).
     plot : tuple(matplotlib.figure.Figure, matplotlib.axes.Axes), optional
@@ -109,6 +109,7 @@ def plot_spectrogram(
         
         fb, f_centers = mel_filterbank(n_bands, window_length, sr, fmin=fmin, fmax=fmax, corner_frequency=corner_frequency)
         f = f_centers
+        #Sx : np.ndarray = np.einsum("...ft,mf->...mt", Sx, fb, optimize=True)
         Sx = fb @ Sx
 
     # Apply dB scale
@@ -296,7 +297,7 @@ def plot_features(
     features = extract_all_features(data, sr)
     spec, times, freqs = spectrogram(data, sr)
     freq_ms, ms = spectrum(data, sr)#, mode="power")
-    spectrogram_db = 20 * np.log10(np.abs(spec))
+    spectrogram_db = 20 * np.log10(np.abs(spec + 1e-30)) # avoid divide by zero #TODO double check
     #dynamic range to 100 dB
     spectrogram_db = np.maximum(spectrogram_db, -100)
 
@@ -304,8 +305,8 @@ def plot_features(
     plt.figure(figsize=(12, 12))
     ax = plt.subplot(3, 1, 1)
     plt.title("Spectrogram with Dominant Frequencies")
-    # plt.pcolormesh(times, freqs, spectrogram_db, shading='gouraud', cmap='grey')
-    im = ax.imshow(spectrogram_db, aspect='auto', origin='lower', extent=(times[0], times[-1], freqs[0], freqs[-1]), cmap="grey")
+    # plt.pcolormesh(times, freqs, spectrogram_db, shading='gouraud', cmap='binary')
+    im = ax.imshow(spectrogram_db, aspect='auto', origin='lower', extent=(times[0], times[-1], freqs[0], freqs[-1]), cmap="binary")
     plt.scatter(times, features["dominant_freqs"], color=(0.7, 0.1, 0.1, 0.3), marker="o", label='Dominant Frequency')
     plt.colorbar(im, ax=ax, label="Amplitude [dB]")
     plt.xlabel("Time [s]")
@@ -440,7 +441,7 @@ def plot_pitch_on_spectrogram(
     flim : Optional[Tuple[float, float]] = None,
     tlim : Optional[Tuple[float, float]] = None,
     title : str = "Spectrogram with Pitch Candidates",
-    cmap : str = 'grey',
+    cmap : str = 'binary',
     plot : Optional[Tuple[Figure, Axes]] = None,
 ) -> None:
     """
@@ -475,7 +476,7 @@ def plot_pitch_on_spectrogram(
     title : str, optional
         Title of the plot. Default is "Spectrogram with Pitch Candidates".
     cmap : str, optional
-        Colormap to use for the spectrogram. Default is 'grey'.
+        Colormap to use for the spectrogram. Default is 'binary'.
     plot : tuple of (Figure, Axes), optional
         Existing matplotlib Figure and Axes to plot on. If None, a new figure is created.
     """
@@ -607,7 +608,6 @@ def plot_spectrogram_catalogue(
     ... }
     >>> df = pd.DataFrame(data)
     >>> plot_spectrogram_catalogue(df, per_page=2, ncols=2, show=False, save_dir="plots")
-    Saved plots/spectrograms_001.png
     """
     if save_dir is not None:
         os.makedirs(save_dir, exist_ok=True)

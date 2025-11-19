@@ -182,6 +182,7 @@ def flatness(data: ArrayLike) -> Union[float, np.floating[Any]]:
     flatness_ = gmean(ps_wo_zeros) / np.mean(ps_wo_zeros)
     if not np.isscalar(flatness_) or not isinstance(flatness_, (float, np.floating)):
         raise ValueError(f"Received wrong data type for spectral flatness: {type(flatness_)}")
+    # TODO transform to dB
     return flatness_
 
 
@@ -528,7 +529,7 @@ def spectral_features(data: ArrayLike,
         "spectral_skew" : skewness(data, sr),
         "spectral_kurtosis" : kurtosis(data, sr),
         "peak_frequency": peak_frequency(data, sr),
-        "pse": power_spectral_entropy(data, sr)
+        "pse": power_spectral_entropy(data, sr)[0]
     }
 
     return features

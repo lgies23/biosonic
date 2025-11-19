@@ -30,10 +30,11 @@ def _check_filterbank_parameters(
         )
     
     
-def filterbank(
+def _filterbank(
         n_filters : int, 
         n_fft : int, 
-        bin_indices : ArrayLike,
+        center_freqs: ArrayLike,
+        fft_freqs : ArrayLike
     ) -> ArrayLike:
     """
     Construct a triangular filter bank for spectral analysis.
@@ -66,7 +67,7 @@ def filterbank(
 
     Notes
     -----
-    The filters are normalized according to the method used in `librosa` to 
+    The filters are normalized according to the slaney method (directly taken from `librosa`, see references) to 
     ensure energy preservation. 
     
     References
@@ -75,38 +76,36 @@ def filterbank(
     and Oriol Nieto. “librosa: Audio and music signal analysis in python.” In Proceedings 
     of the 14th python in science conference, pp. 18-25. 2015.
     """
-    filterbank = np.zeros([n_filters, n_fft // 2 + 1])
-    
-    for i in range(1, n_filters + 1):
-        left = bin_indices[i - 1]
-        center = bin_indices[i]
-        right = bin_indices[i + 1]
+    filterbank = np.zeros((n_filters, int(n_fft // 2 + 1)), dtype=np.float32)
 
-        # Triangular filter
-        filterbank[i - 1, left:center] = (np.arange(left, center) - left) / (center - left)
-        filterbank[i - 1, center:right] = (right - np.arange(center, right)) / (right - center)
+    fdiff = np.diff(center_freqs)
+    ramps = np.subtract.outer(center_freqs, fft_freqs)
 
-    # normalize, from librosa
-    enorm = 2.0 / (bin_indices[2:n_filters+2] - bin_indices[:n_filters])
+    for i in range(n_filters):
+        # lower and upper slopes
+        lower = -ramps[i] / fdiff[i]
+        upper = ramps[i + 2] / fdiff[i + 1]
+
+        # intersect with each other and zero
+        filterbank[i] = np.maximum(0, np.minimum(lower, upper))
+
+    # normalize each filter to have approx constant energy
+    enorm = 2.0 / (center_freqs[2:n_filters+2] - center_freqs[:n_filters])
     filterbank *= enorm[:, np.newaxis]
 
-    # if not np.all((bin_indices[:-2] == 0) | (filterbank.max(axis=1) > 0)):
-    #     # empty channel 
-    #     # This code is directly taken from libosa (see reference in docs)
-    #     warnings.warn(
-    #         "Empty filters detected in filter bank. "
-    #         "Some channels will produce empty responses. "
-    #         "Try increasing your sampling rate (and fmax) or "
-    #         "reducing n_filters.",
-    #         stacklevel=2,
-    #     )
-    
+    # check if any filter is empty
+    if np.any(filterbank.max(axis=1) == 0):
+        print(
+            "Empty filters detected in mel filterbank. "
+            "Consider reducing n_filters or increasing n_fft."
+        )
+
     return filterbank
 
 
 def mel_filterbank(
         n_filters : int, 
-        window_length : int, 
+        n_fft : int, 
         sr : int, 
         fmin : float = 0.0, 
         fmax : Optional[float] = None,
@@ -119,8 +118,8 @@ def mel_filterbank(
     ----------
     n_filters : int
         Number of triangular filters.
-    n_fft : int
-        FFT size (defines frequency resolution).
+    window_length : int
+        Window size in samples.
     sr : int
         Sampling rate of the signal in Hz.
     fmin : float
@@ -134,24 +133,21 @@ def mel_filterbank(
         Array of shape (n_filters, n_fft//2 + 1), each row a filter.
     """
     if fmax is None:
-        fmax = sr / 2
+        fmax = float(sr) / 2
 
-    _check_filterbank_parameters(n_filters, window_length, sr, fmin, fmax)
+    _check_filterbank_parameters(n_filters, n_fft, sr, fmin, fmax)
+
+    # fft bin center frequencies
+    fft_freqs = np.fft.rfftfreq(n=n_fft, d=1.0 / sr)
 
     # boundaries
     mel_min = hz_to_mel(fmin, **kwargs)
     mel_max = hz_to_mel(fmax, **kwargs)
 
-    # evenly spaced in Mel scale, then convert to Hz
-    mel_points = np.linspace(mel_min, mel_max, n_filters + 2)
-    hz_points = np.asarray(mel_to_hz(mel_points, **kwargs))
-
-    # FFT bin numbers
-    bin_indices = np.floor((window_length + 1) * hz_points / sr).astype(int)
-
-    f_centers = np.sqrt(hz_points[:-2] * hz_points[2:])
-
-    return filterbank(n_filters, window_length, bin_indices), f_centers
+    # mel filter center frequencies
+    mel_points = np.linspace(mel_min, mel_max, n_filters + 2, dtype=np.float32)
+    hz_points = mel_to_hz(mel_points, **kwargs)
+    return _filterbank(n_filters, n_fft, hz_points, fft_freqs), mel_points
 
 
 def linear_filterbank(
@@ -187,13 +183,12 @@ def linear_filterbank(
 
     _check_filterbank_parameters(n_filters, n_fft, sr, fmin, fmax)
 
+    # fft bin center frequencies
+    fft_freqs = np.fft.rfftfreq(n=n_fft, d=1.0 / sr)
+
     hz_points = np.linspace(fmin, fmax, n_filters + 2)
-    bin_indices = np.floor((n_fft + 1) * hz_points / sr).astype(int)
 
-    # geometric mean of adjacent edges skipping first and last to get centers
-    f_centers = np.sqrt(hz_points[:-2] * hz_points[2:])
-
-    return filterbank(n_filters, n_fft, bin_indices), f_centers
+    return _filterbank(n_filters, n_fft, hz_points, fft_freqs), hz_points
 
 
 def log_filterbank(
@@ -235,19 +230,20 @@ def log_filterbank(
     if fmin <= 0:
         raise ValueError("fmin must be greater than 0 for log-scaled filterbanks.")
     
+    # fft bin center frequencies
+    fft_freqs = np.fft.rfftfreq(n=n_fft, d=1.0 / sr)
+
     # compute log-spaced center frequencies
     log_min = np.log(fmin) / np.log(base)
     log_max = np.log(fmax) / np.log(base)
-    log_centers = np.linspace(log_min, log_max, n_filters + 2)
-    hz_points = base ** log_centers
+    log_points = np.linspace(log_min, log_max, n_filters+2, dtype=np.float32)
+    hz_points = base ** log_points
 
     # convert to FFT bin indices
     bin_indices = np.floor((n_fft + 1) * hz_points / sr).astype(int)
     bin_indices = np.clip(bin_indices, 0, n_fft // 2)
     
-    f_centers = hz_points[1:-1]
-
-    return filterbank(n_filters, n_fft, bin_indices), f_centers
+    return _filterbank(n_filters, n_fft, hz_points, fft_freqs), log_points
 
 
 # TODO weighted filter (seewave), rolloff like in audacity f-filter (tuneR)

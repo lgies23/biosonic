@@ -180,6 +180,7 @@ def cepstral_coefficients(
     fmax : Optional[float] = None,
     filterbank_type : Literal["mel", "linear", "log"] = "mel",
     skip_first : bool = True,
+    timestep: float = 0.01,
     **kwargs : Any
 ) -> ArrayLike:
     """
@@ -207,6 +208,8 @@ def cepstral_coefficients(
         Type of filter bank to apply before DCT.
     skip_first : bool
         Wether to excluse the first cepstral coefficient. Defaults to True.
+    timestep: float
+        Step size for window function.
     **kwargs : dict
         Optional keyword arguments for the filter banks, e.g. corner frequency for mel.
 
@@ -238,7 +241,7 @@ def cepstral_coefficients(
     data_preemphasized = np.append(data[0], data[1:] - pre_emphasis * data[:-1])
 
     # window and fft
-    data_windowed = window_signal(data_preemphasized, sr, window_length)
+    data_windowed = window_signal(data_preemphasized, sr, window_length, timestep=timestep)
     mag_frames = np.abs(rfft(data_windowed, window_length))
     pow_frames = (1/window_length) * mag_frames **2
 
@@ -251,8 +254,9 @@ def cepstral_coefficients(
     elif filterbank_type == "linear":
         fbanks, _ = linear_filterbank(n_filters, window_length, sr, fmin, fmax)
     elif filterbank_type == "log":
-        raise NotImplementedError("Log frequency scale is not yet implemented for cepstral coefficients in Version 0.")
-        #fbanks, _ = log_filterbank(n_filters, window_length, sr, fmin, fmax, **kwargs)
+        #raise NotImplementedError("Log frequency scale is not yet implemented for cepstral coefficients in Version 0.")
+        fmin_corrected = 1e-6 if fmin == 0 else fmin
+        fbanks, _ = log_filterbank(n_filters, window_length, sr, fmin_corrected, fmax, **kwargs)
     else:
         raise ValueError(f"Unknown filterbank_type: {filterbank_type}")
 
