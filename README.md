@@ -1,6 +1,8 @@
 # BioSonic
 A python package for bioacoustics
 
+**This package is in active development. If you want to work with it, be aware that it is prone to bugs and the functionality might change. If you would like to collaborate, please reach out to us! We would love for this to become a comprehensive package for bioacoustics and a collaborative project.**
+
 
 ## Description
 
@@ -42,6 +44,7 @@ See the jupyter notebook `example_usage.ipynb` for demonstrations of different f
 
 - Lena Gies (a12113965@unet.univie.ac.at)
 - Tecumseh Fitch (tecumseh.fitch@unet.univie.ac.at)
+- Yannick Jadoul (yannick.jadoul@uniroma1.it)
 
 ## Acknowledgments and References
 
