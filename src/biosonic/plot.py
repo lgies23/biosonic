@@ -290,6 +290,7 @@ def plot_features(
         data: ArrayLike, 
         sr: int,
         features : Optional[dict[str, Any]] = None,
+        spec_kwargs: Optional[dict[str, Any]] = None,
         **kwargs : Any,
     ) -> None:
     """
@@ -306,41 +307,50 @@ def plot_features(
     """
     data = check_signal_format(data)
     sr = check_sr_format(sr)
+
     if not features:
         features = extract_all_features(data, sr, **kwargs)
-    spec, times, freqs = spectrogram(data, sr)
-    freq_ms, ms = spectrum(data, sr)#, mode="power")
-    spectrogram_db = 20 * np.log10(np.abs(spec + 1e-30)) # avoid divide by zero #TODO double check
-    #dynamic range to 100 dB
-    spectrogram_db = np.maximum(spectrogram_db, -100)
+
+    _, times, _ = spectrogram(data, sr)
+    freq_ms, ms = spectrum(data, sr)
+
+    dom_freqs = features["dominant_freqs"]
+    all_candidates = [[(float(f), 1.0) if f > 0 else (0.0, 0.0)] for f in dom_freqs]
 
     # Spectrogram with Dominant Frequencies
-    plt.figure(figsize=(12, 12))
-    ax = plt.subplot(3, 1, 1)
-    plt.title("Spectrogram with Dominant Frequencies")
-    # plt.pcolormesh(times, freqs, spectrogram_db, shading='gouraud', cmap='binary')
-    im = ax.imshow(spectrogram_db, aspect='auto', origin='lower', extent=(times[0], times[-1], freqs[0], freqs[-1]), cmap="binary")
-    plt.scatter(times, features["dominant_freqs"], color=(0.7, 0.1, 0.1, 0.3), marker="o", label='Dominant Frequency')
-    plt.colorbar(im, ax=ax, label="Amplitude [dB]")
-    plt.xlabel("Time [s]")
-    plt.ylabel("Frequency (Hz)")
-    plt.legend()
+    fig = plt.figure(figsize=(12, 12))
+    ax1 = fig.add_subplot(3, 1, 1)
 
-    # Power Spectrum
-    plt.subplot(3, 1, 2)
-    plt.title("Magnitude Spectrum with Spectral Features")
+    if spec_kwargs is None:
+        spec_kwargs = {}
+    plot_pitch_on_spectrogram(
+        data=data,
+        sr=sr,
+        time_points=times,
+        all_candidates=all_candidates,
+        show_strongest=True,
+        db_scale=True,
+        title="Spectrogram with Dominant Frequencies",
+        cmap="binary",
+        plot=(fig, ax1),
+        **spec_kwargs
+    )
+
+    # Spectrum
+    ax2= fig.add_subplot(3, 1, 2)
+    ax2.set_title("Magnitude Spectrum with Spectral Features")
     if not isinstance(freq_ms, np.ndarray):
         raise TypeError("Expected 'freqs_ps' to be an ndarray.")
     if not isinstance(freq_ms, np.ndarray):
         raise TypeError("Expected 'freqs_ps' to be an ndarray.")
     cutoff = len(freq_ms) // 3
-    plt.plot(freq_ms[:-cutoff], ms[:-cutoff], label="Magnitude Spectrum", color='blue')
+    ax2.plot(freq_ms[:-cutoff], ms[:-cutoff], label="Magnitude Spectrum", color='blue')
     
-    plt.axvline(features["peak_frequency"], color='orange', linestyle="-", label="Peak Frequency (kHz)")
-    plt.axvline(features["fq_median"], color='red', linestyle="--", label="Median")
-    plt.axvline(features["fq_q1"], color='yellow', linestyle="--", label="Q1")
-    plt.axvline(features["fq_q3"], color='purple', linestyle="--", label="Q3")
-    plt.fill_betweenx(
+    ax2.axvline(features["peak_frequency"], color='orange', linestyle="-", label="Peak Frequency (kHz)")
+    ax2.axvline(features["fq_median"], color='red', linestyle="--", label="Median")
+    ax2.axvline(features["fq_q1"], color='yellow', linestyle="--", label="Q1")
+    ax2.axvline(features["fq_q3"], color='purple', linestyle="--", label="Q3")
+    ax2.fill_betweenx(
         y=[0, max(ms)],
         x1=features["spectral_centroid"] - features["spectral_sd"],
         x2=features["spectral_centroid"] + features["spectral_sd"],
@@ -348,21 +358,21 @@ def plot_features(
         alpha=0.2,
         label='Bandwidth'
     )
-    plt.axvline(features["spectral_centroid"], color='pink', linestyle="--", label="Centroid")
-    plt.xlabel("Frequency [Hz]")
-    plt.ylabel("Magnitude")
-    plt.legend()
+    ax2.axvline(features["spectral_centroid"], color='pink', linestyle="--", label="Centroid")
+    ax2.set_xlabel("Frequency [Hz]")
+    ax2.set_ylabel("Magnitude")
+    ax2.legend(loc="upper left", bbox_to_anchor=(1.02, 1), borderaxespad=0)
 
     # Waveform
-    plt.subplot(3, 1, 3)
-    plt.title("Waveform with Energy Envelope and Time-domain Features")
+    ax3 = fig.add_subplot(3, 1, 3)
+    ax3.set_title("Waveform with Energy Envelope and Time-domain Features")
     times_waveform = np.linspace(0, len(data) / sr, num=len(data))
-    plt.plot(times_waveform, data, label="Waveform", color="gray", alpha=0.3)
-    plt.plot(times_waveform, features["amplitude_envelope"], label="Amplitude Envelope", color="blue")
-    plt.axvline(features["t_median"], color='red', linestyle="--", label="Median")
-    plt.axvline(features["t_q1"], color='yellow', linestyle="--", label="Q1")
-    plt.axvline(features["t_q3"], color='purple', linestyle="--", label="Q3")
-    plt.fill_betweenx(
+    ax3.plot(times_waveform, data, label="Waveform", color="gray", alpha=0.3)
+    ax3.plot(times_waveform, features["amplitude_envelope"], label="Amplitude Envelope", color="blue")
+    ax3.axvline(features["t_median"], color='red', linestyle="--", label="Median")
+    ax3.axvline(features["t_q1"], color='yellow', linestyle="--", label="Q1")
+    ax3.axvline(features["t_q3"], color='purple', linestyle="--", label="Q3")
+    ax3.fill_betweenx(
         y=[0, np.max(features["amplitude_envelope"])],
         x1=features["temporal_centroid"] - features["temporal_sd"],
         x2=features["temporal_centroid"] + features["temporal_sd"],
@@ -370,10 +380,10 @@ def plot_features(
         alpha=0.2,
         label='Bandwidth'
     )
-    plt.axvline(features["temporal_centroid"], color='pink', linestyle="--", label="Centroid")
-    plt.xlabel("Time [s]")
-    plt.ylabel("Amplitude")
-    plt.legend()
+    ax3.axvline(features["temporal_centroid"], color='pink', linestyle="--", label="Centroid")
+    ax3.set_xlabel("Time [s]")
+    ax3.set_ylabel("Amplitude")
+    ax3.legend(loc="upper left", bbox_to_anchor=(1.02, 1), borderaxespad=0)
 
     plt.tight_layout()
     plt.show()
@@ -456,6 +466,7 @@ def plot_pitch_on_spectrogram(
     title : str = "Spectrogram with Pitch Candidates",
     cmap : str = 'binary',
     plot : Optional[Tuple[Figure, Axes]] = None,
+    **kwargs
 ) -> None:
     """
     Plot a spectrogram of the input audio data and overlay pitch candidates.
@@ -508,7 +519,8 @@ def plot_pitch_on_spectrogram(
         tlim=tlim,
         title=title,
         window_length=window_length,
-        plot=(fig, ax)
+        plot=(fig, ax),
+        **kwargs
     )
 
     plot_pitch_candidates(
@@ -519,7 +531,8 @@ def plot_pitch_on_spectrogram(
         ax=ax,
         )
     
-    plt.show()
+    if plot is None:
+        plt.show()
 
 
 def plot_boundaries_on_spectrogram(
