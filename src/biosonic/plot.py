@@ -31,6 +31,7 @@ def plot_spectrogram(
         noisereduction: Optional[bool] = False,
         n_bands: int = 40,
         corner_frequency: Optional[float] = None,
+        after: Optional[Literal["fant", "koenig", "oshaughnessy", "umesh"]] = "oshaughnessy",
         plot: Optional[Tuple[Figure, Axes]] = None,
         show_amplitude_bar: Optional[bool] = True,
         **kwargs: Any
@@ -75,6 +76,11 @@ def plot_spectrogram(
         Number of frequency bands for mel scaling. Default is 40.
     corner_frequency : float, optional
         Corner frequency for perceptual frequency scaling (used in mel scale).
+    after (Literal): Choice of Mel scale formula to use.
+            - 'fant': Classic formula with `a=b=1000`: `F_m = a * np.log(1 + f / b)`
+            - 'koenig': (Not yet implemented)
+            - 'oshaughnessy' or 'beranek': Commonly used formula as fant, but with `a=2595`, `b=700`
+            - 'umesh': Formula using rational function with `a=0.0004`, `b=0.603`.
     plot : tuple(matplotlib.figure.Figure, matplotlib.axes.Axes), optional
         Existing matplotlib Figure and Axes objects to plot into. If None, a new figure and axes are created.
     **kwargs : dict
@@ -108,7 +114,7 @@ def plot_spectrogram(
         fmin = flim[0] if flim else 0.0
         fmax = flim[1] if flim and flim[1] else sr / 2
         
-        fb, f_centers = mel_filterbank(n_bands, window_length, sr, fmin=fmin, fmax=fmax, corner_frequency=corner_frequency)
+        fb, f_centers = mel_filterbank(n_bands, window_length, sr, fmin=fmin, fmax=fmax, corner_frequency=corner_frequency, after=after)
         f = f_centers
         #Sx : np.ndarray = np.einsum("...ft,mf->...mt", Sx, fb, optimize=True)
         Sx = fb @ Sx
