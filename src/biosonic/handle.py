@@ -532,7 +532,7 @@ def boundaries_from_raven(
               "Begin Time (s)": "min",
               "End Time (s)": "max",
               "Annotation": lambda ann: "; ".join(
-                  sorted(set(str(v).strip() for v in ann if pd.notna(v) and str(v).strip()))
+                  sorted({str(v).strip() for v in ann if pd.notna(v) and str(v).strip()})
               )
           })
           .reset_index()

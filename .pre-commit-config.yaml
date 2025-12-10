@@ -29,3 +29,8 @@ repos:
       - id: pretty-format-json
         exclude_types: [jupyter]
       - id: trailing-whitespace
+
+  - repo: https://github.com/asottile/pyupgrade
+    rev: v3.21.0
+    hooks:
+     - id: pyupgrade
