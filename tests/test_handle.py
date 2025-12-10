@@ -11,7 +11,7 @@ def test_convert_dtype():
     # invalid string
     with pytest.raises(ValueError):
         convert_dtype(original, "invalid")
-    
+
     # int16 -> float32 -> int16
     float_data = convert_dtype(original, "float32")
     recovered = convert_dtype(float_data, "int16")
@@ -135,7 +135,7 @@ def test_batch_extract_features(mock_extract, mock_read, mock_glob, tmp_path):
     assert 'filename' in df.columns
     assert 'feature1' in df.columns
     assert df['filename'].iloc[0] == "mocked.wav"
-    
+
     # csv output
     csv_path = tmp_path / "output.csv"
     df = batch_extract_features(str(tmp_path), save_csv_path=str(csv_path))
@@ -183,7 +183,7 @@ def test_batch_read_files(mock_read, mock_glob, tmp_path):
     assert 'sr' in df.columns
     assert 'waveform' in df.columns
     assert df['filename'].iloc[0] == "mocked.wav"
-    
+
     # csv output
     csv_path = tmp_path / "output.csv"
     df = batch_read_files_to_df(str(tmp_path), save_csv_path=str(csv_path))

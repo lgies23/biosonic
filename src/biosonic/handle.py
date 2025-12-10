@@ -18,7 +18,7 @@ QuantizationStr = Literal["int8", "int16", "int32", "float32", "float64"]
 #     Attributes:
 #         data : NDArray
 #             Audio samples as a NumPy array. 1D for mono, otherwise a 2D array with shape (n_samples, n_channels)
-#         n_channels : int 
+#         n_channels : int
 #             Number of audio channels (1 for mono, 2 for stereo, etc.).
 #         sr : int
 #             Sample rate in Hz.
@@ -44,15 +44,15 @@ def convert_dtype(data: NDArray, target_dtype: QuantizationStr) -> NDArray:
 
     Returns
     -------
-        NDArray 
+        NDArray
             Converted audio data with appropriate scaling and clipping.
-    
+
     Notes
     -----
 
-    The table below summarizes the value ranges and corresponding NumPy dtypes 
+    The table below summarizes the value ranges and corresponding NumPy dtypes
     for common WAV audio formats. See the SciPy io.wavfile documentation for more details.
-    
+
     +------------------------+--------------+---------------+-------------+
     | WAV format             | Min          | Max           | NumPy dtype |
     +========================+==============+===============+=============+
@@ -69,18 +69,18 @@ def convert_dtype(data: NDArray, target_dtype: QuantizationStr) -> NDArray:
 
     References
     ----------
-    Virtanen P et al. 2020 SciPy 1.0: fundamental algorithms for scientific computing in Python. 
+    Virtanen P et al. 2020 SciPy 1.0: fundamental algorithms for scientific computing in Python.
     Nat Methods 17, 261–272. (doi:10.1038/s41592-019-0686-2)
     """
     if target_dtype not in get_args(QuantizationStr):
         raise ValueError(f"Invalid quantization: {target_dtype}. Must be one of {get_args(QuantizationStr)}")
-    
+
     target_np_dtype: np.dtype[np.generic] = np.dtype(target_dtype)
     current_dtype = data.dtype
 
     if current_dtype == target_np_dtype:
         return data
-    
+
     # special handling for uint8 (unsigned), to float32
     if current_dtype == np.uint8 and np.issubdtype(target_np_dtype, np.floating):
         return ((data.astype(target_np_dtype) - 128) / 128).astype(target_np_dtype)
@@ -128,7 +128,7 @@ def resample_audio(data: NDArray, orig_sr: int, target_sr: int) -> NDArray:
 
     References
     ----------
-    Virtanen P et al. 2020 SciPy 1.0: fundamental algorithms for scientific computing in Python. 
+    Virtanen P et al. 2020 SciPy 1.0: fundamental algorithms for scientific computing in Python.
     Nat Methods 17, 261–272. (doi:10.1038/s41592-019-0686-2)
     """
     if orig_sr == target_sr:
@@ -167,9 +167,9 @@ def convert_channels(data: NDArray, target_channels: int) -> NDArray:
     - Converts mono to stereo by duplicating the mono channel.
     - If the data already has the target number of channels, it is returned unchanged.
     """
-    if target_channels > 2: 
+    if target_channels > 2:
         raise NotImplementedError("Conversion to more than 2 channels not implemented yet.")
-    
+
     n_ch = 1 if data.ndim == 1 else data.shape[1]
 
     if n_ch == target_channels:
@@ -178,16 +178,16 @@ def convert_channels(data: NDArray, target_channels: int) -> NDArray:
     if target_channels == 1:
         # Convert stereo to mono by averaging channels
         return data.mean(axis=1)
-        
+
     elif target_channels == 2:
         # Convert mono to stereo by duplicating
         return np.stack([data, data], axis=1)
-        
+
     return data
 
 
 def read_wav(
-        filepath: Union[str, Path], 
+        filepath: Union[str, Path],
         sampling_rate : Optional[int] = None,
         quantization: QuantizationStr = "float32",
         n_channels : Optional[int] = None,
@@ -231,7 +231,7 @@ def read_wav(
 
     References
     ----------
-    Virtanen P et al. 2020 SciPy 1.0: fundamental algorithms for scientific computing in Python. 
+    Virtanen P et al. 2020 SciPy 1.0: fundamental algorithms for scientific computing in Python.
     Nat Methods 17, 261–272. (doi:10.1038/s41592-019-0686-2)
     """
     sr, data = wavfile.read(filepath)
@@ -240,7 +240,7 @@ def read_wav(
         if sr != sampling_rate:
             data = resample_audio(data, sr, sampling_rate)
             sr = sampling_rate
-    
+
     n_ch = 1 if data.ndim == 1 else data.shape[1]
     if n_channels is not None:
         if n_channels != n_ch:
@@ -354,7 +354,7 @@ def batch_extract_features(
         except Exception as e:
             print(f"Failed to process {wav_file.name}: {e}")
             traceback.print_exc()
-    
+
     out_df = pd.DataFrame(feature_rows)
 
     if save_csv_path:
@@ -417,7 +417,7 @@ def batch_read_files_to_df(
         except Exception as e:
             print(f"Failed to process {wav_file.name}: {e}")
             traceback.print_exc()
-    
+
     out_df = pd.DataFrame(rows)
 
     if save_csv_path:
@@ -431,7 +431,7 @@ def batch_read_files_to_df(
 
 
 def segments_from_signal(
-        data : NDArray, 
+        data : NDArray,
         sr : int,
         boundaries : Union[Dict[str, float], ArrayLike, Tuple[float, float], List[Dict[str, float]]]
     ) -> List[NDArray]:
@@ -475,7 +475,7 @@ def segments_from_signal(
         start_idx = int(np.floor(begin * sr))
         end_idx = int(np.ceil(end * sr))
         segments.append(data[start_idx:end_idx])
-    
+
     return segments
 
 def boundaries_from_textgrid(
@@ -501,7 +501,7 @@ def boundaries_from_textgrid(
 
     grid = _read_textgrid(filepath)
     segments = grid.interval_tier_to_array(tier_name=tier_name)
-    return [segment for segment in segments if len(segment["label"]) > 0] 
+    return [segment for segment in segments if len(segment["label"]) > 0]
 
 
 def boundaries_from_raven(
@@ -549,7 +549,7 @@ def boundaries_from_raven(
 
 
 def audio_segments_from_textgrid(
-        data : NDArray, 
+        data : NDArray,
         sr : int,
         filepath_textgrid : Union[str, Path],
         tier_name : str,
@@ -557,7 +557,7 @@ def audio_segments_from_textgrid(
         **kwargs
     ) -> Union[pd.DataFrame, list[dict[str, Any]]]:
     """
-    Extracts and visualizes audio segments corresponding to labeled intervals 
+    Extracts and visualizes audio segments corresponding to labeled intervals
     in a praat TextGrid file.
 
     Parameters
@@ -595,12 +595,12 @@ def audio_segments_from_textgrid(
 
 
 def audio_segments_from_raven(
-        data : NDArray, 
+        data : NDArray,
         sr : int,
         filepath_raven : Union[str, Path]
     ) -> List[Dict[NDArray, str]]:
     """
-    Extracts and visualizes audio segments corresponding to intervals 
+    Extracts and visualizes audio segments corresponding to intervals
     in a Raven selection table.
 
     Parameters

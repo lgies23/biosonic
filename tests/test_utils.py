@@ -59,32 +59,32 @@ def test_exclude_trailing_and_leading_zeros():
     arr = np.array([0, 0, 1, 2, 3, 0])
     expected = np.array([1, 2, 3])
     assert_array_equal(exclude_trailing_and_leading_zeros(arr), expected)
-    
+
     # ceck array with no zeros
     arr = np.array([1, 2, 3])
     expected = np.array([1, 2, 3])
     assert_array_equal(exclude_trailing_and_leading_zeros(arr), expected)
-    
+
     # check array with only zeros
     arr = np.array([0, 0, 0, 0])
     expected = np.array([])
     assert_array_equal(exclude_trailing_and_leading_zeros(arr), expected)
-    
+
     # check array with zeros in the middle (should not be removed)
     arr = np.array([0, 1, 0, 2, 0, 3, 0])
     expected = np.array([1, 0, 2, 0, 3])
     assert_array_equal(exclude_trailing_and_leading_zeros(arr), expected)
-    
+
     # check array with single non-zero element
     arr = np.array([0, 0, 5, 0, 0])
     expected = np.array([5])
     assert_array_equal(exclude_trailing_and_leading_zeros(arr), expected)
-    
+
     # check empty array
     arr = np.array([])
     expected = np.array([])
     assert_array_equal(exclude_trailing_and_leading_zeros(arr), expected)
-    
+
     # check invalid input (2D array)
     arr = np.array([[0, 1, 2], [0, 0, 3]])
     with pytest.raises(ValueError, match="Input array must be 1D."):
@@ -101,11 +101,11 @@ def test_transform_spectrogram_for_nn():
     assert np.isclose(transformed.min(), 0.0)
     assert transformed.shape == (32, 32)
 
-    # test type casting   
+    # test type casting
     spectrogram = np.array(np.random.rand(64, 64) * 255, dtype = 'uint8')
     transformed = transform_spectrogram_for_nn(spectrogram, values_type='float64', add_channel=False)
     assert transformed.dtype == np.float64
-    
+
     spectrogram = np.array(np.random.rand(64, 64) * 255, dtype = 'float32')
     transformed = transform_spectrogram_for_nn(spectrogram, values_type='float64', add_channel=False)
     assert transformed.dtype == np.float64
@@ -136,7 +136,7 @@ def test_transform_spectrogram_for_nn():
 
 
 def test_shannon_enropy():
-    from biosonic.compute.utils import shannon_entropy 
+    from biosonic.compute.utils import shannon_entropy
 
     # uniform distribution
     dist = np.array([0.25, 0.25, 0.25, 0.25])
@@ -166,7 +166,7 @@ def test_shannon_enropy():
     assert np.isclose(entropy, expected)
     assert np.isclose(max_val, np.log10(2))
 
-    # invalid unit  
+    # invalid unit
     dist = np.array([0.5, 0.5])
     try:
         _ = shannon_entropy(dist, unit="invalid")
@@ -174,7 +174,7 @@ def test_shannon_enropy():
     except ValueError as e:
         assert "Invalid unit" in str(e)
 
-    # output type 
+    # output type
     dist = np.array([0.7, 0.3])
     entropy, max_val = shannon_entropy(dist)
     assert isinstance(entropy, float)

@@ -39,13 +39,13 @@ def exclude_trailing_and_leading_zeros(envelope: ArrayLike) -> NDArray[np.float3
 
     Args:
         envelope : ArrayLike
-            A 1D NumPy array containing numerical values, 
+            A 1D NumPy array containing numerical values,
             potentially with leading and/or trailing zeros.
 
     Returns:
         np.ndarray
-            A 1D NumPy array with leading and trailing zeros excluded. 
-            The returned array will only contain values between the first 
+            A 1D NumPy array with leading and trailing zeros excluded.
+            The returned array will only contain values between the first
             and last non-zero elements from the original array.
 
     Example:
@@ -61,7 +61,7 @@ def exclude_trailing_and_leading_zeros(envelope: ArrayLike) -> NDArray[np.float3
     """
     if envelope.ndim != 1:
         raise ValueError("Input array must be 1D.")
-    
+
     if np.all(envelope == 0):  # check if all zeros and return empty array
         return np.array([])
 
@@ -69,15 +69,15 @@ def exclude_trailing_and_leading_zeros(envelope: ArrayLike) -> NDArray[np.float3
         # Exclude trailing zeros (identify last non-zero element)
         non_zero_end = np.argmax(envelope[::-1] > 0)
         envelope = envelope[:len(envelope) - non_zero_end]
-        
+
         # Exclude leading zeros (identify first non-zero value)
         non_zero_start = np.argmax(envelope > 0)
         envelope = envelope[non_zero_start:]
-        
+
     except Exception as e:
         logging.error(f"An error occurred: {e}")
         raise
-    
+
     return envelope
 
 
@@ -90,10 +90,10 @@ def cumulative_distribution_function(envelope: NDArray[np.float32]) -> NDArray[n
 
 
 def extract_all_features(
-    data : ArrayLike, 
-    sr : int, 
+    data : ArrayLike,
+    sr : int,
     kernel_size : Optional[int] = None,
-    n_dominant_freqs : int = 1, 
+    n_dominant_freqs : int = 1,
     **kwargs : dict[str, Any]
 ) -> dict[str, Any]:
     """
@@ -112,7 +112,7 @@ def extract_all_features(
     from .spectral import spectral_features
     from .temporal import temporal_features
     from .spectrotemporal import spectrotemporal_features
-    
+
     data = check_signal_format(data)
     sr = check_sr_format(sr)
 
@@ -125,8 +125,8 @@ def extract_all_features(
 
 def transform_spectrogram_for_nn(
         data: ArrayLike,
-        sr: Optional[int] = None, 
-        values_type: str = 'float32', 
+        sr: Optional[int] = None,
+        values_type: str = 'float32',
         add_channel: bool = True,
         data_format: Literal['channels_last', 'channels_first'] = 'channels_first',
         f_min: Optional[float] = None,
@@ -148,7 +148,7 @@ def transform_spectrogram_for_nn(
         add_channel : bool
             Whether to add a greyscale channel dimension.
         data_format : Literal['channels_last', 'channels_first']
-            Specifies channel dimension placement when `add_channel` is True. 
+            Specifies channel dimension placement when `add_channel` is True.
             - 'channels_last' results in shape (H, W, 1) - e.g. for TensorFlow/Keras
             - 'channels_first' results in shape (1, H, W) - e.g. for PyTorch
         fmin : Optional[float]
@@ -160,10 +160,10 @@ def transform_spectrogram_for_nn(
         **kwargs : dict
             Additional keyword arguments for spectrogram calculation.
     Returns:
-        ArrayLike : 
+        ArrayLike :
             The transformed spectrogram, normalized to [0, 1], cast to the specified
             data type, and optionally with a channel dimension added.
-    
+
     Example:
         >>> import numpy as np
         >>> spec = np.random.rand(128, 128) * 255  # Example spectrogram
@@ -178,7 +178,7 @@ def transform_spectrogram_for_nn(
     # Precomputed spectrogram
     if isinstance(data, tuple) and len(data) == 3:
         spec, t, f = data
-    
+
     # Raw signal + sr
     elif isinstance(data, np.ndarray):
         if sr is None:
@@ -189,7 +189,7 @@ def transform_spectrogram_for_nn(
             complex_output=False,
             **kwargs
         )
-    
+
     if f_min is not None or f_max is not None:
         freq_mask = np.ones_like(f, dtype=bool)
         if f_min is not None:
@@ -222,7 +222,7 @@ def transform_spectrogram_for_nn(
 
 
 def shannon_entropy(
-        prob_dist : ArrayLike, 
+        prob_dist : ArrayLike,
         unit : Literal["bits", "nat", "dits", "bans", "hartleys"] = "bits",
         norm : bool = True
     ) -> Tuple[float, float]:
@@ -232,26 +232,26 @@ def shannon_entropy(
     Parameters
     ----------
     prob_dist : ArrayLike
-        A 1D array-like object representing a probability distribution. 
+        A 1D array-like object representing a probability distribution.
         Values should be non-negative and typically sum to 1.
-        
+
     unit : {'bits', 'nat', 'dits', 'bans', 'hartleys'}, default='bits'
         The desired output unit, determining the logarithmic base to use for entropy calculation:
         - 'bits': base 2 (Shannon entropy)
         - 'nat' : base e (natural logarithm)
         - 'dits', 'bans', 'hartleys': base 10
-        
+
     norm : bool, default=True
-        Whether to normalize the entropy by dividing by the maximum possible entropy 
+        Whether to normalize the entropy by dividing by the maximum possible entropy
         for the given distribution length, resulting in a value in [0, 1].
 
     Returns
     -------
     entropy : float
         The Shannon entropy of the distribution.
-        
+
     max_entropy : float
-        The maximum possible entropy for the distribution length (either normalized to 1 or 
+        The maximum possible entropy for the distribution length (either normalized to 1 or
         log-base(len(dist)) if not normalized).
 
     Raises
@@ -285,7 +285,7 @@ def shannon_entropy(
     else:
         H = np.negative(np.sum(prob_dist * log_(prob_dist)))
         max = log_(len(prob_dist))
-    
+
     return float(H), float(max)
 
 
@@ -320,9 +320,9 @@ def hz_to_mel(
 
 
     References:
-        1. Fant G. 1970 Acoustic Theory of Speech Production. The Hague: Mouton & Co. 
-        2. Umesh S, Cohen L, Nelson D. 1999 Fitting the Mel scale. In 1999 IEEE International 
-           Conference on Acoustics, Speech, and Signal Processing. Proceedings. ICASSP99 (Cat. No.99CH36258), 
+        1. Fant G. 1970 Acoustic Theory of Speech Production. The Hague: Mouton & Co.
+        2. Umesh S, Cohen L, Nelson D. 1999 Fitting the Mel scale. In 1999 IEEE International
+           Conference on Acoustics, Speech, and Signal Processing. Proceedings. ICASSP99 (Cat. No.99CH36258),
            pp. 217–220 vol.1. Phoenix, AZ, USA: IEEE. (doi:10.1109/ICASSP.1999.758101)
         3. D. O'Shaughnessy, ”Speech Communication - Human and Machine” Addison- Wesley, New York, 1987. As cited in [2]
 
@@ -426,7 +426,7 @@ def mel_to_hz(
 def frame_signal(
         data: ArrayLike,
         sr : int,
-        window_length : int = 512, 
+        window_length : int = 512,
         timestep : float = 0.01,
         normalize : bool = False
     ) -> ArrayLike:
@@ -435,33 +435,33 @@ def frame_signal(
 
     frame_num = int((len(data) - window_length) / samples_step) + 1
     frames = np.zeros((frame_num, window_length))
-    
+
     for n in range(frame_num):
         start = int(n * samples_step)
         frames[n] = data[start : start + window_length]
-    
+
     if normalize:
         frames = [frame / np.mean(frame) if frame.any() else frame for frame in frames] # skip normalization for frames with all 0
-        
+
     return frames
 
 
 def window_signal(
         data: ArrayLike,
-        sr : int, 
+        sr : int,
         window_length: int = 512,
         window: Union[str, ArrayLike] = "hann",
         timestep : float = 0.01,
         normalize : bool = False
 ) -> ArrayLike:
-    
+
     if isinstance(window, str):
         try:
             window = windows.get_window(window, window_length)
         except ValueError as e:
             raise ValueError(f"Invalid window type: {window}") from e
     else:
-        window = np.asarray(window) 
+        window = np.asarray(window)
         if not isinstance(window, np.ndarray):
             raise TypeError("'window' must be either a string or a 1D NumPy array.")
 

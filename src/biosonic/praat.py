@@ -10,5 +10,5 @@ def _read_textgrid(
     """
     filepath = Path(filepath)
     grid = textgrids.TextGrid(filepath)
-    
+
     return grid

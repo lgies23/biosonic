@@ -5,28 +5,28 @@ import unittest
 
 def test_amplitude_envelope():
     from biosonic.compute.temporal import amplitude_envelope
-    
+
     # check basic signal without smoothing
     signal = np.array([0, 1, 2, 3, 2, 1, 0], dtype=np.float64)
     expected = np.array([0.73623886, 1.58098335, 2.38174929, 3, 2.38174929, 1.58098335, 0.73623886])
     assert_array_almost_equal(amplitude_envelope(signal), expected, decimal=5)
-    
+
     # check with kernel smoothing
     expected_smoothed = np.array([0.7724074, 1.56632383, 2.32091088, 2.58783286, 2.32091088, 1.56632383, 0.7724074])
     assert_array_almost_equal(amplitude_envelope(signal, kernel_size=3), expected_smoothed, decimal=4)
-    
+
     # check signal with leading and trailing zeros
     # TODO
 
     # check empty signal
     with pytest.warns(RuntimeWarning, match="Input signal is empty; returning an empty array."):
         assert len(amplitude_envelope(np.array([]))) == 0
-    
+
     # check signal with all zeros
     signal = np.array([0, 0, 0, 0], dtype=np.float64)
     expected = np.array([])
     assert_array_almost_equal(amplitude_envelope(signal), expected, decimal=5)
-    
+
     # check invalid input (2D array)
     signal = np.array([[1, 2, 3], [4, 5, 6]], dtype=np.float64)
     with pytest.raises(ValueError, match="Signal must be a 1D array"):
@@ -40,35 +40,35 @@ def test_duration():
     sr = 10  # Sample rate
     expected = 0.5  # 5 samples / 10 samples per second
     assert duration(signal, sr, exclude_surrounding_silences=False) == expected
-    
+
     # check duration calculation with leading and trailing zeros (exclude_surrounding_silences=True)
     signal = np.array([0, 0, 1, 2, 3, 4, 5, 0, 0], dtype=np.float64)
     expected = 0.5  # only non-zero part -> 5 samples
     assert duration(signal, sr, exclude_surrounding_silences=True) == expected
-    
+
     # check duration with leading and trailing zeros but exclude_surrounding_silences=False
     expected = 0.9  # 9 samples / 10 samples per second
     assert duration(signal, sr, exclude_surrounding_silences=False) == expected
-    
+
     # check empty signal
     signal = np.array([], dtype=np.float64)
     expected = 0.0
     assert duration(signal, sr, exclude_surrounding_silences=True) == expected
     assert duration(signal, sr, exclude_surrounding_silences=False) == expected
-    
+
     # check all-zero signal
     signal = np.array([0, 0, 0, 0, 0], dtype=np.float64)
     expected_trimmed = 0.0
     expected_full = 0.5  # 5 samples / 10 samples per second
     assert duration(signal, sr, exclude_surrounding_silences=True) == expected_trimmed
     assert duration(signal, sr, exclude_surrounding_silences=False) == expected_full
-    
+
     # check invalid sample rate
     with pytest.raises(ValueError, match="Sample rate must be greater than zero"):
         duration(signal, 0)
     with pytest.raises(ValueError, match="Sample rate must be greater than zero"):
         duration(signal, -10)
-    
+
     # check invalid input (2D array)
     signal = np.array([[1, 2, 3], [4, 5, 6]], dtype=np.float64)
     with pytest.raises(ValueError, match="Signal must be a 1D array"):
@@ -77,42 +77,42 @@ def test_duration():
 
 def test_temporal_quartiles():
     from biosonic.compute.temporal import temporal_quartiles
-    
+
     # check basic case
     signal = np.array([0, 1, 2, 3, 2, 1, 0], dtype=np.float64)
     sr = 10
     q1, median, q3 = temporal_quartiles(signal, sr)
     assert 0 <= q1 < median < q3 <= len(signal) / sr
     # TODO check actual values
-    
+
     # check with a longer signal
     signal = np.array([0] * 10 + [1] * 80 + [0] * 10, dtype=np.float64)  # 100 samples
     sr = 20
     q1, median, q3 = temporal_quartiles(signal, sr)
     assert 0 <= q1 < median < q3 <= 5
     # TODO check actual values
-    
+
     # check empty signal
     signal = np.array([], dtype=np.float64)
     with pytest.raises(ValueError, match="Input is empty"):
         temporal_quartiles(signal, sr)
-    
+
     # check all-zero signal
     signal = np.array([0, 0, 0, 0, 0], dtype=np.float64)
     with pytest.raises(ValueError, match="Signal contains no nonzero values"):
         temporal_quartiles(signal, sr)
-    
+
     # check invalid sample rate
     with pytest.raises(ValueError, match="Sample rate must be greater than zero"):
         temporal_quartiles(signal, 0)
     with pytest.raises(ValueError, match="Sample rate must be greater than zero"):
         temporal_quartiles(signal, -10)
-    
+
     # check 2D input (invalid case)
     signal = np.array([[1, 2, 3], [4, 5, 6]], dtype=np.float64)
     with pytest.raises(ValueError, match="Signal must be a 1D array"):
         temporal_quartiles(signal, sr)
-    
+
 def test_temporal_sd():
     pass
 
@@ -228,7 +228,7 @@ def test_spectrogram():
         sr=sr,
         window="hann",
         window_length=512,
-        overlap=0.5, 
+        overlap=0.5,
         complex_output=True
     )
 
@@ -241,7 +241,7 @@ def test_spectrogram():
 
 def test_spectral_quartiles(monkeypatch):
     from biosonic.compute.spectral import quartiles
-    
+
     # basic sinosoid
     sr = 1000
     t = np.linspace(0, 1, sr, endpoint=False)
@@ -289,7 +289,7 @@ def test_flatness():
     # empty input
     with pytest.raises(ValueError, match="Input signal contained only zero values"):
         flatness([])
-        
+
     # check output type
     y = flatness(np.random.randn(1024))
     assert isinstance(y, float) or isinstance(y, np.floating), f"Expected float output, got {type(y)}"
@@ -341,7 +341,7 @@ class TestDominantFrequencies(unittest.TestCase):
     def setUp(self):
         self.sample_rate = 1000  # Hz
         t = np.linspace(0, 1.0, self.sample_rate, endpoint=False)
-        
+
         # Single tone sine wave at 50 Hz
         self.sine_wave = np.sin(2 * np.pi * 50 * t)
 
@@ -406,7 +406,7 @@ class TestHzToMel(unittest.TestCase):
         result = hz_to_mel(freqs, after="oshaughnessy")
         expected = 2595 * np.log(1 + freqs / 700)
         np.testing.assert_allclose(result, expected, rtol=1e-4)
-    
+
     def test_beranek_array(self):
         freqs = np.array([0, 100, 1000, 8000])
         result = hz_to_mel(freqs, after="beranek")
@@ -482,7 +482,7 @@ class TestPowerSpectralEntropy(unittest.TestCase):
         signal = np.sin(2 * np.pi * 5 * t)
         H, H_max = power_spectral_entropy(signal, self.sample_rate)
         self.assertTrue(isinstance(H, float))
-    
+
     def test_entropy_units_consistency(self):
         t = np.linspace(0, 1.0, self.sample_rate, endpoint=False)
         x = np.sin(2 * np.pi * 30 * t)
@@ -559,7 +559,7 @@ def test_spectrotemporal_entropy():
     sr = 1000
     time = np.linspace(0, duration, int(sr * duration), endpoint=False)
     data = chirp(time, f1, 10, f2) + np.random.normal(0, 1, size=time.shape)
-        
+
     entropy_val = spectrotemporal_entropy(data, sr, unit="bits")
     expected_temporal, _ = temporal_entropy(data, unit="bits")
     expected_spectral, _ = power_spectral_entropy(data, sr, unit="bits")
@@ -663,13 +663,13 @@ def test_cepstral_coefficients(filterbank_type, sine_wave, chirp_with_noise):
     # parameter validation
     with pytest.raises(ValueError, match="fmax must be <= Nyquist frequency"):
         ceps = cepstral_coefficients(signal, sr, window_length=512, fmin=10, fmax=5000, n_ceps=12)
-    
+
     with pytest.raises(ValueError, match="fmin must be >= 0 and < fmax"):
         ceps = cepstral_coefficients(signal, sr, window_length=512, fmin=100, fmax=10, n_ceps=12)
-    
+
     with pytest.raises(ValueError, match="fmin must be >= 0 and < fmax"):
         ceps = cepstral_coefficients(signal, sr, window_length=512, fmin=-1, fmax=10, n_ceps=12)
-    
+
 
 if __name__ == '__main__':
     unittest.main()

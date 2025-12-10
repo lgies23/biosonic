@@ -34,7 +34,7 @@ def spectrogram(
     window_length : int, optional
         Length of the window in samples. Must be even. Default is 512.
     window : str or tuple, optional
-        Type of window to use (e.g., 'hann', 'hamming' of scipy.signal.windows) or a custom window array. 
+        Type of window to use (e.g., 'hann', 'hamming' of scipy.signal.windows) or a custom window array.
         Defaults to 'hann'.
     overlap : float, optional
         Overlap between adjacent windows as a percentage (0–100). Default is 50.
@@ -60,16 +60,16 @@ def spectrogram(
 
     References
     ----------
-    [1] Pauli Virtanen, Ralf Gommers, Travis E. Oliphant, Matt Haberland, Tyler Reddy, David Cournapeau, 
-    Evgeni Burovski, Pearu Peterson, Warren Weckesser, Jonathan Bright, Stéfan J. van der Walt, 
-    Matthew Brett, Joshua Wilson, K. Jarrod Millman, Nikolay Mayorov, Andrew R. J. Nelson, Eric Jones, 
-    Robert Kern, Eric Larson, CJ Carey, İlhan Polat, Yu Feng, Eric W. Moore, Jake VanderPlas, Denis 
-    Laxalde, Josef Perktold, Robert Cimrman, Ian Henriksen, E.A. Quintero, Charles R Harris, Anne M. 
-    Archibald, Antônio H. Ribeiro, Fabian Pedregosa, Paul van Mulbregt, and SciPy 1.0 Contributors. 
-    (2020) SciPy 1.0: Fundamental Algorithms for Scientific Computing in Python. Nature Methods, 17(3), 
+    [1] Pauli Virtanen, Ralf Gommers, Travis E. Oliphant, Matt Haberland, Tyler Reddy, David Cournapeau,
+    Evgeni Burovski, Pearu Peterson, Warren Weckesser, Jonathan Bright, Stéfan J. van der Walt,
+    Matthew Brett, Joshua Wilson, K. Jarrod Millman, Nikolay Mayorov, Andrew R. J. Nelson, Eric Jones,
+    Robert Kern, Eric Larson, CJ Carey, İlhan Polat, Yu Feng, Eric W. Moore, Jake VanderPlas, Denis
+    Laxalde, Josef Perktold, Robert Cimrman, Ian Henriksen, E.A. Quintero, Charles R Harris, Anne M.
+    Archibald, Antônio H. Ribeiro, Fabian Pedregosa, Paul van Mulbregt, and SciPy 1.0 Contributors.
+    (2020) SciPy 1.0: Fundamental Algorithms for Scientific Computing in Python. Nature Methods, 17(3),
     261-272. DOI: 10.1038/s41592-019-0686-2.
 
-    [2] J. Sueur, T. Aubin, C. Simonis (2008). “Seewave: a free modular tool for sound analysis and 
+    [2] J. Sueur, T. Aubin, C. Simonis (2008). “Seewave: a free modular tool for sound analysis and
     synthesis.” Bioacoustics, 18, 213-226.
     """
     if window_length % 2 != 0:
@@ -83,7 +83,7 @@ def spectrogram(
         except ValueError as e:
             raise ValueError(f"Invalid window type: {window}") from e
     else:
-        window = np.asarray(window) 
+        window = np.asarray(window)
         if not isinstance(window, np.ndarray):
             raise TypeError("'window' must be either a string or a 1D NumPy array.")
 
@@ -111,15 +111,15 @@ def spectrogram(
 
 
 def cepstrum(
-        data: ArrayLike,  
+        data: ArrayLike,
         sr: int,
         mode : Literal ["amplitude", "power"] = "amplitude",
     ) -> Tuple[ArrayLike, ArrayLike]:
     """
     Compute the cepstrum of a real-valued time-domain signal.
 
-    The cepstrum is computed by taking the inverse Fourier transform 
-    of the logarithm of the magnitude spectrum. Depending on the `mode`, 
+    The cepstrum is computed by taking the inverse Fourier transform
+    of the logarithm of the magnitude spectrum. Depending on the `mode`,
     this function returns either the amplitude or power cepstrum.
 
     Parameters
@@ -143,8 +143,8 @@ def cepstrum(
 
     References
     ----------
-    Childers DG, Skinner DP, Kemerait RC. 1977 
-    The cepstrum: A guide to processing. Proc. IEEE 65, 1428–1443. 
+    Childers DG, Skinner DP, Kemerait RC. 1977
+    The cepstrum: A guide to processing. Proc. IEEE 65, 1428–1443.
     (doi:10.1109/PROC.1977.10747)
     """
     data = check_signal_format(data)
@@ -160,7 +160,7 @@ def cepstrum(
 
     elif mode == "amplitude":
         return np.abs(ifft(np.log(np.abs(fft(data))))), quefrencies
-    
+
     else:
         raise ValueError(f"Invalid mode for cepstrum calculation: {mode}")
 
@@ -263,7 +263,7 @@ def cepstral_coefficients(
     # DCT to cepstral domain
     ceps = dct(audio_filtered, type=2, norm="ortho", axis=1)
 
-    if skip_first: 
+    if skip_first:
         ceps = liftering(ceps)[:, 1:n_ceps+1]  # skip C0
     else:
         ceps = liftering(ceps)[:, :n_ceps]
@@ -272,16 +272,16 @@ def cepstral_coefficients(
 
 
 def spectrotemporal_entropy(
-        data: ArrayLike,  
-        sr: int, 
-        *args : Any, 
+        data: ArrayLike,
+        sr: int,
+        *args : Any,
         **kwargs : Any
     ) -> float:
     """
     Compute the product of temporal_entropy and power spectral entropy of the input data.
 
     This function computes two information-theoretic measures — temporal temporal_entropy and
-    power spectral entropy — using the same unit and multiplies their values 
+    power spectral entropy — using the same unit and multiplies their values
     to produce a combined spectrotemporal complexity measure.
 
     Parameters
@@ -314,19 +314,19 @@ def spectrotemporal_entropy(
 
 
 def dominant_frequencies(
-        data: ArrayLike, 
-        sr: int, 
-        n_freqs: int = 1, 
+        data: ArrayLike,
+        sr: int,
+        n_freqs: int = 1,
         min_height: float = 0.05,
         threshold: float = 0.05,
         min_distance: float = 0.05,
         min_prominence: float = 0.05,
         noise_threshold: float = 0.1,
-        *args: Any, 
+        *args: Any,
         **kwargs: Any
-    ) -> NDArray[np.float32]: 
+    ) -> NDArray[np.float32]:
     """
-    Extracts the dominant frequency or frequencies from each time frame of a spectrogram 
+    Extracts the dominant frequency or frequencies from each time frame of a spectrogram
     based on the scipy.signal function find_peaks.
 
     Parameters
@@ -352,7 +352,7 @@ def dominant_frequencies(
         Must be between 0 and 1.
     *args, **kwargs :
         Additional arguments passed to the scipy.signal ShortTimeFFT class.
-    
+
     Returns
     -------
     NDArray[np.float32]
@@ -361,22 +361,22 @@ def dominant_frequencies(
         - If n_freqs > 1:
             2D array of shape (time_frames, n_freqs) containing the top `n_freqs` dominant
             frequencies per frame. NaNs are used to pad frames with fewer than `n_freqs` detected peaks.
-    """   
+    """
     if not (0.0 <= min_height <= 1.0):
         raise ValueError("min_height must be between 0 and 1")
-    
+
     if not (0.0 <= min_distance <= 1.0):
         raise ValueError("min_distance must be between 0 and 1")
-    
+
     if not (0.0 <= min_prominence <= 1.0):
         raise ValueError("min_prominence must be between 0 and 1")
-    
+
     if not (0.0 <= threshold <= 1.0):
         raise ValueError("threshold must be between 0 and 1")
-    
+
     if not (0.0 <= noise_threshold <= 1.0):
         raise ValueError("noise_threshold must be between 0 and 1")
-    
+
     spec, times, freqs = spectrogram(data, sr, *args, **kwargs)
     spec_real = np.abs(spec)
 
@@ -395,14 +395,14 @@ def dominant_frequencies(
             continue
 
         default_peak_params = {
-            "height" : magnitude_range*min_height, 
+            "height" : magnitude_range*min_height,
             "threshold" : magnitude_range*threshold,
-            "distance" : max(1, len(freqs)//(1/min_distance)), 
+            "distance" : max(1, len(freqs)//(1/min_distance)),
             "prominence" : magnitude_range*min_prominence
         }
 
         peaks, _ = signal.find_peaks(spectrum, **default_peak_params)
-        
+
         if len(peaks) > 0:
             sorted_peaks = peaks[np.argsort(spectrum[peaks])[::-1]]
             top_peaks = sorted_peaks[:n_freqs]
@@ -420,12 +420,12 @@ def zero_crossings(data: ArrayLike) -> NDArray[np.int64]:
     #TODO
     """
     Calculate the indices of zero crossings in a 1D signal.
-    
+
     Parameters
     ----------
     data : ArrayLike
         Input 1D audio signal.
-        
+
     Returns
     -------
     NDArray[np.int64]
@@ -434,15 +434,15 @@ def zero_crossings(data: ArrayLike) -> NDArray[np.int64]:
     pass
 
 def zero_crossing_rate(
-        data: ArrayLike, 
-        frame_length: int = 2048, 
+        data: ArrayLike,
+        frame_length: int = 2048,
         hop_length: int = 512
         ) -> np.float32:
     # TODO
     """
     Calculate the zero crossing rate of a 1D signal.
-    
-    Parameters  
+
+    Parameters
     ----------
     data : ArrayLike
         Input 1D audio signal.
@@ -450,8 +450,8 @@ def zero_crossing_rate(
         Length of each frame in samples. Default is 2048.
     hop_length : int, optional
         Number of samples to advance between frames. Default is 512.
-    
-    Returns     
+
+    Returns
     -------
     np.float32
         Zero crossing rate of the signal.
@@ -468,10 +468,10 @@ def _variance(x: NDArray[np.float32], dim: int) -> float:
 
 
 def _nearest_neighbors(
-        length: int, 
-        dim: int, 
-        ss: NDArray[np.float32], 
-        c: int, 
+        length: int,
+        dim: int,
+        ss: NDArray[np.float32],
+        c: int,
         exclusion: int
     ) -> Any:
     """Find nearest neighbors for index c based on embedding distance."""
@@ -490,9 +490,9 @@ def _nearest_neighbors(
 
 
 def lpc_estimate(
-        dim: int, 
-        nnn: int, 
-        ss: NDArray[np.float32], 
+        dim: int,
+        nnn: int,
+        ss: NDArray[np.float32],
         nb: NDArray[np.float32]
     ) -> Any:
     """Estimate LPC coefficients using nearest neighbors (solves Ax = b)."""
@@ -512,10 +512,10 @@ def lpc_estimate(
 
 
 def SNR(
-        length: int, 
-        dim: int, 
-        nnn: int, 
-        xx: NDArray[np.float32], 
+        length: int,
+        dim: int,
+        nnn: int,
+        xx: NDArray[np.float32],
         exclusion: int
     ) -> float:
     ss = xx.copy()
@@ -535,8 +535,8 @@ def SNR(
 
 
 def tokuda_nlm(
-        dim: int, 
-        data: NDArray[np.float32], 
+        dim: int,
+        data: NDArray[np.float32],
         exclusion: int = 15
         ) -> Tuple[List[Tuple[float, float]], float, float]:
     """
@@ -597,15 +597,15 @@ def tokuda_nlm(
 
 
 def calculate_dominant_frequency_features(
-        data: ArrayLike, 
-        sr: int, 
+        data: ArrayLike,
+        sr: int,
         **kwargs: Any
     ) -> Dict[str, Union[float, NDArray[np.float32]]]:
         """
         Calculate dominant frequency features.
         """
         dominant_freqs = dominant_frequencies(data, sr, n_freqs=1, **kwargs)
-        
+
         # exclude 0 values (no peak detected) from calculations
         dom_freqs_detected = dominant_freqs[dominant_freqs > 0]
         min_dom : float
@@ -624,7 +624,7 @@ def calculate_dominant_frequency_features(
         }
 
 def spectrotemporal_features(
-        data: ArrayLike, 
+        data: ArrayLike,
         sr: int,
         n_dominant_freqs : int = 1,
         **kwargs : Any
@@ -635,7 +635,7 @@ def spectrotemporal_features(
     Args:
         data : ArrayLike
             The input signal as a 1D ArrayLike.
-        sr : int 
+        sr : int
             Sampling rate of the signal in Hz.
         n_dominant_frequencies : int
             Number of dominant frequencies to extract. Default is 1.
