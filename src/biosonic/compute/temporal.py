@@ -16,8 +16,8 @@ from .utils import (
 def amplitude_envelope(
         data: ArrayLike,
         kernel_size: Optional[int] = None,
-        remove_trailing_zeros : bool = True,
-        avoid_zero_values : bool = False
+        remove_trailing_zeros: bool = True,
+        avoid_zero_values: bool = False
     ) -> NDArray[np.float64]:
     """
     Computes the amplitude envelope of a signal using the Hilbert transform.
@@ -205,7 +205,7 @@ def skewness(data: ArrayLike, sr: int, kernel_size: Optional[int] = None) -> Opt
     check_sr_format(sr)
 
     skew_ = skew(amplitude_envelope(data, kernel_size))
-    if skew_ == None:
+    if skew_ is None:
         warnings.warn("All values are equal, returning None for skew.")
 
     return float(skew_)
@@ -232,7 +232,7 @@ def temporal_kurtosis(data: ArrayLike, sr: int, kernel_size: Optional[int] = Non
 
     kurtosis_ = kurtosis(amplitude_envelope(data, kernel_size))
 
-    if kurtosis_ == None:
+    if kurtosis_ is None:
         warnings.warn("All values are equal, returning None for kurtosis.")
 
     return float(kurtosis_)
@@ -241,8 +241,8 @@ def temporal_kurtosis(data: ArrayLike, sr: int, kernel_size: Optional[int] = Non
 def temporal_entropy(
         data: ArrayLike,
         unit: Literal["bits", "nat", "dits", "bans", "hartleys"] = "bits",
-        *args : Any,
-        **kwargs : Any
+        *args: Any,
+        **kwargs: Any
     ) -> Tuple[float, float]:
     """
     Calculates the entropy of the amplitude envelope as follows:

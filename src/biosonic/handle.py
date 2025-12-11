@@ -188,9 +188,9 @@ def convert_channels(data: NDArray, target_channels: int) -> NDArray:
 
 def read_wav(
         filepath: Union[str, Path],
-        sampling_rate : Optional[int] = None,
+        sampling_rate: Optional[int] = None,
         quantization: QuantizationStr = "float32",
-        n_channels : Optional[int] = None,
+        n_channels: Optional[int] = None,
     ) -> Tuple[NDArray, int, int, QuantizationStr]:
     """
     Reads a WAV file and returns a Signal object, optionally converting sample rate, number of channels,
@@ -286,7 +286,8 @@ def batch_normalize_wav_files(
     -----
     - Input WAV files with extensions '.wav' and '.WAV' are processed.
     - Uses `read_wav` for loading and converting audio files. This attaches to scipys wavfile.io.read function.
-    - Output files are saved with the same filename in the output directory. So if you set output_dir to your folder_path, **all origninal files will be overwritten!**
+    - Output files are saved with the same filename in the output directory. So if you set output_dir to your folder_path,
+      **all origninal files will be overwritten!**
     """
     folder_path = Path(folder_path)
     output_dir = Path(output_dir) if output_dir else folder_path / "normalized"
@@ -301,9 +302,9 @@ def batch_normalize_wav_files(
 
 
 def batch_extract_features(
-        folder_path : Union[str, Path],
+        folder_path: Union[str, Path],
         save_csv_path: Optional[str] = None
-) -> pd.DataFrame :
+) -> pd.DataFrame:
     """
     Extract features from all WAV files in a folder.
 
@@ -366,8 +367,9 @@ def batch_extract_features(
 
     return out_df
 
+
 def batch_read_files_to_df(
-        folder_path : Union[str, Path],
+        folder_path: Union[str, Path],
         save_csv_path: Optional[str] = None,
 ) -> pd.DataFrame:
     """
@@ -409,7 +411,7 @@ def batch_read_files_to_df(
         print(f"processing {wav_file.name}")
         try:
             data, sr, _, _ = read_wav(wav_file)
-            columns : dict[str, Any] = {}
+            columns: dict[str, Any] = {}
             columns['filename'] = wav_file.name
             columns['sr'] = sr
             columns['waveform'] = data
@@ -431,9 +433,9 @@ def batch_read_files_to_df(
 
 
 def segments_from_signal(
-        data : NDArray,
-        sr : int,
-        boundaries : Union[Dict[str, float], ArrayLike, Tuple[float, float], List[Dict[str, float]]]
+        data: NDArray,
+        sr: int,
+        boundaries: Union[Dict[str, float], ArrayLike, Tuple[float, float], List[Dict[str, float]]]
     ) -> List[NDArray]:
     """
     Extract segments from an audio signal based on time boundaries.
@@ -478,9 +480,10 @@ def segments_from_signal(
 
     return segments
 
+
 def boundaries_from_textgrid(
-        filepath : Union[str, Path],
-        tier_name : str
+        filepath: Union[str, Path],
+        tier_name: str
     ) -> List[Dict[str, float]]:
     """
     Extracts segment boundaries from a specified tier in a praat TextGrid file.
@@ -534,7 +537,7 @@ def boundaries_from_raven(
               "Annotation": lambda ann: "; ".join(
                   sorted({str(v).strip() for v in ann if pd.notna(v) and str(v).strip()})
               )
-          })
+            })
           .reset_index()
     )
 
@@ -549,11 +552,11 @@ def boundaries_from_raven(
 
 
 def audio_segments_from_textgrid(
-        data : NDArray,
-        sr : int,
-        filepath_textgrid : Union[str, Path],
-        tier_name : str,
-        as_df : bool = True,
+        data: NDArray,
+        sr: int,
+        filepath_textgrid: Union[str, Path],
+        tier_name: str,
+        as_df: bool = True,
         **kwargs
     ) -> Union[pd.DataFrame, list[dict[str, Any]]]:
     """
@@ -590,14 +593,19 @@ def audio_segments_from_textgrid(
     plot_boundaries_on_spectrogram(data, sr, boundaries, **kwargs)
     segments = segments_from_signal(data, sr, boundaries)
     if as_df:
-        return pd.DataFrame([{"waveform": seg, "label": str(b["label"]), "sr": sr, "filename": str(filepath_textgrid.name)} for seg, b in zip(segments, boundaries)])
+        return pd.DataFrame([{
+                "waveform": seg,
+                "label": str(b["label"]),
+                "sr": sr,
+                "filename": str(filepath_textgrid.name)
+            } for seg, b in zip(segments, boundaries)])
     return [{"waveform": seg, "label": str(b["label"])} for seg, b in zip(segments, boundaries)]
 
 
 def audio_segments_from_raven(
-        data : NDArray,
-        sr : int,
-        filepath_raven : Union[str, Path]
+        data: NDArray,
+        sr: int,
+        filepath_raven: Union[str, Path]
     ) -> List[Dict[NDArray, str]]:
     """
     Extracts and visualizes audio segments corresponding to intervals

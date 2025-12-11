@@ -2,6 +2,7 @@ import numpy as np
 import pytest
 from numpy.testing import assert_array_equal
 
+
 def test_check_sr_format():
     from biosonic.compute.utils import check_sr_format
 
@@ -102,11 +103,11 @@ def test_transform_spectrogram_for_nn():
     assert transformed.shape == (32, 32)
 
     # test type casting
-    spectrogram = np.array(np.random.rand(64, 64) * 255, dtype = 'uint8')
+    spectrogram = np.array(np.random.rand(64, 64) * 255, dtype='uint8')
     transformed = transform_spectrogram_for_nn(spectrogram, values_type='float64', add_channel=False)
     assert transformed.dtype == np.float64
 
-    spectrogram = np.array(np.random.rand(64, 64) * 255, dtype = 'float32')
+    spectrogram = np.array(np.random.rand(64, 64) * 255, dtype='float32')
     transformed = transform_spectrogram_for_nn(spectrogram, values_type='float64', add_channel=False)
     assert transformed.dtype == np.float64
 

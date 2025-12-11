@@ -104,7 +104,7 @@ def spectrogram(
     S_real = np.abs(Sx)
 
     # Noise reduction
-    if noisereduction == True:
+    if noisereduction is True:
         S_real = S_real - np.median(S_real, axis=0)
 
     return S_real, t, f
@@ -113,7 +113,7 @@ def spectrogram(
 def cepstrum(
         data: ArrayLike,
         sr: int,
-        mode : Literal ["amplitude", "power"] = "amplitude",
+        mode: Literal["amplitude", "power"] = "amplitude",
     ) -> Tuple[ArrayLike, ArrayLike]:
     """
     Compute the cepstrum of a real-valued time-domain signal.
@@ -166,18 +166,18 @@ def cepstrum(
 
 
 def cepstral_coefficients(
-    data : ArrayLike,
-    sr : int,
-    window_length : int = 512,
-    n_filters : int = 32,
-    n_ceps : int = 16,
-    pre_emphasis : float = 0.97,
-    fmin : float = 0.0,
-    fmax : Optional[float] = None,
-    filterbank_type : Literal["mel", "linear", "log"] = "mel",
-    skip_first : bool = True,
+    data: ArrayLike,
+    sr: int,
+    window_length: int = 512,
+    n_filters: int = 32,
+    n_ceps: int = 16,
+    pre_emphasis: float = 0.97,
+    fmin: float = 0.0,
+    fmax: Optional[float] = None,
+    filterbank_type: Literal["mel", "linear", "log"] = "mel",
+    skip_first: bool = True,
     timestep: float = 0.01,
-    **kwargs : Any
+    **kwargs: Any
 ) -> ArrayLike:
     """
     Compute cepstral coefficients from a signal using the specified filter bank.
@@ -239,7 +239,7 @@ def cepstral_coefficients(
     # window and fft
     data_windowed = window_signal(data_preemphasized, sr, window_length, timestep=timestep)
     mag_frames = np.abs(rfft(data_windowed, window_length))
-    pow_frames = (1/window_length) * mag_frames **2
+    pow_frames = (1/window_length) * mag_frames ** 2
 
     # filter bank selection
     if fmax is None:
@@ -250,14 +250,14 @@ def cepstral_coefficients(
     elif filterbank_type == "linear":
         fbanks, _ = linear_filterbank(n_filters, window_length, sr, fmin, fmax)
     elif filterbank_type == "log":
-        #raise NotImplementedError("Log frequency scale is not yet implemented for cepstral coefficients in Version 0.")
+        # raise NotImplementedError("Log frequency scale is not yet implemented for cepstral coefficients in Version 0.")
         fmin_corrected = 1e-6 if fmin == 0 else fmin
         fbanks, _ = log_filterbank(n_filters, window_length, sr, fmin_corrected, fmax, **kwargs)
     else:
         raise ValueError(f"Unknown filterbank_type: {filterbank_type}")
 
     audio_filtered = np.dot(pow_frames, fbanks.T)
-    audio_filtered = np.where(audio_filtered == 0, np.finfo(float).eps, audio_filtered) # avoid 0 division
+    audio_filtered = np.where(audio_filtered == 0, np.finfo(float).eps, audio_filtered)  # avoid 0 division
     audio_filtered = 20 * np.log10(audio_filtered)  # to dB
 
     # DCT to cepstral domain
@@ -274,8 +274,8 @@ def cepstral_coefficients(
 def spectrotemporal_entropy(
         data: ArrayLike,
         sr: int,
-        *args : Any,
-        **kwargs : Any
+        *args: Any,
+        **kwargs: Any
     ) -> float:
     """
     Compute the product of temporal_entropy and power spectral entropy of the input data.
@@ -395,10 +395,10 @@ def dominant_frequencies(
             continue
 
         default_peak_params = {
-            "height" : magnitude_range*min_height,
-            "threshold" : magnitude_range*threshold,
-            "distance" : max(1, len(freqs)//(1/min_distance)),
-            "prominence" : magnitude_range*min_prominence
+            "height": magnitude_range*min_height,
+            "threshold": magnitude_range*threshold,
+            "distance": max(1, len(freqs)//(1/min_distance)),
+            "prominence": magnitude_range*min_prominence
         }
 
         peaks, _ = signal.find_peaks(spectrum, **default_peak_params)
@@ -417,7 +417,7 @@ def dominant_frequencies(
 
 
 def zero_crossings(data: ArrayLike) -> NDArray[np.int64]:
-    #TODO
+    # TODO
     """
     Calculate the indices of zero crossings in a 1D signal.
 
@@ -432,6 +432,7 @@ def zero_crossings(data: ArrayLike) -> NDArray[np.int64]:
         Indices where zero crossings occur.
     """
     pass
+
 
 def zero_crossing_rate(
         data: ArrayLike,
@@ -476,8 +477,8 @@ def _nearest_neighbors(
     ) -> Any:
     """Find nearest neighbors for index c based on embedding distance."""
     # Build embedding windows
-    target = ss[c - dim + 1 : c + 1][None, :]  # shape (1, dim)
-    windows = [ss[l - dim + 1 : l + 1] for l in range(dim - 1, length - 1) if abs(l - c) > exclusion]
+    target = ss[c - dim + 1:c + 1][None, :]  # shape (1, dim)
+    windows = [ss[l - dim + 1:l + 1] for l in range(dim - 1, length - 1) if abs(l - c) > exclusion]
     windows = np.array(windows)
 
     # Compute distances and sort
@@ -526,7 +527,7 @@ def SNR(
         rr[i + 1] = ss[i + 1]
         nb = _nearest_neighbors(length, dim, ss, i, exclusion)
         wd = lpc_estimate(dim, nnn, ss, nb)
-        rr[i + 1] -= np.dot(wd, ss[i - dim + 1 : i + 1][::-1])
+        rr[i + 1] -= np.dot(wd, ss[i - dim + 1:i + 1][::-1])
 
     # Variance of original and residual signals
     vs = _variance(ss, dim)
@@ -595,39 +596,39 @@ def tokuda_nlm(
 # TODO Modulation spectra
 
 
-
 def calculate_dominant_frequency_features(
         data: ArrayLike,
         sr: int,
         **kwargs: Any
     ) -> Dict[str, Union[float, NDArray[np.float32]]]:
-        """
-        Calculate dominant frequency features.
-        """
-        dominant_freqs = dominant_frequencies(data, sr, n_freqs=1, **kwargs)
+    """
+    Calculate dominant frequency features.
+    """
+    dominant_freqs = dominant_frequencies(data, sr, n_freqs=1, **kwargs)
 
-        # exclude 0 values (no peak detected) from calculations
-        dom_freqs_detected = dominant_freqs[dominant_freqs > 0]
-        min_dom : float
-        max_dom : float
-        min_dom, max_dom = float(np.min(dom_freqs_detected)), float(np.max(dom_freqs_detected))
-        range_dom = max_dom - min_dom
-        cumulative_diff : float = np.sum(np.abs(np.diff(dom_freqs_detected)))
-        mod_dom = cumulative_diff / range_dom if range_dom > 0 else 0
+    # exclude 0 values (no peak detected) from calculations
+    dom_freqs_detected = dominant_freqs[dominant_freqs > 0]
+    min_dom: float
+    max_dom: float
+    min_dom, max_dom = float(np.min(dom_freqs_detected)), float(np.max(dom_freqs_detected))
+    range_dom = max_dom - min_dom
+    cumulative_diff: float = np.sum(np.abs(np.diff(dom_freqs_detected)))
+    mod_dom = cumulative_diff / range_dom if range_dom > 0 else 0
 
-        return {
-            "mean_dom": np.mean(dom_freqs_detected),
-            "min_dom": min_dom,
-            "max_dom": max_dom,
-            "range_dom": range_dom,
-            "mod_dom": mod_dom
-        }
+    return {
+        "mean_dom": np.mean(dom_freqs_detected),
+        "min_dom": min_dom,
+        "max_dom": max_dom,
+        "range_dom": range_dom,
+        "mod_dom": mod_dom
+    }
+
 
 def spectrotemporal_features(
         data: ArrayLike,
         sr: int,
-        n_dominant_freqs : int = 1,
-        **kwargs : Any
+        n_dominant_freqs: int = 1,
+        **kwargs: Any
     ) -> dict[str, Union[float, np.floating, NDArray[np.float32]]]:
     """
     Extracts a set of spectrotemporal features from a signal.

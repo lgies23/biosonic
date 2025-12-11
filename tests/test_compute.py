@@ -3,6 +3,7 @@ import pytest
 from numpy.testing import assert_array_almost_equal
 import unittest
 
+
 def test_amplitude_envelope():
     from biosonic.compute.temporal import amplitude_envelope
 
@@ -31,6 +32,7 @@ def test_amplitude_envelope():
     signal = np.array([[1, 2, 3], [4, 5, 6]], dtype=np.float64)
     with pytest.raises(ValueError, match="Signal must be a 1D array"):
         amplitude_envelope(signal)
+
 
 def test_duration():
     from biosonic.compute.temporal import duration
@@ -113,14 +115,18 @@ def test_temporal_quartiles():
     with pytest.raises(ValueError, match="Signal must be a 1D array"):
         temporal_quartiles(signal, sr)
 
+
 def test_temporal_sd():
     pass
+
 
 def test_temporal_skew():
     pass
 
+
 def test_temporal_kurtosis():
     pass
+
 
 def test_spectrum():
     import numpy as np
@@ -133,7 +139,7 @@ def test_spectrum():
     freqs, spec = spectrum(signal, mode='amplitude')
     assert freqs is None
     assert isinstance(spec, np.ndarray)
-    assert len(spec) == (len(signal) // 2 +1)
+    assert len(spec) == (len(signal) // 2 + 1)
     assert np.all(spec >= 0)
 
     # basic power spectrum
@@ -155,7 +161,7 @@ def test_spectrum():
 
     # check that invalid type raises error
     with pytest.raises(TypeError, match="must be a string, int or float"):
-        spectrum(signal, mode=(1,2))
+        spectrum(signal, mode=(1, 2))
 
     # check empty input
     empty_signal = np.array([], dtype=np.float64)
@@ -163,7 +169,7 @@ def test_spectrum():
         freqs_empty, spec_empty = spectrum(empty_signal, mode='amplitude')
         assert spec_empty.size == 0
         assert isinstance(spec_empty, np.ndarray)
-        assert freqs_empty == None
+        assert freqs_empty is None
 
     # check default = "amplitude"
     signal = np.array([0, 1, 0, -1], dtype=np.float64)
@@ -239,6 +245,7 @@ def test_spectrogram():
     assert Sx.shape[0] == len(freqs)
     assert Sx.shape[1] == len(times)
 
+
 def test_spectral_quartiles(monkeypatch):
     from biosonic.compute.spectral import quartiles
 
@@ -265,6 +272,7 @@ def test_spectral_quartiles(monkeypatch):
 
     with pytest.raises(ValueError, match="Freuency bins don't match envelope"):
         quartiles(np.ones(100), 1000)
+
 
 def test_flatness():
     from biosonic.compute.spectral import flatness
@@ -296,7 +304,7 @@ def test_flatness():
 
 
 def test_bandwidth():
-    #TODO
+    # TODO
     from biosonic.compute.spectral import bandwidth
 
     # constant signal
@@ -336,6 +344,8 @@ def test_centroid():
 
 
 from biosonic.compute.spectrotemporal import dominant_frequencies
+
+
 class TestDominantFrequencies(unittest.TestCase):
 
     def setUp(self):
@@ -395,6 +405,8 @@ class TestDominantFrequencies(unittest.TestCase):
 
 
 from biosonic.compute.utils import hz_to_mel
+
+
 class TestHzToMel(unittest.TestCase):
     def test_oshaughnessy_scalar(self):
         result = hz_to_mel(1000.0, after="oshaughnessy")
@@ -433,6 +445,8 @@ class TestHzToMel(unittest.TestCase):
 
 
 from biosonic.compute.spectral import power_spectral_entropy
+
+
 class TestPowerSpectralEntropy(unittest.TestCase):
     def setUp(self):
         self.sample_rate = 1000  # Hz
@@ -501,6 +515,8 @@ class TestPowerSpectralEntropy(unittest.TestCase):
 
 from biosonic.compute.temporal import temporal_entropy
 from scipy.signal import chirp
+
+
 class TestTemporalEntropy(unittest.TestCase):
     def setUp(self):
         self.sample_rate = 1000  # Hz
@@ -523,7 +539,7 @@ class TestTemporalEntropy(unittest.TestCase):
         f1 = 300
         f2 = 400
         signal = chirp(self.time, f1, 10, f2) + np.random.normal(0, 1, size=self.time.shape)
-        H, H_max  = temporal_entropy(signal)
+        H, H_max = temporal_entropy(signal)
         self.assertGreater(H, 0.5, "Entropy of chirp with noise should be relatively high.")
 
     def test_noise_signal_entropy(self):
@@ -552,6 +568,8 @@ class TestTemporalEntropy(unittest.TestCase):
 from biosonic.compute.spectrotemporal import spectrotemporal_entropy
 from biosonic.compute.spectral import power_spectral_entropy
 from biosonic.compute.temporal import temporal_entropy
+
+
 def test_spectrotemporal_entropy():
     f1 = 300
     f2 = 400
@@ -574,7 +592,10 @@ def test_spectrotemporal_entropy():
         entropy_val = spectrotemporal_entropy(data, sr, unit=unit)
         assert isinstance(entropy_val, float)
 
+
 from biosonic.compute.spectrotemporal import cepstrum
+
+
 @pytest.fixture
 def sine_wave():
     sr = 16000
@@ -582,6 +603,7 @@ def sine_wave():
     freq = 440
     x = np.sin(2 * np.pi * freq * t)
     return x, sr
+
 
 @pytest.fixture
 def chirp_with_noise():
@@ -592,6 +614,7 @@ def chirp_with_noise():
     time = np.linspace(0, duration, int(sr * duration), endpoint=False)
     x = chirp(time, f1, 10, f2) + np.random.normal(0, 1, size=time.shape)
     return x, sr
+
 
 def test_cepstrum(sine_wave, chirp_with_noise):
     x, sr = chirp_with_noise

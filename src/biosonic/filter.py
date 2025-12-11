@@ -7,11 +7,11 @@ from biosonic.compute.utils import hz_to_mel, mel_to_hz
 
 
 def _check_filterbank_parameters(
-        n_filters : int,
-        n_fft : int,
-        sr : int,
-        fmin : float,
-        fmax : float,
+        n_filters: int,
+        n_fft: int,
+        sr: int,
+        fmin: float,
+        fmax: float,
         ) -> None:
 
     if fmax > sr / 2:
@@ -31,10 +31,10 @@ def _check_filterbank_parameters(
 
 
 def _filterbank(
-        n_filters : int,
-        n_fft : int,
+        n_filters: int,
+        n_fft: int,
         center_freqs: ArrayLike,
-        fft_freqs : ArrayLike
+        fft_freqs: ArrayLike
     ) -> ArrayLike:
     """
     Construct a triangular filter bank for spectral analysis.
@@ -104,12 +104,12 @@ def _filterbank(
 
 
 def mel_filterbank(
-        n_filters : int,
-        n_fft : int,
-        sr : int,
-        fmin : float = 0.0,
-        fmax : Optional[float] = None,
-        **kwargs : Any
+        n_filters: int,
+        n_fft: int,
+        sr: int,
+        fmin: float = 0.0,
+        fmax: Optional[float] = None,
+        **kwargs: Any
     ) -> ArrayLike:
     """
     Create a mel spaced triangular filterbank.
@@ -154,8 +154,8 @@ def linear_filterbank(
         n_filters: int,
         n_fft: int,
         sr: int,
-        fmin : float = 0.0,
-        fmax : Optional[float] = None
+        fmin: float = 0.0,
+        fmax: Optional[float] = None
     ) -> ArrayLike:
     """
     Create a linearly spaced triangular filterbank.
@@ -248,11 +248,11 @@ def log_filterbank(
 
 # TODO weighted filter (seewave), rolloff like in audacity f-filter (tuneR)
 def filter(
-        data : ArrayLike,
-        sr : int,
-        f_cutoff : Union[int, Tuple[int, int]],
-        type : Literal["lowpass", "highpass", "bandpass", "bandstop"] = "lowpass",
-        order : int = 2,
+        data: ArrayLike,
+        sr: int,
+        f_cutoff: Union[int, Tuple[int, int]],
+        type: Literal["lowpass", "highpass", "bandpass", "bandstop"] = "lowpass",
+        order: int = 2,
 ) -> ArrayLike:
     """
     Apply a zero-phase Butterworth filter to a 1D signal using SciPy.

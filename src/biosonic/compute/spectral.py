@@ -4,7 +4,7 @@ from scipy import fft
 from scipy.stats import gmean
 from typing import Optional, Tuple, Union, Any, Dict, Literal
 import warnings
-from .utils import  (
+from .utils import (
     exclude_trailing_and_leading_zeros,
     check_signal_format,
     check_sr_format,
@@ -230,7 +230,7 @@ def spectral_moments(
 
     freqs, ms = spectrum(data, sr=sr)
     # normalize spectrum
-    ms =  ms / np.sum(ms)
+    ms = ms / np.sum(ms)
     centroid_ = np.average(freqs, weights=ms)
     bandwidth_ = np.sqrt(np.sum(ms * (freqs-centroid_)**2))
     if bandwidth_ == 0:
@@ -242,7 +242,7 @@ def spectral_moments(
     return centroid_, bandwidth_, skewness_, kurtosis_
 
 
-def centroid(data: ArrayLike, sr: int)-> Union[float, np.floating[Any]]:
+def centroid(data: ArrayLike, sr: int) -> Union[float, np.floating[Any]]:
     r"""
     Compute the spectral centroid of a signal.
 
@@ -285,7 +285,7 @@ def centroid(data: ArrayLike, sr: int)-> Union[float, np.floating[Any]]:
         Klapuri A, Davy M. 2006 Signal processing methods for music transcription.
         New York: Springer. p.136
     """
-    centroid_,_,_,_ = spectral_moments(data, sr)
+    centroid_, _, _, _ = spectral_moments(data, sr)
 
     return centroid_
 
@@ -322,9 +322,9 @@ def bandwidth(data: ArrayLike, sr: int) -> Union[float, np.floating[Any]]:
         Klapuri A, Davy M. 2006 Signal processing methods for music transcription.
         New York: Springer. p.136
     """
-    _,bandwidth_,_,_ = spectral_moments(data, sr)
+    _, bandwidth_, _, _ = spectral_moments(data, sr)
 
-    return bandwidth_ # TODO change to variance and let people define bandwidth through percentiles
+    return bandwidth_  # TODO change to variance and let people define bandwidth through percentiles
 
 
 def skewness(data: ArrayLike, sr: int) -> Union[float, np.floating[Any]]:
@@ -356,7 +356,7 @@ def skewness(data: ArrayLike, sr: int) -> Union[float, np.floating[Any]]:
     data = check_signal_format(data)
     sr = check_sr_format(sr)
 
-    _,_,skew,_ = spectral_moments(data, sr)
+    _, _, skew, _ = spectral_moments(data, sr)
     return skew
 
 
@@ -389,7 +389,7 @@ def kurtosis(data: ArrayLike, sr: int) -> Union[float, np.floating[Any]]:
     data = check_signal_format(data)
     sr = check_sr_format(sr)
 
-    _,_,_,kurt = spectral_moments(data, sr)
+    _, _, _, kurt = spectral_moments(data, sr)
     return kurt
 
 
@@ -443,8 +443,8 @@ def power_spectral_entropy(
         data: ArrayLike,
         sr: int,
         unit: Literal["bits", "nat", "dits", "bans", "hartleys"] = "bits",
-        *args : Any,
-        **kwargs : Any
+        *args: Any,
+        **kwargs: Any
         ) -> Tuple[float, float]:
     """
     Calculates the power spectral entropy as follows:
@@ -478,7 +478,7 @@ def power_spectral_entropy(
     _, psd = spectrum(data, sr, mode="power")
     psd = exclude_trailing_and_leading_zeros(psd)
 
-    psd_sum : float = np.sum(psd)
+    psd_sum: float = np.sum(psd)
     psd_norm = psd / psd_sum
     # Ensure no zero values in normalized power distribution because H is undefined with p=0
     psd_norm = psd_norm[psd_norm > 0]
@@ -519,15 +519,15 @@ def spectral_features(data: ArrayLike,
     freqs, ps = spectrum(data, sr, mode="power")
 
     features = {
-        #"mean_frequency" : np.average(freqs, weights=ps), # because centroid is based on magnitude spectrum
+        # "mean_frequency" : np.average(freqs, weights=ps),  # because centroid is based on magnitude spectrum
         "fq_q1": fq_q1_bin,
         "fq_median": fq_median_bin,
         "fq_q3": fq_q3_bin,
         "spectral_flatness": flatness(data),
         "spectral_centroid": centroid(data, sr),
         "spectral_sd": bandwidth(data, sr),
-        "spectral_skew" : skewness(data, sr),
-        "spectral_kurtosis" : kurtosis(data, sr),
+        "spectral_skew": skewness(data, sr),
+        "spectral_kurtosis": kurtosis(data, sr),
         "peak_frequency": peak_frequency(data, sr),
         "pse": power_spectral_entropy(data, sr)[0]
     }

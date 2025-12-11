@@ -6,6 +6,7 @@ import warnings
 from scipy.signal import windows
 from scipy.ndimage import zoom
 
+
 def check_sr_format(sr: Union[int, float]) -> int:
     try:
         sr = int(sr)
@@ -90,11 +91,11 @@ def cumulative_distribution_function(envelope: NDArray[np.float32]) -> NDArray[n
 
 
 def extract_all_features(
-    data : ArrayLike,
-    sr : int,
-    kernel_size : Optional[int] = None,
-    n_dominant_freqs : int = 1,
-    **kwargs : dict[str, Any]
+    data: ArrayLike,
+    sr: int,
+    kernel_size: Optional[int] = None,
+    n_dominant_freqs: int = 1,
+    **kwargs: dict[str, Any]
 ) -> dict[str, Any]:
     """
     Extracts a comprehensive set of temporal and spectral features from a signal.
@@ -222,9 +223,9 @@ def transform_spectrogram_for_nn(
 
 
 def shannon_entropy(
-        prob_dist : ArrayLike,
-        unit : Literal["bits", "nat", "dits", "bans", "hartleys"] = "bits",
-        norm : bool = True
+        prob_dist: ArrayLike,
+        unit: Literal["bits", "nat", "dits", "bans", "hartleys"] = "bits",
+        norm: bool = True
     ) -> Tuple[float, float]:
     """
     Calculate the Shannon entropy of a probability distribution.
@@ -268,7 +269,7 @@ def shannon_entropy(
     (0.3250829733914482, 0.6931471805599453)
     """
     if unit == "bits":
-        log_ : Any = np.log2
+        log_: Any = np.log2
     elif unit == "nat":
         log_ = np.log
     elif unit in ["dits", "bans", "hartleys"]:
@@ -294,7 +295,7 @@ def hz_to_mel(
         a: Optional[float] = None,
         b: Optional[float] = None,
         corner_frequency: Optional[float] = None,
-        after : Literal["fant", "koenig", "oshaughnessy", "umesh"] = "oshaughnessy"
+        after: Literal["fant", "koenig", "oshaughnessy", "umesh"] = "oshaughnessy"
     ) -> Union[ArrayLike, float]:
     """
     Converts a frequency or array of frequencies in Hertz to the Mel scale
@@ -425,10 +426,10 @@ def mel_to_hz(
 
 def frame_signal(
         data: ArrayLike,
-        sr : int,
-        window_length : int = 512,
-        timestep : float = 0.01,
-        normalize : bool = False
+        sr: int,
+        window_length: int = 512,
+        timestep: float = 0.01,
+        normalize: bool = False
     ) -> ArrayLike:
     samples_step = timestep * sr
     data = np.pad(data, int(window_length / 2), mode='reflect')
@@ -438,21 +439,21 @@ def frame_signal(
 
     for n in range(frame_num):
         start = int(n * samples_step)
-        frames[n] = data[start : start + window_length]
+        frames[n] = data[start:start + window_length]
 
     if normalize:
-        frames = [frame / np.mean(frame) if frame.any() else frame for frame in frames] # skip normalization for frames with all 0
+        frames = [frame / np.mean(frame) if frame.any() else frame for frame in frames]  # skip normalization for frames with all 0
 
     return frames
 
 
 def window_signal(
         data: ArrayLike,
-        sr : int,
+        sr: int,
         window_length: int = 512,
         window: Union[str, ArrayLike] = "hann",
-        timestep : float = 0.01,
-        normalize : bool = False
+        timestep: float = 0.01,
+        normalize: bool = False
 ) -> ArrayLike:
 
     if isinstance(window, str):

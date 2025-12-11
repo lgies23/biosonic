@@ -1,10 +1,10 @@
 import textgrids
-from typing import Union, Optional
+from typing import Union
 from pathlib import Path
 
 
 def _read_textgrid(
-        filepath : Union[str, Path]
+        filepath: Union[str, Path]
     ) -> textgrids.TextGrid:
     """
     """
