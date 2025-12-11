@@ -1,17 +1,17 @@
 import os
+from typing import Any, Dict, List, Literal, Optional, Tuple, Union
+
 import matplotlib.pyplot as plt
+import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
-import numpy as np
 from numpy.typing import ArrayLike
-from typing import Optional, Any, Union, Literal, Tuple, List, Dict
 from pandas import DataFrame
 
-from biosonic.compute.spectrotemporal import cepstrum, spectrogram, cepstral_coefficients
 from biosonic.compute.spectral import spectrum
+from biosonic.compute.spectrotemporal import cepstral_coefficients, cepstrum, spectrogram
+from biosonic.compute.utils import check_signal_format, check_sr_format, extract_all_features
 from biosonic.filter import mel_filterbank
-
-from biosonic.compute.utils import extract_all_features, check_signal_format, check_sr_format
 
 
 def plot_spectrogram(

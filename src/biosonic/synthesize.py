@@ -1,7 +1,6 @@
 import numpy as np
 from numpy.typing import ArrayLike
 
-
 # def ripple_sound():
 #     """
 #     Generate a ripple signal ad defined in [2]:

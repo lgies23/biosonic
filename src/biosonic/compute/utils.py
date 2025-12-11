@@ -1,10 +1,11 @@
-from numpy.typing import NDArray, ArrayLike
-import numpy as np
 import logging
-from typing import Optional, Literal, Union, Tuple, Any
 import warnings
-from scipy.signal import windows
+from typing import Any, Literal, Optional, Tuple, Union
+
+import numpy as np
+from numpy.typing import ArrayLike, NDArray
 from scipy.ndimage import zoom
+from scipy.signal import windows
 
 
 def check_sr_format(sr: Union[int, float]) -> int:
@@ -111,8 +112,8 @@ def extract_all_features(
         dict: Dictionary of extracted features.
     """
     from .spectral import spectral_features
-    from .temporal import temporal_features
     from .spectrotemporal import spectrotemporal_features
+    from .temporal import temporal_features
 
     data = check_signal_format(data)
     sr = check_sr_format(sr)
@@ -176,6 +177,7 @@ def transform_spectrogram_for_nn(
         dtype('float32')
     """
     from .spectrotemporal import spectrogram
+
     # Precomputed spectrogram
     if isinstance(data, tuple) and len(data) == 3:
         spec, t, f = data

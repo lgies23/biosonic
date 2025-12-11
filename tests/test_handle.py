@@ -1,8 +1,9 @@
-import numpy as np
-import pytest
-import pandas as pd
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
+
+import numpy as np
+import pandas as pd
+import pytest
 
 
 def test_convert_dtype():
@@ -93,7 +94,9 @@ def test_convert_channels(mono_signal, stereo_signal):
 
 def test_read_wav(tmp_path):
     from scipy.io import wavfile
+
     from biosonic.handle import read_wav
+
     # create dummy WAV file
     sr = 44100
     data = (np.sin(2 * np.pi * 440 * np.arange(44100) / sr) * 32767).astype(np.int16)
@@ -118,6 +121,7 @@ def test_read_wav(tmp_path):
 @patch("biosonic.compute.utils.extract_all_features")
 def test_batch_extract_features(mock_extract, mock_read, mock_glob, tmp_path):
     from biosonic.handle import batch_extract_features
+
     # success
     mock_file = MagicMock(spec=Path)
     mock_file.name = "mocked.wav"
@@ -260,7 +264,7 @@ def test_segments_from_signal(sample_data):
         segments_from_signal(data, sr, "not a valid boundary")
 
 
-from biosonic.handle import boundaries_from_textgrid, audio_segments_from_textgrid
+from biosonic.handle import audio_segments_from_textgrid, boundaries_from_textgrid
 
 
 @pytest.fixture
@@ -327,7 +331,7 @@ def test_audio_segments_from_textgrid(
     mock_plot.assert_called_once()
 
 
-from biosonic.handle import boundaries_from_raven, audio_segments_from_raven
+from biosonic.handle import audio_segments_from_raven, boundaries_from_raven
 
 
 @pytest.fixture

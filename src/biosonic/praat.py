@@ -1,6 +1,7 @@
-import textgrids
-from typing import Union
 from pathlib import Path
+from typing import Union
+
+import textgrids
 
 
 def _read_textgrid(

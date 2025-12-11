@@ -1,8 +1,9 @@
+from typing import Any, Literal, Optional, Tuple, Union
+
 import numpy as np
 from numpy.typing import ArrayLike
-from typing import Optional, Any, Literal, Union, Tuple
-
 from scipy.signal import butter, filtfilt
+
 from biosonic.compute.utils import hz_to_mel, mel_to_hz
 
 

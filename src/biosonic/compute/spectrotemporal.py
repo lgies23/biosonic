@@ -1,16 +1,17 @@
-from typing import Optional, Tuple, Union, Dict, Literal, Any, List
-import numpy as np
-from numpy.typing import NDArray, ArrayLike
-from scipy import signal
-from scipy.fft import ifft, fft, rfft
-from scipy.fftpack import dct
-from scipy.spatial.distance import cdist
-from scipy.linalg import solve
+from typing import Any, Dict, List, Literal, Optional, Tuple, Union
 
-from .temporal import temporal_entropy
+import numpy as np
+from numpy.typing import ArrayLike, NDArray
+from scipy import signal
+from scipy.fft import fft, ifft, rfft
+from scipy.fftpack import dct
+from scipy.linalg import solve
+from scipy.spatial.distance import cdist
+
+from ..filter import linear_filterbank, log_filterbank, mel_filterbank
 from .spectral import power_spectral_entropy
+from .temporal import temporal_entropy
 from .utils import check_signal_format, check_sr_format, window_signal
-from ..filter import linear_filterbank, mel_filterbank, log_filterbank
 
 
 def spectrogram(

@@ -1,8 +1,9 @@
-from numpy.typing import ArrayLike, NDArray
+from typing import Any, List, Optional, Tuple
+
 import numpy as np
-from scipy.fft import rfft, irfft
+from numpy.typing import ArrayLike, NDArray
+from scipy.fft import irfft, rfft
 from scipy.signal import windows
-from typing import Tuple, List, Optional, Any
 
 from biosonic.compute.utils import frame_signal
 

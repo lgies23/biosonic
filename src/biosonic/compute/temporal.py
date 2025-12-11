@@ -1,14 +1,16 @@
+import warnings
+from typing import Any, Dict, Literal, Optional, Tuple, Union
+
 import numpy as np
-from numpy.typing import NDArray, ArrayLike
+from numpy.typing import ArrayLike, NDArray
 from scipy import signal
 from scipy.stats import kurtosis, skew
-from typing import Optional, Tuple, Union, Dict, Literal, Any
-import warnings
+
 from .utils import (
-    exclude_trailing_and_leading_zeros,
     check_signal_format,
     check_sr_format,
     cumulative_distribution_function,
+    exclude_trailing_and_leading_zeros,
     shannon_entropy
 )
 

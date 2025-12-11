@@ -1,7 +1,8 @@
+import unittest
+
 import numpy as np
 import pytest
 from numpy.testing import assert_array_almost_equal
-import unittest
 
 
 def test_amplitude_envelope():
@@ -131,6 +132,7 @@ def test_temporal_kurtosis():
 def test_spectrum():
     import numpy as np
     import pytest
+
     from biosonic.compute.spectral import spectrum
 
     # basic amplitude spectrum
@@ -513,8 +515,9 @@ class TestPowerSpectralEntropy(unittest.TestCase):
             power_spectral_entropy(signal, self.sample_rate, unit="watts")
 
 
-from biosonic.compute.temporal import temporal_entropy
 from scipy.signal import chirp
+
+from biosonic.compute.temporal import temporal_entropy
 
 
 class TestTemporalEntropy(unittest.TestCase):
@@ -565,8 +568,8 @@ class TestTemporalEntropy(unittest.TestCase):
             temporal_entropy(signal, unit="invalid_unit")
 
 
-from biosonic.compute.spectrotemporal import spectrotemporal_entropy
 from biosonic.compute.spectral import power_spectral_entropy
+from biosonic.compute.spectrotemporal import spectrotemporal_entropy
 from biosonic.compute.temporal import temporal_entropy
 
 
