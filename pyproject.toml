@@ -53,3 +53,16 @@ Homepage = "https://github.com/lenag23/biosonic.git"
 Documentation = "https://readthedocs.org"
 Repository = "https://github.com/lenag23/biosonic.git"
 "Bug Tracker" = "https://github.com/lenag23/biosonic/issues"
+
+[tool.flake8]
+max-line-length = 160
+max-doc-length = 100
+extend-ignore = [
+  "E125",  # reenable later?
+  "E741",
+  "W505",  # for now, ignore too long docstrings
+]
+per-file-ignores = [
+  "__init__.py:F401",
+  "tests/*:E402,F811",  # Remove after splitting up tests?
+]
