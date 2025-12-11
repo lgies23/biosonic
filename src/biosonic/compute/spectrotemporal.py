@@ -220,7 +220,7 @@ def cepstral_coefficients(
 
         Parameters:
         - cc: Cepstral coefficients (2D array: frames x coefficients)
-        - D: Liftering parameter (default 22, typical for MFCCs)
+        - D: Liftering parameter (default 22)
 
         Returns:
         - Lifted cepstral coefficients

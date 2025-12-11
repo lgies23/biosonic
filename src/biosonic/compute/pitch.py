@@ -406,19 +406,6 @@ def boersma(
         candidates = [(0.0, unvoiced_strength)] + voiced_candidates
         all_candidates.append(candidates)
 
-    # for i, cands in enumerate(all_candidates[:-5]):
-    #     print(f"Frame {i}:")
-    #     for pitch, strength in cands:
-    #         print(f"  Pitch: {pitch:.2f} Hz, Strength: {strength:.3f}")
-
-    # fig, axs = plt.subplots(2, 3)
-    # axs[0][0].plot(frame)
-    # axs[0][1].plot(window)
-    # axs[0][2].plot(windowed_frame)
-    # axs[1][0].plot(lag_domain)
-    # axs[1][1].plot(autocorr_hann)
-    # axs[1][2].plot(sampled_autocorr)
-
     time_points = np.arange(len(framed_signal)) * timestep
     pitch_track = _viterbi_pitch_path(
         all_candidates,

@@ -33,7 +33,7 @@ Python 3.10 and above are supported. Python 3.9 may be prone to some errors due 
 
 For now, clone the repository and run this command inside its root: 
 ```
-pip install -e . 
+pip install -e .
 ```
 
 ### Executing

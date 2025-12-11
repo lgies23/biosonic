@@ -371,7 +371,7 @@ def plot_features(
 
     # Waveform
     ax3 = fig.add_subplot(3, 1, 3)
-    ax3.set_title("Waveform with Energy Envelope and Time-domain Features")
+    ax3.set_title("Waveform with Amplitude Envelope and Time-domain Features")
     times_waveform = np.linspace(0, len(data) / sr, num=len(data))
     ax3.plot(times_waveform, data, label="Waveform", color="gray", alpha=0.3)
     ax3.plot(times_waveform, features["amplitude_envelope"], label="Amplitude Envelope", color="blue")
