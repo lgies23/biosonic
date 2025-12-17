@@ -14,7 +14,7 @@ ignore_missing_imports = true
 strict = true
 show_error_codes = true
 pretty = true
-exclude = ["tests/", "build/", "dist/"]
+exclude = ["tests/", "build/", "dist/", "docs/", "normalized/"]
 
 [project]
 name = "biosonic"
@@ -30,6 +30,7 @@ requires-python = ">=3.9"
 authors = [
   {name = "Lena Gies", email = "a12113065@unet.univie.ac.at"},
   {name = "Tecumseh Fitch", email = "tecumseh.fitch@unet.univie.ac.at"},
+  {name = "Yannick Jadoul", email="yannick.jadoul@uniroma1.it"}
 ]
 maintainers = [
   {name = "Lena Gies", email = "a12113065@unet.univie.ac.at"}
@@ -50,7 +51,7 @@ praat = ["praat-textgrids>=1.4.0"]
 
 [project.urls]
 Homepage = "https://github.com/lenag23/biosonic.git"
-Documentation = "https://readthedocs.org"
+Documentation = "https://readthedocs.org" # update after registering
 Repository = "https://github.com/lenag23/biosonic.git"
 "Bug Tracker" = "https://github.com/lenag23/biosonic/issues"
 
