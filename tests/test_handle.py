@@ -1,8 +1,10 @@
-import numpy as np
-import pytest
-import pandas as pd
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
+
+import numpy as np
+import pandas as pd
+import pytest
+
 
 def test_convert_dtype():
     from biosonic.handle import convert_dtype
@@ -11,7 +13,7 @@ def test_convert_dtype():
     # invalid string
     with pytest.raises(ValueError):
         convert_dtype(original, "invalid")
-    
+
     # int16 -> float32 -> int16
     float_data = convert_dtype(original, "float32")
     recovered = convert_dtype(float_data, "int16")
@@ -29,6 +31,7 @@ def test_convert_dtype():
 @pytest.fixture
 def mono_signal():
     return np.linspace(-1.0, 1.0, 44100)
+
 
 @pytest.fixture
 def stereo_signal(mono_signal):
@@ -91,7 +94,9 @@ def test_convert_channels(mono_signal, stereo_signal):
 
 def test_read_wav(tmp_path):
     from scipy.io import wavfile
+
     from biosonic.handle import read_wav
+
     # create dummy WAV file
     sr = 44100
     data = (np.sin(2 * np.pi * 440 * np.arange(44100) / sr) * 32767).astype(np.int16)
@@ -116,6 +121,7 @@ def test_read_wav(tmp_path):
 @patch("biosonic.compute.utils.extract_all_features")
 def test_batch_extract_features(mock_extract, mock_read, mock_glob, tmp_path):
     from biosonic.handle import batch_extract_features
+
     # success
     mock_file = MagicMock(spec=Path)
     mock_file.name = "mocked.wav"
@@ -131,11 +137,11 @@ def test_batch_extract_features(mock_extract, mock_read, mock_glob, tmp_path):
     df = batch_extract_features(str(tmp_path))
 
     assert isinstance(df, pd.DataFrame)
-    assert df.shape[0] == 2 # because glob is called two times
+    assert df.shape[0] == 2  # because glob is called two times
     assert 'filename' in df.columns
     assert 'feature1' in df.columns
     assert df['filename'].iloc[0] == "mocked.wav"
-    
+
     # csv output
     csv_path = tmp_path / "output.csv"
     df = batch_extract_features(str(tmp_path), save_csv_path=str(csv_path))
@@ -178,12 +184,12 @@ def test_batch_read_files(mock_read, mock_glob, tmp_path):
     df = batch_read_files_to_df(str(tmp_path))
 
     assert isinstance(df, pd.DataFrame)
-    assert df.shape[0] == 2 # because glob is called two times
+    assert df.shape[0] == 2  # because glob is called two times
     assert 'filename' in df.columns
     assert 'sr' in df.columns
     assert 'waveform' in df.columns
     assert df['filename'].iloc[0] == "mocked.wav"
-    
+
     # csv output
     csv_path = tmp_path / "output.csv"
     df = batch_read_files_to_df(str(tmp_path), save_csv_path=str(csv_path))
@@ -214,11 +220,12 @@ def sample_data():
     data = np.sin(2 * np.pi * 5 * t)  # 5 Hz sine wave
     return data, sr
 
+
 def test_segments_from_signal(sample_data):
     from biosonic.handle import segments_from_signal
 
     def assert_segment_correct(data, segment, sr, start_time, end_time):
-        expected = data[int(np.floor(start_time * sr)) : int(np.ceil(end_time * sr))]
+        expected = data[int(np.floor(start_time * sr)):int(np.ceil(end_time * sr))]
         np.testing.assert_array_equal(segment, expected)
 
     # dict
@@ -257,8 +264,8 @@ def test_segments_from_signal(sample_data):
         segments_from_signal(data, sr, "not a valid boundary")
 
 
+from biosonic.handle import audio_segments_from_textgrid, boundaries_from_textgrid
 
-from biosonic.handle import boundaries_from_textgrid, audio_segments_from_textgrid
 
 @pytest.fixture
 def mock_selection_data():
@@ -269,12 +276,14 @@ def mock_selection_data():
         {"begin": 1.5, "end": 2.0, "label": "c"}
     ]
 
+
 @pytest.fixture
 def sample_audio():
     sr = 1000
     duration = 2  # seconds
     data = np.random.randn(sr * duration)
     return data, sr
+
 
 @patch("biosonic.praat._read_textgrid")
 def test_boundaries_from_textgrid(mock_read_textgrid, mock_selection_data):
@@ -322,7 +331,8 @@ def test_audio_segments_from_textgrid(
     mock_plot.assert_called_once()
 
 
-from biosonic.handle import boundaries_from_raven, audio_segments_from_raven
+from biosonic.handle import audio_segments_from_raven, boundaries_from_raven
+
 
 @pytest.fixture
 def mock_selection_df():

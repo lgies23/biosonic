@@ -1,19 +1,21 @@
+import warnings
+from typing import Any, Dict, Literal, Optional, Tuple, Union
+
 import numpy as np
-from numpy.typing import NDArray, ArrayLike
+from numpy.typing import ArrayLike, NDArray
 from scipy import fft
 from scipy.stats import gmean
-from typing import Optional, Tuple, Union, Any, Dict, Literal
-import warnings
-from .utils import  (
-    exclude_trailing_and_leading_zeros, 
-    check_signal_format,  
-    check_sr_format,  
-    cumulative_distribution_function,  
+
+from .utils import (
+    check_signal_format,
+    check_sr_format,
+    cumulative_distribution_function,
+    exclude_trailing_and_leading_zeros,
     shannon_entropy
 )
 
 
-def spectrum(data: ArrayLike, 
+def spectrum(data: ArrayLike,
              sr: Optional[int] = None,
              mode: Union[str, int, float] = 'amplitude') -> Tuple[Optional[NDArray[np.float32]], NDArray[np.float32]]:
     """
@@ -22,9 +24,9 @@ def spectrum(data: ArrayLike,
     Parameters
     ----------
         data : ArrayLike
-            The input time-domain signal as a 1D array-like. 
+            The input time-domain signal as a 1D array-like.
         sr: Optional Integer, default=None
-            Sampling rate in Hz as an integer. If given, returns the frequency bins 
+            Sampling rate in Hz as an integer. If given, returns the frequency bins
             of the magnitude spectrum. Defaults to None.
         mode : Union[str, int], default='amplitude'
             Specifies how to compute the spectrum:
@@ -38,7 +40,7 @@ def spectrum(data: ArrayLike,
             A tuple (frequencies, spectrum), where:
             - frequencies: If sr is provided. 1D array of frequency bins corresponding to the spectrum.
             - spectrum: 1D array of the transformed frequency-domain representation (magnitude raised to the specified power).
-    
+
     Raises
     ------
         ValueError
@@ -53,11 +55,11 @@ def spectrum(data: ArrayLike,
     if data.size == 0:
         warnings.warn("Input signal is empty; returning an empty spectrum.", RuntimeWarning)
         return freqs, np.array([], dtype=np.float32)
-    
+
     if sr is not None:
         sr = check_sr_format(sr)
         freqs = fft.rfftfreq(len(data), d=1/sr)
-    
+
     magnitude_spectrum = np.abs(fft.rfft(data))
 
     if isinstance(mode, str):
@@ -130,13 +132,13 @@ def quartiles(data: ArrayLike, sr: int) -> Tuple[float, float, float]:
         raise ValueError("Input is empty")
     if np.all(data == 0):
         raise ValueError("Signal contains no nonzero values")
-    
+
     frequencies, envelope = spectrum(data, sr=sr, mode="power")
     cdf = cumulative_distribution_function(envelope)
 
-    if frequencies is None or len(frequencies) != len(envelope): 
-        raise ValueError("Freuency bins don't match envelope") 
-    
+    if frequencies is None or len(frequencies) != len(envelope):
+        raise ValueError("Freuency bins don't match envelope")
+
     return frequencies[np.searchsorted(cdf, 0.25)], frequencies[np.searchsorted(cdf, 0.5)], frequencies[np.searchsorted(cdf, 0.75)]
 
 
@@ -144,8 +146,8 @@ def flatness(data: ArrayLike) -> Union[float, np.floating[Any]]:
     """
     Compute the spectral flatness (also known as Wiener entropy) of a signal.
 
-    Spectral flatness is a measure of how noise-like a signal is. A flatness close to 1 
-    indicates a flat (white noise-like) spectrum, whereas a value close to 0 indicates 
+    Spectral flatness is a measure of how noise-like a signal is. A flatness close to 1
+    indicates a flat (white noise-like) spectrum, whereas a value close to 0 indicates
     a peaky (tonal) spectrum.
 
     Parameters
@@ -156,7 +158,7 @@ def flatness(data: ArrayLike) -> Union[float, np.floating[Any]]:
     Returns
     -------
         float
-            Spectral flatness value, defined as the ratio of the geometric mean to the arithmetic mean 
+            Spectral flatness value, defined as the ratio of the geometric mean to the arithmetic mean
             of the signal's power spectrum (excluding leading/trailing zeros).
 
     Raises
@@ -178,7 +180,7 @@ def flatness(data: ArrayLike) -> Union[float, np.floating[Any]]:
     ps_wo_zeros = exclude_trailing_and_leading_zeros(envelope)
     if len(ps_wo_zeros) == 0:
         raise ValueError("Input signal contained only zero values")
-    
+
     flatness_ = gmean(ps_wo_zeros) / np.mean(ps_wo_zeros)
     if not np.isscalar(flatness_) or not isinstance(flatness_, (float, np.floating)):
         raise ValueError(f"Received wrong data type for spectral flatness: {type(flatness_)}")
@@ -187,7 +189,7 @@ def flatness(data: ArrayLike) -> Union[float, np.floating[Any]]:
 
 
 def spectral_moments(
-        data: ArrayLike, 
+        data: ArrayLike,
         sr: int
         ) -> Tuple[
             Union[float, np.floating[Any]],
@@ -202,7 +204,7 @@ def spectral_moments(
     ----------
     data : ArrayLike
         1D array-like representing the input signal.
-    sampling_rate : float 
+    sampling_rate : float
         Sampling rate of the signal in Hz.
 
     Returns
@@ -215,11 +217,11 @@ def spectral_moments(
             Spectral skewness
         float or np.floating
             Spectral kurtosis
-            
+
 
     References
     ----------
-        Klapuri A, Davy M. 2006 Signal processing methods for music transcription. 
+        Klapuri A, Davy M. 2006 Signal processing methods for music transcription.
         New York: Springer. p.136
     """
     data = check_signal_format(data)
@@ -230,7 +232,7 @@ def spectral_moments(
 
     freqs, ms = spectrum(data, sr=sr)
     # normalize spectrum
-    ms =  ms / np.sum(ms) 
+    ms = ms / np.sum(ms)
     centroid_ = np.average(freqs, weights=ms)
     bandwidth_ = np.sqrt(np.sum(ms * (freqs-centroid_)**2))
     if bandwidth_ == 0:
@@ -242,30 +244,30 @@ def spectral_moments(
     return centroid_, bandwidth_, skewness_, kurtosis_
 
 
-def centroid(data: ArrayLike, sr: int)-> Union[float, np.floating[Any]]:
+def centroid(data: ArrayLike, sr: int) -> Union[float, np.floating[Any]]:
     r"""
     Compute the spectral centroid of a signal.
 
     The spectral centroid represents the "center of mass" of the power spectrum,
-    giving a measure of where the energy of the spectrum is concentrated. It is 
-    calculated as the first spectral moment, or the weighted average of the frequency components, using the 
-    magnitude spectrum as weights: 
-        
+    giving a measure of where the energy of the spectrum is concentrated. It is
+    calculated as the first spectral moment, or the weighted average of the frequency components, using the
+    magnitude spectrum as weights:
+
         .. math::
             C_f=\sum_{k \epsilon K_+}k X(k)
-    
+
     Parameters
     ----------
         data : ArrayLike
             Input time-domain signal. Must be one-dimensional and convertible to a NumPy array.
-        
+
         sr : int
             Sampling rate of the input signal in Hz.
 
     Returns
     -------
         float or np.floating
-            Spectral centroid in Hz. A higher value indicates that the signal's energy 
+            Spectral centroid in Hz. A higher value indicates that the signal's energy
             is biased toward higher frequencies.
 
     Raises
@@ -282,22 +284,22 @@ def centroid(data: ArrayLike, sr: int)-> Union[float, np.floating[Any]]:
 
     References
     ----------
-        Klapuri A, Davy M. 2006 Signal processing methods for music transcription. 
+        Klapuri A, Davy M. 2006 Signal processing methods for music transcription.
         New York: Springer. p.136
     """
-    centroid_,_,_,_ = spectral_moments(data, sr)
+    centroid_, _, _, _ = spectral_moments(data, sr)
 
     return centroid_
 
 
 def bandwidth(data: ArrayLike, sr: int) -> Union[float, np.floating[Any]]:
     r"""
-    Compute the mean spectral bandwidth (standard deviation or second spectral moment) of a signal. 
+    Compute the mean spectral bandwidth (standard deviation or second spectral moment) of a signal.
     It is calculated as
 
         .. math::
             S_f=S_f=\sqrt{\sum_{k \epsilon K_+}(k-C_f)^2 X(k)}
-        
+
     Parameters
     ----------
         data : ArrayLike
@@ -309,7 +311,7 @@ def bandwidth(data: ArrayLike, sr: int) -> Union[float, np.floating[Any]]:
     -------
         float or np.floating
             The standard deviation of the signal.
-    
+
     Examples
     --------
         >>> import numpy as np
@@ -319,23 +321,23 @@ def bandwidth(data: ArrayLike, sr: int) -> Union[float, np.floating[Any]]:
 
     References
     ----------
-        Klapuri A, Davy M. 2006 Signal processing methods for music transcription. 
+        Klapuri A, Davy M. 2006 Signal processing methods for music transcription.
         New York: Springer. p.136
     """
-    _,bandwidth_,_,_ = spectral_moments(data, sr)
+    _, bandwidth_, _, _ = spectral_moments(data, sr)
 
-    return bandwidth_ # TODO change to variance and let people define bandwidth through percentiles
+    return bandwidth_  # TODO change to variance and let people define bandwidth through percentiles
 
 
 def skewness(data: ArrayLike, sr: int) -> Union[float, np.floating[Any]]:
     r"""
-    Compute the spectral skewness (third spectral moment) of a signal. 
-    The skewness describes the asymmetry of the spectrum 
+    Compute the spectral skewness (third spectral moment) of a signal.
+    The skewness describes the asymmetry of the spectrum
     around the spectral centroid and is calculated as
 
         .. math::
             \gamma_1=\frac{\sum_{k \epsilon K_+}(k-C_f)^3 X(k)}{S_f^3}
-        
+
     Parameters
     ----------
     data : ArrayLike
@@ -347,28 +349,28 @@ def skewness(data: ArrayLike, sr: int) -> Union[float, np.floating[Any]]:
     -------
         float or np.floating
             The skewness of the signal.
-    
+
     References
     ----------
-        Klapuri A, Davy M. 2006 Signal processing methods for music transcription. 
+        Klapuri A, Davy M. 2006 Signal processing methods for music transcription.
         New York: Springer. p.136
     """
     data = check_signal_format(data)
     sr = check_sr_format(sr)
 
-    _,_,skew,_ = spectral_moments(data, sr)
+    _, _, skew, _ = spectral_moments(data, sr)
     return skew
 
 
 def kurtosis(data: ArrayLike, sr: int) -> Union[float, np.floating[Any]]:
     r"""
-    Compute the spectral kurtosis (fourth spectral moment) of a signal. 
-    The skewness describes the 'peakedness' of the spectrum 
+    Compute the spectral kurtosis (fourth spectral moment) of a signal.
+    The skewness describes the 'peakedness' of the spectrum
     and is calculated as
 
         .. math::
             \gamma_2=\frac{\sum_{k \epsilon K_+}(k-C_f)^4 X(k)}{S_f^4}
-        
+
     Parameters
     ----------
     data : ArrayLike
@@ -380,16 +382,16 @@ def kurtosis(data: ArrayLike, sr: int) -> Union[float, np.floating[Any]]:
     -------
         float or np.floating
             The kurtosis of the signal.
-    
+
     References
     ----------
-        Klapuri A, Davy M. 2006 Signal processing methods for music transcription. 
+        Klapuri A, Davy M. 2006 Signal processing methods for music transcription.
         New York: Springer. p.136
     """
     data = check_signal_format(data)
     sr = check_sr_format(sr)
 
-    _,_,_,kurt = spectral_moments(data, sr)
+    _, _, _, kurt = spectral_moments(data, sr)
     return kurt
 
 
@@ -405,7 +407,7 @@ def peak_frequency(data: ArrayLike, sr: int) -> Union[float, np.floating[Any]]:
     ----------
     data : ArrayLike
         1D array-like representing the input signal.
-    sampling_rate : float 
+    sampling_rate : float
         Sampling rate of the signal in Hz.
 
     Returns
@@ -440,11 +442,11 @@ def peak_frequency(data: ArrayLike, sr: int) -> Union[float, np.floating[Any]]:
 
 
 def power_spectral_entropy(
-        data: ArrayLike, 
-        sr: int, 
+        data: ArrayLike,
+        sr: int,
         unit: Literal["bits", "nat", "dits", "bans", "hartleys"] = "bits",
-        *args : Any, 
-        **kwargs : Any
+        *args: Any,
+        **kwargs: Any
         ) -> Tuple[float, float]:
     """
     Calculates the power spectral entropy as follows:
@@ -458,12 +460,12 @@ def power_spectral_entropy(
         sr : int
             Sampling rate in Hz.
         unit : str, optional
-            Desired unit of the entropy, determines the logarithmic base used for calculatein. 
+            Desired unit of the entropy, determines the logarithmic base used for calculatein.
             Choose from "bits" (log2), "nat" (ln), or "dits"/"bans"/"hartleys" (log10).
             Defaults to "bits".
 
     Returns:
-        float 
+        float
             Power spectral entropy.
     References:
         1. https://de.mathworks.com/help/signal/ref/spectralentropy.html accessed January 13th, 2025. 18:34 pm
@@ -474,18 +476,18 @@ def power_spectral_entropy(
     data = check_signal_format(data)
     sr = check_sr_format(sr)
 
-    # _, psd = signal.welch(data, sr, nperseg=N_FFT, noverlap=N_FFT//HOP_OVERLAP) # would return psd - frequency spectrum squared and scaled by sum - 
+    # _, psd = signal.welch(data, sr, nperseg=N_FFT, noverlap=N_FFT//HOP_OVERLAP) # would return psd - frequency spectrum squared and scaled by sum -
     _, psd = spectrum(data, sr, mode="power")
     psd = exclude_trailing_and_leading_zeros(psd)
 
-    psd_sum : float = np.sum(psd)
+    psd_sum: float = np.sum(psd)
     psd_norm = psd / psd_sum
     # Ensure no zero values in normalized power distribution because H is undefined with p=0
     psd_norm = psd_norm[psd_norm > 0]
     return shannon_entropy(psd_norm, unit, *args, **kwargs)
 
 
-def spectral_features(data: ArrayLike, 
+def spectral_features(data: ArrayLike,
                       sr: int,
                       ) -> Dict[str, Union[float, np.floating, NDArray[np.float64]]]:
     """
@@ -494,7 +496,7 @@ def spectral_features(data: ArrayLike,
     Args:
         data : ArrayLike
             The input signal as a 1D ArrayLike.
-        sr : int 
+        sr : int
             Sampling rate of the signal in Hz.
 
     Retuns:
@@ -517,17 +519,17 @@ def spectral_features(data: ArrayLike,
 
     fq_q1_bin, fq_median_bin, fq_q3_bin = quartiles(data, sr)
     freqs, ps = spectrum(data, sr, mode="power")
-    
+
     features = {
-        #"mean_frequency" : np.average(freqs, weights=ps), # because centroid is based on magnitude spectrum
+        # "mean_frequency" : np.average(freqs, weights=ps),  # because centroid is based on magnitude spectrum
         "fq_q1": fq_q1_bin,
         "fq_median": fq_median_bin,
         "fq_q3": fq_q3_bin,
         "spectral_flatness": flatness(data),
         "spectral_centroid": centroid(data, sr),
         "spectral_sd": bandwidth(data, sr),
-        "spectral_skew" : skewness(data, sr),
-        "spectral_kurtosis" : kurtosis(data, sr),
+        "spectral_skew": skewness(data, sr),
+        "spectral_kurtosis": kurtosis(data, sr),
         "peak_frequency": peak_frequency(data, sr),
         "pse": power_spectral_entropy(data, sr)[0]
     }

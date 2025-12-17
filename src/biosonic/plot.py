@@ -1,26 +1,26 @@
 import os
+from typing import Any, Dict, List, Literal, Optional, Tuple, Union
+
 import matplotlib.pyplot as plt
+import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
-import numpy as np
-from numpy.typing import ArrayLike, NDArray
-from typing import Optional, Any, Union, Literal, Tuple, List, Dict
+from numpy.typing import ArrayLike
 from pandas import DataFrame
 
-from biosonic.compute.spectrotemporal import cepstrum, spectrogram, cepstral_coefficients
 from biosonic.compute.spectral import spectrum
+from biosonic.compute.spectrotemporal import cepstral_coefficients, cepstrum, spectrogram
+from biosonic.compute.utils import check_signal_format, check_sr_format, extract_all_features
 from biosonic.filter import mel_filterbank
 
-from biosonic.compute.utils import extract_all_features, check_signal_format, check_sr_format
 
-    
 def plot_spectrogram(
         data: ArrayLike,
-        sr: Optional[int] = None, 
-        db_scale : bool = True, 
-        cmap : str = 'binary', 
-        title : Optional[str] = None,
-        db_ref : Optional[float] = None,
+        sr: Optional[int] = None,
+        db_scale: bool = True,
+        cmap: str = 'binary',
+        title: Optional[str] = None,
+        db_ref: Optional[float] = None,
         dynamic_range: Optional[float] = 100,
         flim: Optional[Tuple[float, float]] = None,
         tlim: Optional[Tuple[float, float]] = None,
@@ -89,41 +89,41 @@ def plot_spectrogram(
     # Precomputed spectrogram
     if isinstance(data, tuple) and len(data) == 3:
         Sx, t, f = data
-    
+
     # Raw signal + sr
     elif isinstance(data, np.ndarray):
         if sr is None:
             raise ValueError("sr must be provided when passing a signal array.")
         Sx, t, f = spectrogram(
-        data=data,
-        sr=sr,
-        window_length=window_length,
-        window=window,
-        overlap=overlap,
-        noisereduction=noisereduction,
-        complex_output=False
-    )
-    
+            data=data,
+            sr=sr,
+            window_length=window_length,
+            window=window,
+            overlap=overlap,
+            noisereduction=noisereduction,
+            complex_output=False
+        )
+
     else:
         raise TypeError("data must be either a (S, t, f) tuple or a 1D np.ndarray signal")
 
-    if freq_scale=="mel":
+    if freq_scale == "mel":
         if sr is None:
             raise ValueError("Sample rate must be provided for mel frequency scale.")
 
         fmin = flim[0] if flim else 0.0
         fmax = flim[1] if flim and flim[1] else sr / 2
-        
+
         fb, f_centers = mel_filterbank(n_bands, window_length, sr, fmin=fmin, fmax=fmax, corner_frequency=corner_frequency, after=after)
         f = f_centers
-        #Sx : np.ndarray = np.einsum("...ft,mf->...mt", Sx, fb, optimize=True)
+        # Sx : np.ndarray = np.einsum("...ft,mf->...mt", Sx, fb, optimize=True)
         Sx = fb @ Sx
 
     # Apply dB scale
     if db_scale:
         ref = np.max(Sx) if db_ref is None else db_ref
         Sx = 20 * np.log10(Sx / ref)
-        
+
         if dynamic_range is not None:
             if dynamic_range is not None:
                 Sx = np.maximum(Sx, -dynamic_range)
@@ -145,7 +145,7 @@ def plot_spectrogram(
     # Plot
     if plot is not None:
         fig, ax = plot
-    else: 
+    else:
         fig, ax = plt.subplots(figsize=(10, 5))
 
     extent = (
@@ -161,7 +161,7 @@ def plot_spectrogram(
 
     if freq_scale == "log":
         ax.set_yscale("log")
-        ax.set_ylim(float(min(f[f>0])), float(f[-1]))
+        ax.set_ylim(float(min(f[f > 0])), float(f[-1]))
 
     if title is None:
         title = f"{freq_scale}-scaled spectrogram"
@@ -173,19 +173,19 @@ def plot_spectrogram(
 
     if plot is None:
         plt.show()
-    
+
     return fig, ax
 
 
 def plot_cepstrum(
-        data : ArrayLike,
-        sr : int, 
-        min_quefrency : Optional[float] = None,
+        data: ArrayLike,
+        sr: int,
+        min_quefrency: Optional[float] = None,
         max_quefrency: Optional[float] = None,
-        log_scale : bool = False, 
-        ylim : Optional[Tuple[float, float]] = None,
-        title : Optional[str] = None,
-        **kwargs : Any
+        log_scale: bool = False,
+        ylim: Optional[Tuple[float, float]] = None,
+        title: Optional[str] = None,
+        **kwargs: Any
 ) -> None:
     """
     Plot the cepstrum against quefrency (in seconds).
@@ -229,75 +229,75 @@ def plot_cepstrum(
 
 
 def plot_cepstral_coefficients(
-        data : ArrayLike, 
-        sr : int, 
-        window_length : int, 
-        n_filters : int = 32, 
-        n_ceps : int = 40,
+        data: ArrayLike,
+        sr: int,
+        window_length: int,
+        n_filters: int = 32,
+        n_ceps: int = 40,
         pre_emphasis: float = 0.97,
         fmin: float = 0.0,
         fmax: Optional[float] = None,
         filterbank_type: Literal["mel", "linear", "log"] = "mel",
-        cmap : Optional[str] = "grey",
-        **kwargs : Any
+        cmap: Optional[str] = "grey",
+        **kwargs: Any
     ) -> None:
-        """
-        Compute and plot cepstral coefficients over time from audio data.
+    """
+    Compute and plot cepstral coefficients over time from audio data.
 
-        This function calculates cepstral coefficients using a specified filterbank 
-        type and visualizes them with time on the x-axis and 
-        cepstral coefficient indices on the y-axis.
+    This function calculates cepstral coefficients using a specified filterbank
+    type and visualizes them with time on the x-axis and
+    cepstral coefficient indices on the y-axis.
 
-        Parameters
-        ----------
-        data : ArrayLike
-            Input audio signal (1D array-like).
-        sr : int
-            Sampling rate of the audio signal in Hz.
-        window_length : int
-            Length of the analysis window in samples.
-        n_filters : int, optional
-            Number of filters in the filterbank. Default is 32.
-        n_ceps : int, optional
-            Number of cepstral coefficients to compute and plot. Default is 40.
-        pre_emphasis : float, optional
-            Pre-emphasis filter coefficient. Default is 0.97.
-        fmin : float, optional
-            Minimum frequency for the filterbank in Hz. Default is 0.0.
-        fmax : float, optional
-            Maximum frequency for the filterbank in Hz. Defaults to Nyquist frequency if None.
-        filterbank_type : {'mel', 'linear', 'log'}, optional
-            Type of filterbank to use for cepstral coefficient calculation.
-            Default is 'mel'.
-        cmap : str or None, optional
-            Matplotlib colormap name for plotting. Default is 'grey'.
-        **kwargs : dict, optional
-            Additional keyword arguments passed to the cepstral_coefficients function.
-        """
-        ceps = cepstral_coefficients(
-            data, 
-            sr, 
-            window_length, 
-            n_filters, 
-            n_ceps, 
-            pre_emphasis=pre_emphasis, 
-            fmin=fmin,
-            fmax=fmax,
-            filterbank_type=filterbank_type,
-            **kwargs)
-        
-        times = np.linspace(0, len(data) / sr, ceps.shape[0])
-        plt.xlabel("Time [s]")
-        plt.ylabel("Cepstral Coefficient Index")
-        plt.imshow(ceps, origin="lower", aspect="auto", extent=(times[0], times[-1], 0, n_ceps), cmap=cmap)
+    Parameters
+    ----------
+    data : ArrayLike
+        Input audio signal (1D array-like).
+    sr : int
+        Sampling rate of the audio signal in Hz.
+    window_length : int
+        Length of the analysis window in samples.
+    n_filters : int, optional
+        Number of filters in the filterbank. Default is 32.
+    n_ceps : int, optional
+        Number of cepstral coefficients to compute and plot. Default is 40.
+    pre_emphasis : float, optional
+        Pre-emphasis filter coefficient. Default is 0.97.
+    fmin : float, optional
+        Minimum frequency for the filterbank in Hz. Default is 0.0.
+    fmax : float, optional
+        Maximum frequency for the filterbank in Hz. Defaults to Nyquist frequency if None.
+    filterbank_type : {'mel', 'linear', 'log'}, optional
+        Type of filterbank to use for cepstral coefficient calculation.
+        Default is 'mel'.
+    cmap : str or None, optional
+        Matplotlib colormap name for plotting. Default is 'grey'.
+    **kwargs : dict, optional
+        Additional keyword arguments passed to the cepstral_coefficients function.
+    """
+    ceps = cepstral_coefficients(
+        data,
+        sr,
+        window_length,
+        n_filters,
+        n_ceps,
+        pre_emphasis=pre_emphasis,
+        fmin=fmin,
+        fmax=fmax,
+        filterbank_type=filterbank_type,
+        **kwargs)
+
+    times = np.linspace(0, len(data) / sr, ceps.shape[0])
+    plt.xlabel("Time [s]")
+    plt.ylabel("Cepstral Coefficient Index")
+    plt.imshow(ceps, origin="lower", aspect="auto", extent=(times[0], times[-1], 0, n_ceps), cmap=cmap)
 
 
 def plot_features(
-        data: ArrayLike, 
+        data: ArrayLike,
         sr: int,
-        features : Optional[dict[str, Any]] = None,
+        features: Optional[dict[str, Any]] = None,
         spec_kwargs: Optional[dict[str, Any]] = None,
-        **kwargs : Any,
+        **kwargs: Any,
     ) -> None:
     """
     Plot audio signal features using precomputed feature dictionary.
@@ -343,7 +343,7 @@ def plot_features(
     )
 
     # Spectrum
-    ax2= fig.add_subplot(3, 1, 2)
+    ax2 = fig.add_subplot(3, 1, 2)
     ax2.set_title("Magnitude Spectrum with Spectral Features")
     if not isinstance(freq_ms, np.ndarray):
         raise TypeError("Expected 'freqs_ps' to be an ndarray.")
@@ -351,7 +351,7 @@ def plot_features(
         raise TypeError("Expected 'freqs_ps' to be an ndarray.")
     cutoff = len(freq_ms) // 3
     ax2.plot(freq_ms[:-cutoff], ms[:-cutoff], label="Magnitude Spectrum", color='blue')
-    
+
     ax2.axvline(features["peak_frequency"], color='orange', linestyle="-", label="Peak Frequency (kHz)")
     ax2.axvline(features["fq_median"], color='red', linestyle="--", label="Median")
     ax2.axvline(features["fq_q1"], color='yellow', linestyle="--", label="Q1")
@@ -396,15 +396,15 @@ def plot_features(
 
 
 def plot_pitch_candidates(
-        time_points : ArrayLike, 
-        all_candidates : ArrayLike, 
-        show_strongest : bool = True,
-        tlim : Optional[Tuple[float, float]] = None,
-        ax : Optional[Axes] = None
+        time_points: ArrayLike,
+        all_candidates: ArrayLike,
+        show_strongest: bool = True,
+        tlim: Optional[Tuple[float, float]] = None,
+        ax: Optional[Axes] = None
     ) -> Optional[Axes]:
     """
     Plot pitch candidates over time.
-    
+
     Parameters
     ----------
     time_points : list of float
@@ -413,7 +413,7 @@ def plot_pitch_candidates(
         List containing, for each frame, a list of (pitch, strength) tuples.
     show_strongest : bool
         If True, highlight the strongest voiced candidate per frame.
-    """    
+    """
     if ax is None:
         fig, ax = plt.subplots(figsize=(10, 5))
 
@@ -441,10 +441,10 @@ def plot_pitch_candidates(
                 times.append(t)
                 pitches.append(best[0])
         ax.scatter(times, pitches, color=(0.7, 0.1, 0.1, 0.3), marker="o", label='Strongest pitch candidate')
-    
+
     if tlim:
         ax.set_xlim(tlim)
-        
+
     if ax is None:
         plt.title("Autocorrelation based pitch tracking")
         plt.xlabel("Time [s]")
@@ -459,19 +459,19 @@ def plot_pitch_candidates(
 
 
 def plot_pitch_on_spectrogram(
-    data : ArrayLike,
-    sr : int,
-    time_points : ArrayLike,
-    all_candidates : ArrayLike,
-    window_length : int = 512,
-    overlap : int = 50,
-    show_strongest : bool = True,
-    db_scale : bool = True,
-    flim : Optional[Tuple[float, float]] = None,
-    tlim : Optional[Tuple[float, float]] = None,
-    title : str = "Spectrogram with Pitch Candidates",
-    cmap : str = 'binary',
-    plot : Optional[Tuple[Figure, Axes]] = None,
+    data: ArrayLike,
+    sr: int,
+    time_points: ArrayLike,
+    all_candidates: ArrayLike,
+    window_length: int = 512,
+    overlap: int = 50,
+    show_strongest: bool = True,
+    db_scale: bool = True,
+    flim: Optional[Tuple[float, float]] = None,
+    tlim: Optional[Tuple[float, float]] = None,
+    title: str = "Spectrogram with Pitch Candidates",
+    cmap: str = 'binary',
+    plot: Optional[Tuple[Figure, Axes]] = None,
     **kwargs
 ) -> None:
     """
@@ -512,15 +512,15 @@ def plot_pitch_on_spectrogram(
     """
     if plot is None:
         fig, ax = plt.subplots(figsize=(10, 5))
-    else: 
+    else:
         fig, ax = plot
-    
+
     plot_spectrogram(
         data,
         sr,
         overlap=overlap,
-        db_scale=db_scale, 
-        cmap=cmap, 
+        db_scale=db_scale,
+        cmap=cmap,
         flim=flim,
         tlim=tlim,
         title=title,
@@ -530,22 +530,22 @@ def plot_pitch_on_spectrogram(
     )
 
     plot_pitch_candidates(
-        time_points=time_points, 
-        all_candidates=all_candidates, 
+        time_points=time_points,
+        all_candidates=all_candidates,
         show_strongest=show_strongest,
         tlim=tlim,
         ax=ax,
         )
-    
+
     if plot is None:
         plt.show()
 
 
 def plot_boundaries_on_spectrogram(
-    data : ArrayLike,
-    sr : int,
-    segments : List[Dict[str, float]],
-    **kwargs : Any
+    data: ArrayLike,
+    sr: int,
+    segments: List[Dict[str, float]],
+    **kwargs: Any
     ) -> None:
     """
     Plot a spectrogram of the input audio data and overlay vertical lines indicating segment boundaries.
@@ -564,18 +564,18 @@ def plot_boundaries_on_spectrogram(
         Additional keyword arguments passed to the spectrogram plotting function.
     """
     fig, ax = plt.subplots()
-    
+
     plot_spectrogram(data, sr, plot=(fig, ax), **kwargs)
 
     tlim = kwargs.get("tlim", None)
 
-    for segment in segments: 
+    for segment in segments:
         if tlim is None or (segment["begin"] >= tlim[0] and segment["end"] <= tlim[1]):
             ax.axvline(segment["begin"], color='green', linestyle="--")
             ax.axvline(segment["end"], color='orange', linestyle="-")
-            
+
         # TODO labels
-        
+
     plt.show()
 
 
@@ -658,7 +658,7 @@ def plot_spectrogram_catalogue(
 
         for idx, (_, row) in enumerate(subset.iterrows()):
             r, c = divmod(idx, ncols)
-            ax_spec = axes[r, c]   
+            ax_spec = axes[r, c]
 
             snippet = row[column]
             if snippet is None:
@@ -671,7 +671,7 @@ def plot_spectrogram_catalogue(
                 row["waveform"],
                 sr,
                 title="|".join(str(row[col]) for col in title_columns),
-                plot=(fig, ax_spec), 
+                plot=(fig, ax_spec),
                 show_amplitude_bar=False,
                 **kwargs
             )

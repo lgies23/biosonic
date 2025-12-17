@@ -1,36 +1,39 @@
+import unittest
+
 import numpy as np
 import pytest
 from numpy.testing import assert_array_almost_equal
-import unittest
+
 
 def test_amplitude_envelope():
     from biosonic.compute.temporal import amplitude_envelope
-    
+
     # check basic signal without smoothing
     signal = np.array([0, 1, 2, 3, 2, 1, 0], dtype=np.float64)
     expected = np.array([0.73623886, 1.58098335, 2.38174929, 3, 2.38174929, 1.58098335, 0.73623886])
     assert_array_almost_equal(amplitude_envelope(signal), expected, decimal=5)
-    
+
     # check with kernel smoothing
     expected_smoothed = np.array([0.7724074, 1.56632383, 2.32091088, 2.58783286, 2.32091088, 1.56632383, 0.7724074])
     assert_array_almost_equal(amplitude_envelope(signal, kernel_size=3), expected_smoothed, decimal=4)
-    
+
     # check signal with leading and trailing zeros
     # TODO
 
     # check empty signal
     with pytest.warns(RuntimeWarning, match="Input signal is empty; returning an empty array."):
         assert len(amplitude_envelope(np.array([]))) == 0
-    
+
     # check signal with all zeros
     signal = np.array([0, 0, 0, 0], dtype=np.float64)
     expected = np.array([])
     assert_array_almost_equal(amplitude_envelope(signal), expected, decimal=5)
-    
+
     # check invalid input (2D array)
     signal = np.array([[1, 2, 3], [4, 5, 6]], dtype=np.float64)
     with pytest.raises(ValueError, match="Signal must be a 1D array"):
         amplitude_envelope(signal)
+
 
 def test_duration():
     from biosonic.compute.temporal import duration
@@ -40,35 +43,35 @@ def test_duration():
     sr = 10  # Sample rate
     expected = 0.5  # 5 samples / 10 samples per second
     assert duration(signal, sr, exclude_surrounding_silences=False) == expected
-    
+
     # check duration calculation with leading and trailing zeros (exclude_surrounding_silences=True)
     signal = np.array([0, 0, 1, 2, 3, 4, 5, 0, 0], dtype=np.float64)
     expected = 0.5  # only non-zero part -> 5 samples
     assert duration(signal, sr, exclude_surrounding_silences=True) == expected
-    
+
     # check duration with leading and trailing zeros but exclude_surrounding_silences=False
     expected = 0.9  # 9 samples / 10 samples per second
     assert duration(signal, sr, exclude_surrounding_silences=False) == expected
-    
+
     # check empty signal
     signal = np.array([], dtype=np.float64)
     expected = 0.0
     assert duration(signal, sr, exclude_surrounding_silences=True) == expected
     assert duration(signal, sr, exclude_surrounding_silences=False) == expected
-    
+
     # check all-zero signal
     signal = np.array([0, 0, 0, 0, 0], dtype=np.float64)
     expected_trimmed = 0.0
     expected_full = 0.5  # 5 samples / 10 samples per second
     assert duration(signal, sr, exclude_surrounding_silences=True) == expected_trimmed
     assert duration(signal, sr, exclude_surrounding_silences=False) == expected_full
-    
+
     # check invalid sample rate
     with pytest.raises(ValueError, match="Sample rate must be greater than zero"):
         duration(signal, 0)
     with pytest.raises(ValueError, match="Sample rate must be greater than zero"):
         duration(signal, -10)
-    
+
     # check invalid input (2D array)
     signal = np.array([[1, 2, 3], [4, 5, 6]], dtype=np.float64)
     with pytest.raises(ValueError, match="Signal must be a 1D array"):
@@ -77,54 +80,59 @@ def test_duration():
 
 def test_temporal_quartiles():
     from biosonic.compute.temporal import temporal_quartiles
-    
+
     # check basic case
     signal = np.array([0, 1, 2, 3, 2, 1, 0], dtype=np.float64)
     sr = 10
     q1, median, q3 = temporal_quartiles(signal, sr)
     assert 0 <= q1 < median < q3 <= len(signal) / sr
     # TODO check actual values
-    
+
     # check with a longer signal
     signal = np.array([0] * 10 + [1] * 80 + [0] * 10, dtype=np.float64)  # 100 samples
     sr = 20
     q1, median, q3 = temporal_quartiles(signal, sr)
     assert 0 <= q1 < median < q3 <= 5
     # TODO check actual values
-    
+
     # check empty signal
     signal = np.array([], dtype=np.float64)
     with pytest.raises(ValueError, match="Input is empty"):
         temporal_quartiles(signal, sr)
-    
+
     # check all-zero signal
     signal = np.array([0, 0, 0, 0, 0], dtype=np.float64)
     with pytest.raises(ValueError, match="Signal contains no nonzero values"):
         temporal_quartiles(signal, sr)
-    
+
     # check invalid sample rate
     with pytest.raises(ValueError, match="Sample rate must be greater than zero"):
         temporal_quartiles(signal, 0)
     with pytest.raises(ValueError, match="Sample rate must be greater than zero"):
         temporal_quartiles(signal, -10)
-    
+
     # check 2D input (invalid case)
     signal = np.array([[1, 2, 3], [4, 5, 6]], dtype=np.float64)
     with pytest.raises(ValueError, match="Signal must be a 1D array"):
         temporal_quartiles(signal, sr)
-    
+
+
 def test_temporal_sd():
     pass
+
 
 def test_temporal_skew():
     pass
 
+
 def test_temporal_kurtosis():
     pass
+
 
 def test_spectrum():
     import numpy as np
     import pytest
+
     from biosonic.compute.spectral import spectrum
 
     # basic amplitude spectrum
@@ -133,7 +141,7 @@ def test_spectrum():
     freqs, spec = spectrum(signal, mode='amplitude')
     assert freqs is None
     assert isinstance(spec, np.ndarray)
-    assert len(spec) == (len(signal) // 2 +1)
+    assert len(spec) == (len(signal) // 2 + 1)
     assert np.all(spec >= 0)
 
     # basic power spectrum
@@ -155,7 +163,7 @@ def test_spectrum():
 
     # check that invalid type raises error
     with pytest.raises(TypeError, match="must be a string, int or float"):
-        spectrum(signal, mode=(1,2))
+        spectrum(signal, mode=(1, 2))
 
     # check empty input
     empty_signal = np.array([], dtype=np.float64)
@@ -163,7 +171,7 @@ def test_spectrum():
         freqs_empty, spec_empty = spectrum(empty_signal, mode='amplitude')
         assert spec_empty.size == 0
         assert isinstance(spec_empty, np.ndarray)
-        assert freqs_empty == None
+        assert freqs_empty is None
 
     # check default = "amplitude"
     signal = np.array([0, 1, 0, -1], dtype=np.float64)
@@ -228,7 +236,7 @@ def test_spectrogram():
         sr=sr,
         window="hann",
         window_length=512,
-        overlap=0.5, 
+        overlap=0.5,
         complex_output=True
     )
 
@@ -239,9 +247,10 @@ def test_spectrogram():
     assert Sx.shape[0] == len(freqs)
     assert Sx.shape[1] == len(times)
 
+
 def test_spectral_quartiles(monkeypatch):
     from biosonic.compute.spectral import quartiles
-    
+
     # basic sinosoid
     sr = 1000
     t = np.linspace(0, 1, sr, endpoint=False)
@@ -266,6 +275,7 @@ def test_spectral_quartiles(monkeypatch):
     with pytest.raises(ValueError, match="Freuency bins don't match envelope"):
         quartiles(np.ones(100), 1000)
 
+
 def test_flatness():
     from biosonic.compute.spectral import flatness
 
@@ -289,14 +299,14 @@ def test_flatness():
     # empty input
     with pytest.raises(ValueError, match="Input signal contained only zero values"):
         flatness([])
-        
+
     # check output type
     y = flatness(np.random.randn(1024))
     assert isinstance(y, float) or isinstance(y, np.floating), f"Expected float output, got {type(y)}"
 
 
 def test_bandwidth():
-    #TODO
+    # TODO
     from biosonic.compute.spectral import bandwidth
 
     # constant signal
@@ -336,12 +346,14 @@ def test_centroid():
 
 
 from biosonic.compute.spectrotemporal import dominant_frequencies
+
+
 class TestDominantFrequencies(unittest.TestCase):
 
     def setUp(self):
         self.sample_rate = 1000  # Hz
         t = np.linspace(0, 1.0, self.sample_rate, endpoint=False)
-        
+
         # Single tone sine wave at 50 Hz
         self.sine_wave = np.sin(2 * np.pi * 50 * t)
 
@@ -395,6 +407,8 @@ class TestDominantFrequencies(unittest.TestCase):
 
 
 from biosonic.compute.utils import hz_to_mel
+
+
 class TestHzToMel(unittest.TestCase):
     def test_oshaughnessy_scalar(self):
         result = hz_to_mel(1000.0, after="oshaughnessy")
@@ -406,7 +420,7 @@ class TestHzToMel(unittest.TestCase):
         result = hz_to_mel(freqs, after="oshaughnessy")
         expected = 2595 * np.log(1 + freqs / 700)
         np.testing.assert_allclose(result, expected, rtol=1e-4)
-    
+
     def test_beranek_array(self):
         freqs = np.array([0, 100, 1000, 8000])
         result = hz_to_mel(freqs, after="beranek")
@@ -433,6 +447,8 @@ class TestHzToMel(unittest.TestCase):
 
 
 from biosonic.compute.spectral import power_spectral_entropy
+
+
 class TestPowerSpectralEntropy(unittest.TestCase):
     def setUp(self):
         self.sample_rate = 1000  # Hz
@@ -482,7 +498,7 @@ class TestPowerSpectralEntropy(unittest.TestCase):
         signal = np.sin(2 * np.pi * 5 * t)
         H, H_max = power_spectral_entropy(signal, self.sample_rate)
         self.assertTrue(isinstance(H, float))
-    
+
     def test_entropy_units_consistency(self):
         t = np.linspace(0, 1.0, self.sample_rate, endpoint=False)
         x = np.sin(2 * np.pi * 30 * t)
@@ -499,8 +515,11 @@ class TestPowerSpectralEntropy(unittest.TestCase):
             power_spectral_entropy(signal, self.sample_rate, unit="watts")
 
 
-from biosonic.compute.temporal import temporal_entropy
 from scipy.signal import chirp
+
+from biosonic.compute.temporal import temporal_entropy
+
+
 class TestTemporalEntropy(unittest.TestCase):
     def setUp(self):
         self.sample_rate = 1000  # Hz
@@ -523,7 +542,7 @@ class TestTemporalEntropy(unittest.TestCase):
         f1 = 300
         f2 = 400
         signal = chirp(self.time, f1, 10, f2) + np.random.normal(0, 1, size=self.time.shape)
-        H, H_max  = temporal_entropy(signal)
+        H, H_max = temporal_entropy(signal)
         self.assertGreater(H, 0.5, "Entropy of chirp with noise should be relatively high.")
 
     def test_noise_signal_entropy(self):
@@ -549,9 +568,11 @@ class TestTemporalEntropy(unittest.TestCase):
             temporal_entropy(signal, unit="invalid_unit")
 
 
-from biosonic.compute.spectrotemporal import spectrotemporal_entropy
 from biosonic.compute.spectral import power_spectral_entropy
+from biosonic.compute.spectrotemporal import spectrotemporal_entropy
 from biosonic.compute.temporal import temporal_entropy
+
+
 def test_spectrotemporal_entropy():
     f1 = 300
     f2 = 400
@@ -559,7 +580,7 @@ def test_spectrotemporal_entropy():
     sr = 1000
     time = np.linspace(0, duration, int(sr * duration), endpoint=False)
     data = chirp(time, f1, 10, f2) + np.random.normal(0, 1, size=time.shape)
-        
+
     entropy_val = spectrotemporal_entropy(data, sr, unit="bits")
     expected_temporal, _ = temporal_entropy(data, unit="bits")
     expected_spectral, _ = power_spectral_entropy(data, sr, unit="bits")
@@ -574,7 +595,10 @@ def test_spectrotemporal_entropy():
         entropy_val = spectrotemporal_entropy(data, sr, unit=unit)
         assert isinstance(entropy_val, float)
 
+
 from biosonic.compute.spectrotemporal import cepstrum
+
+
 @pytest.fixture
 def sine_wave():
     sr = 16000
@@ -582,6 +606,7 @@ def sine_wave():
     freq = 440
     x = np.sin(2 * np.pi * freq * t)
     return x, sr
+
 
 @pytest.fixture
 def chirp_with_noise():
@@ -592,6 +617,7 @@ def chirp_with_noise():
     time = np.linspace(0, duration, int(sr * duration), endpoint=False)
     x = chirp(time, f1, 10, f2) + np.random.normal(0, 1, size=time.shape)
     return x, sr
+
 
 def test_cepstrum(sine_wave, chirp_with_noise):
     x, sr = chirp_with_noise
@@ -663,13 +689,13 @@ def test_cepstral_coefficients(filterbank_type, sine_wave, chirp_with_noise):
     # parameter validation
     with pytest.raises(ValueError, match="fmax must be <= Nyquist frequency"):
         ceps = cepstral_coefficients(signal, sr, window_length=512, fmin=10, fmax=5000, n_ceps=12)
-    
+
     with pytest.raises(ValueError, match="fmin must be >= 0 and < fmax"):
         ceps = cepstral_coefficients(signal, sr, window_length=512, fmin=100, fmax=10, n_ceps=12)
-    
+
     with pytest.raises(ValueError, match="fmin must be >= 0 and < fmax"):
         ceps = cepstral_coefficients(signal, sr, window_length=512, fmin=-1, fmax=10, n_ceps=12)
-    
+
 
 
 

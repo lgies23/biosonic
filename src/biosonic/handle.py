@@ -1,12 +1,13 @@
-from scipy.io import wavfile
-from scipy.signal import resample
-from numpy.typing import NDArray, ArrayLike
-import pandas as pd
-from pathlib import Path
-import numpy as np
 # from dataclasses import dataclass
 import traceback
-from typing import Any, Literal, Union, Optional, get_args, Tuple, List, Dict
+from pathlib import Path
+from typing import Any, Dict, List, Literal, Optional, Tuple, Union, get_args
+
+import numpy as np
+import pandas as pd
+from numpy.typing import ArrayLike, NDArray
+from scipy.io import wavfile
+from scipy.signal import resample
 
 QuantizationStr = Literal["int8", "int16", "int32", "float32", "float64"]
 
@@ -18,7 +19,7 @@ QuantizationStr = Literal["int8", "int16", "int32", "float32", "float64"]
 #     Attributes:
 #         data : NDArray
 #             Audio samples as a NumPy array. 1D for mono, otherwise a 2D array with shape (n_samples, n_channels)
-#         n_channels : int 
+#         n_channels : int
 #             Number of audio channels (1 for mono, 2 for stereo, etc.).
 #         sr : int
 #             Sample rate in Hz.
@@ -44,15 +45,15 @@ def convert_dtype(data: NDArray, target_dtype: QuantizationStr) -> NDArray:
 
     Returns
     -------
-        NDArray 
+        NDArray
             Converted audio data with appropriate scaling and clipping.
-    
+
     Notes
     -----
 
-    The table below summarizes the value ranges and corresponding NumPy dtypes 
+    The table below summarizes the value ranges and corresponding NumPy dtypes
     for common WAV audio formats. See the SciPy io.wavfile documentation for more details.
-    
+
     +------------------------+--------------+---------------+-------------+
     | WAV format             | Min          | Max           | NumPy dtype |
     +========================+==============+===============+=============+
@@ -69,18 +70,18 @@ def convert_dtype(data: NDArray, target_dtype: QuantizationStr) -> NDArray:
 
     References
     ----------
-    Virtanen P et al. 2020 SciPy 1.0: fundamental algorithms for scientific computing in Python. 
+    Virtanen P et al. 2020 SciPy 1.0: fundamental algorithms for scientific computing in Python.
     Nat Methods 17, 261–272. (doi:10.1038/s41592-019-0686-2)
     """
     if target_dtype not in get_args(QuantizationStr):
         raise ValueError(f"Invalid quantization: {target_dtype}. Must be one of {get_args(QuantizationStr)}")
-    
+
     target_np_dtype: np.dtype[np.generic] = np.dtype(target_dtype)
     current_dtype = data.dtype
 
     if current_dtype == target_np_dtype:
         return data
-    
+
     # special handling for uint8 (unsigned), to float32
     if current_dtype == np.uint8 and np.issubdtype(target_np_dtype, np.floating):
         return ((data.astype(target_np_dtype) - 128) / 128).astype(target_np_dtype)
@@ -128,7 +129,7 @@ def resample_audio(data: NDArray, orig_sr: int, target_sr: int) -> NDArray:
 
     References
     ----------
-    Virtanen P et al. 2020 SciPy 1.0: fundamental algorithms for scientific computing in Python. 
+    Virtanen P et al. 2020 SciPy 1.0: fundamental algorithms for scientific computing in Python.
     Nat Methods 17, 261–272. (doi:10.1038/s41592-019-0686-2)
     """
     if orig_sr == target_sr:
@@ -167,9 +168,9 @@ def convert_channels(data: NDArray, target_channels: int) -> NDArray:
     - Converts mono to stereo by duplicating the mono channel.
     - If the data already has the target number of channels, it is returned unchanged.
     """
-    if target_channels > 2: 
+    if target_channels > 2:
         raise NotImplementedError("Conversion to more than 2 channels not implemented yet.")
-    
+
     n_ch = 1 if data.ndim == 1 else data.shape[1]
 
     if n_ch == target_channels:
@@ -178,19 +179,19 @@ def convert_channels(data: NDArray, target_channels: int) -> NDArray:
     if target_channels == 1:
         # Convert stereo to mono by averaging channels
         return data.mean(axis=1)
-        
+
     elif target_channels == 2:
         # Convert mono to stereo by duplicating
         return np.stack([data, data], axis=1)
-        
+
     return data
 
 
 def read_wav(
-        filepath: Union[str, Path], 
-        sampling_rate : Optional[int] = None,
+        filepath: Union[str, Path],
+        sampling_rate: Optional[int] = None,
         quantization: QuantizationStr = "float32",
-        n_channels : Optional[int] = None,
+        n_channels: Optional[int] = None,
     ) -> Tuple[NDArray, int, int, QuantizationStr]:
     """
     Reads a WAV file and returns a Signal object, optionally converting sample rate, number of channels,
@@ -231,7 +232,7 @@ def read_wav(
 
     References
     ----------
-    Virtanen P et al. 2020 SciPy 1.0: fundamental algorithms for scientific computing in Python. 
+    Virtanen P et al. 2020 SciPy 1.0: fundamental algorithms for scientific computing in Python.
     Nat Methods 17, 261–272. (doi:10.1038/s41592-019-0686-2)
     """
     sr, data = wavfile.read(filepath)
@@ -240,7 +241,7 @@ def read_wav(
         if sr != sampling_rate:
             data = resample_audio(data, sr, sampling_rate)
             sr = sampling_rate
-    
+
     n_ch = 1 if data.ndim == 1 else data.shape[1]
     if n_channels is not None:
         if n_channels != n_ch:
@@ -286,7 +287,8 @@ def batch_normalize_wav_files(
     -----
     - Input WAV files with extensions '.wav' and '.WAV' are processed.
     - Uses `read_wav` for loading and converting audio files. This attaches to scipys wavfile.io.read function.
-    - Output files are saved with the same filename in the output directory. So if you set output_dir to your folder_path, **all origninal files will be overwritten!**
+    - Output files are saved with the same filename in the output directory. So if you set output_dir to your folder_path,
+      **all origninal files will be overwritten!**
     """
     folder_path = Path(folder_path)
     output_dir = Path(output_dir) if output_dir else folder_path / "normalized"
@@ -301,9 +303,9 @@ def batch_normalize_wav_files(
 
 
 def batch_extract_features(
-        folder_path : Union[str, Path],
+        folder_path: Union[str, Path],
         save_csv_path: Optional[str] = None
-) -> pd.DataFrame :
+) -> pd.DataFrame:
     """
     Extract features from all WAV files in a folder.
 
@@ -354,7 +356,7 @@ def batch_extract_features(
         except Exception as e:
             print(f"Failed to process {wav_file.name}: {e}")
             traceback.print_exc()
-    
+
     out_df = pd.DataFrame(feature_rows)
 
     if save_csv_path:
@@ -366,8 +368,9 @@ def batch_extract_features(
 
     return out_df
 
+
 def batch_read_files_to_df(
-        folder_path : Union[str, Path],
+        folder_path: Union[str, Path],
         save_csv_path: Optional[str] = None,
 ) -> pd.DataFrame:
     """
@@ -409,7 +412,7 @@ def batch_read_files_to_df(
         print(f"processing {wav_file.name}")
         try:
             data, sr, _, _ = read_wav(wav_file)
-            columns : dict[str, Any] = {}
+            columns: dict[str, Any] = {}
             columns['filename'] = wav_file.name
             columns['sr'] = sr
             columns['waveform'] = data
@@ -417,7 +420,7 @@ def batch_read_files_to_df(
         except Exception as e:
             print(f"Failed to process {wav_file.name}: {e}")
             traceback.print_exc()
-    
+
     out_df = pd.DataFrame(rows)
 
     if save_csv_path:
@@ -431,9 +434,9 @@ def batch_read_files_to_df(
 
 
 def segments_from_signal(
-        data : NDArray, 
-        sr : int,
-        boundaries : Union[Dict[str, float], ArrayLike, Tuple[float, float], List[Dict[str, float]]]
+        data: NDArray,
+        sr: int,
+        boundaries: Union[Dict[str, float], ArrayLike, Tuple[float, float], List[Dict[str, float]]]
     ) -> List[NDArray]:
     """
     Extract segments from an audio signal based on time boundaries.
@@ -475,12 +478,13 @@ def segments_from_signal(
         start_idx = int(np.floor(begin * sr))
         end_idx = int(np.ceil(end * sr))
         segments.append(data[start_idx:end_idx])
-    
+
     return segments
 
+
 def boundaries_from_textgrid(
-        filepath : Union[str, Path],
-        tier_name : str
+        filepath: Union[str, Path],
+        tier_name: str
     ) -> List[Dict[str, float]]:
     """
     Extracts segment boundaries from a specified tier in a praat TextGrid file.
@@ -501,7 +505,7 @@ def boundaries_from_textgrid(
 
     grid = _read_textgrid(filepath)
     segments = grid.interval_tier_to_array(tier_name=tier_name)
-    return [segment for segment in segments if len(segment["label"]) > 0] 
+    return [segment for segment in segments if len(segment["label"]) > 0]
 
 
 def boundaries_from_raven(
@@ -532,9 +536,9 @@ def boundaries_from_raven(
               "Begin Time (s)": "min",
               "End Time (s)": "max",
               "Annotation": lambda ann: "; ".join(
-                  sorted(set(str(v).strip() for v in ann if pd.notna(v) and str(v).strip()))
+                  sorted({str(v).strip() for v in ann if pd.notna(v) and str(v).strip()})
               )
-          })
+            })
           .reset_index()
     )
 
@@ -549,15 +553,15 @@ def boundaries_from_raven(
 
 
 def audio_segments_from_textgrid(
-        data : NDArray, 
-        sr : int,
-        filepath_textgrid : Union[str, Path],
-        tier_name : str,
-        as_df : bool = True,
+        data: NDArray,
+        sr: int,
+        filepath_textgrid: Union[str, Path],
+        tier_name: str,
+        as_df: bool = True,
         **kwargs
     ) -> Union[pd.DataFrame, list[dict[str, Any]]]:
     """
-    Extracts and visualizes audio segments corresponding to labeled intervals 
+    Extracts and visualizes audio segments corresponding to labeled intervals
     in a praat TextGrid file.
 
     Parameters
@@ -590,17 +594,22 @@ def audio_segments_from_textgrid(
     plot_boundaries_on_spectrogram(data, sr, boundaries, **kwargs)
     segments = segments_from_signal(data, sr, boundaries)
     if as_df:
-        return pd.DataFrame([{"waveform": seg, "label": str(b["label"]), "sr": sr, "filename": str(filepath_textgrid.name)} for seg, b in zip(segments, boundaries)])
+        return pd.DataFrame([{
+                "waveform": seg,
+                "label": str(b["label"]),
+                "sr": sr,
+                "filename": str(filepath_textgrid.name)
+            } for seg, b in zip(segments, boundaries)])
     return [{"waveform": seg, "label": str(b["label"])} for seg, b in zip(segments, boundaries)]
 
 
 def audio_segments_from_raven(
-        data : NDArray, 
-        sr : int,
-        filepath_raven : Union[str, Path]
+        data: NDArray,
+        sr: int,
+        filepath_raven: Union[str, Path]
     ) -> List[Dict[NDArray, str]]:
     """
-    Extracts and visualizes audio segments corresponding to intervals 
+    Extracts and visualizes audio segments corresponding to intervals
     in a Raven selection table.
 
     Parameters

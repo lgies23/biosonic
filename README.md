@@ -27,18 +27,18 @@ For full functionality, the current dependencies are:
 - scipy>=1.12
 - praat-textgrids>=1.4.0
 
-Python 3.10 and above are supported. Python 3.9 may be prone to some errors due to type checking but can be used with caution. 
+Python 3.10 and above are supported. Python 3.9 may be prone to some errors due to type checking but can be used with caution.
 
 ### Installing
 
-For now, clone the repository and run this command inside its root: 
+For now, clone the repository and run this command inside its root:
 ```
 pip install -e .
 ```
 
 ### Executing
 
-See the jupyter notebook `example_usage.ipynb` for demonstrations of different functionalities. 
+See the jupyter notebook `example_usage.ipynb` for demonstrations of different functionalities.
 
 ## Authors
 
@@ -56,6 +56,6 @@ See the jupyter notebook `example_usage.ipynb` for demonstrations of different f
 * Sueur, J. (2018). Sound Analysis and Synthesis with R (Springer International Publishing). https://doi.org/10.1007/978-3-319-77647-7.
 * Pauli Virtanen, Ralf Gommers, Travis E. Oliphant, Matt Haberland, Tyler Reddy, David Cournapeau, Evgeni Burovski, Pearu Peterson, Warren Weckesser, Jonathan Bright, Stéfan J. van der Walt, Matthew Brett, Joshua Wilson, K. Jarrod Millman, Nikolay Mayorov, Andrew R. J. Nelson, Eric Jones, Robert Kern, Eric Larson, CJ Carey, İlhan Polat, Yu Feng, Eric W. Moore, Jake VanderPlas, Denis Laxalde, Josef Perktold, Robert Cimrman, Ian Henriksen, E.A. Quintero, Charles R Harris, Anne M. Archibald, Antônio H. Ribeiro, Fabian Pedregosa, Paul van Mulbregt, and SciPy 1.0 Contributors. (2020) SciPy 1.0: Fundamental Algorithms for Scientific Computing in Python. Nature Methods, 17(3), 261-272. https://doi.org/10.1038/s41592-019-0686-2.
 
-  
+
 * https://de.mathworks.com/help/signal/ref/spectralentropy.html accessed January 13th, 2025. 18:34 pm
 * https://docs.scipy.org/doc/scipy-1.15.2/reference/generated/scipy.stats.entropy.html accessed May 20th 2025, 11:32 am
