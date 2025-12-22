@@ -350,12 +350,12 @@ def plot_features(
     if not isinstance(freq_ms, np.ndarray):
         raise TypeError("Expected 'freqs_ps' to be an ndarray.")
     cutoff = len(freq_ms) // 3
-    ax2.plot(freq_ms[:-cutoff], ms[:-cutoff], label="Magnitude Spectrum", color='blue')
+    ax2.plot(freq_ms[:-cutoff], ms[:-cutoff], label="Magnitude Spectrum", color="#A2A2A2")
 
-    ax2.axvline(features["peak_frequency"], color='orange', linestyle="-", label="Peak Frequency (kHz)")
-    ax2.axvline(features["fq_median"], color='red', linestyle="--", label="Median")
-    ax2.axvline(features["fq_q1"], color='yellow', linestyle="--", label="Q1")
-    ax2.axvline(features["fq_q3"], color='purple', linestyle="--", label="Q3")
+    ax2.axvline(features["peak_frequency"], color="#AE00FF", linestyle=":", label="Peak Frequency (kHz)")
+    ax2.axvline(features["fq_median"], color="#5cc2fc", linestyle="--", label="Median")
+    ax2.axvline(features["fq_q1"], color="#f43a3a", linestyle="--", label="Q1")
+    ax2.axvline(features["fq_q3"], color="#53d33d", linestyle="--", label="Q3")
     ax2.fill_betweenx(
         y=[0, max(ms)],
         x1=features["spectral_centroid"] - features["spectral_sd"],
@@ -364,7 +364,7 @@ def plot_features(
         alpha=0.2,
         label='Bandwidth'
     )
-    ax2.axvline(features["spectral_centroid"], color='pink', linestyle="--", label="Centroid")
+    ax2.axvline(features["spectral_centroid"], color="#FFB742", linestyle="--", label="Centroid")
     ax2.set_xlabel("Frequency [Hz]")
     ax2.set_ylabel("Magnitude")
     ax2.legend(loc="upper left", bbox_to_anchor=(1.02, 1), borderaxespad=0)
@@ -373,11 +373,11 @@ def plot_features(
     ax3 = fig.add_subplot(3, 1, 3)
     ax3.set_title("Waveform with Amplitude Envelope and Time-domain Features")
     times_waveform = np.linspace(0, len(data) / sr, num=len(data))
-    ax3.plot(times_waveform, data, label="Waveform", color="gray", alpha=0.3)
-    ax3.plot(times_waveform, features["amplitude_envelope"], label="Amplitude Envelope", color="blue")
-    ax3.axvline(features["t_median"], color='red', linestyle="--", label="Median")
-    ax3.axvline(features["t_q1"], color='yellow', linestyle="--", label="Q1")
-    ax3.axvline(features["t_q3"], color='purple', linestyle="--", label="Q3")
+    ax3.plot(times_waveform, data, label="Waveform", color="grey", alpha=0.3)
+    ax3.plot(times_waveform, features["amplitude_envelope"], label="Amplitude Envelope", color="#A2A2A2")
+    ax3.axvline(features["t_median"], color="#5cc2fc", linestyle="--", label="Median")
+    ax3.axvline(features["t_q1"], color='#f43a3a', linestyle="--", label="Q1")
+    ax3.axvline(features["t_q3"], color="#53d33d", linestyle="--", label="Q3")
     ax3.fill_betweenx(
         y=[0, np.max(features["amplitude_envelope"])],
         x1=features["temporal_centroid"] - features["temporal_sd"],
@@ -386,7 +386,7 @@ def plot_features(
         alpha=0.2,
         label='Bandwidth'
     )
-    ax3.axvline(features["temporal_centroid"], color='pink', linestyle="--", label="Centroid")
+    ax3.axvline(features["temporal_centroid"], color="#FFB742", linestyle="--", label="Centroid")
     ax3.set_xlabel("Time [s]")
     ax3.set_ylabel("Amplitude")
     ax3.legend(loc="upper left", bbox_to_anchor=(1.02, 1), borderaxespad=0)
@@ -571,10 +571,10 @@ def plot_boundaries_on_spectrogram(
 
     for segment in segments:
         if tlim is None or (segment["begin"] >= tlim[0] and segment["end"] <= tlim[1]):
-            ax.axvline(segment["begin"], color='green', linestyle="--")
-            ax.axvline(segment["end"], color='orange', linestyle="-")
+            ax.axvline(segment["begin"], color="#95c547", linestyle="--")
+            ax.axvline(segment["end"], color="#ffa200", linestyle="-")
 
-        # TODO labels
+        plt.legend(["Segment Start", "Segment End"])
 
     plt.show()
 
