@@ -1,6 +1,7 @@
 from typing import Any, List, Optional, Tuple
 
 import numpy as np
+import scipy.optimize
 from numpy.typing import ArrayLike, NDArray
 from scipy.fft import irfft, rfft
 from scipy.signal import windows
@@ -147,6 +148,65 @@ def _preprocess_for_pitch_(
     return filtered_signal
 
 
+def _sinc_interpolation(y, x, max_depth):
+    midleft = np.floor(x).astype(int)
+    midright = midleft + 1
+    if x == midleft:
+        return y[midleft]
+
+    max_depth = min(min(max_depth, midleft), len(y) - midright)
+    assert max_depth > 2
+
+    left = midright - max_depth
+    right = midleft + max_depth
+
+    result = 0.0
+
+    a = np.pi * (x - midleft)
+    halfsina = 0.5 * np.sin(a)
+    aa = a / (x - left + 1)
+    daa = np.pi / (x - left + 1)
+    for i in range(midleft, left - 1, -1):
+        d = halfsina / a * (1 + np.cos(aa))
+        result += y[i] * d
+        a += np.pi
+        aa += daa
+        halfsina = -halfsina
+
+    a = np.pi * (midright - x)
+    halfsina = 0.5 * np.sin(a)
+    aa = a / (right - x + 1)
+    daa = np.pi / (right - x + 1)
+    for i in range(midright, right + 1):
+        d = halfsina / a * (1 + np.cos(aa))
+        result += y[i] * d
+        a += np.pi
+        aa += daa
+        halfsina = -halfsina
+
+    return result
+
+
+def _improve_sinc_maximum(y: ArrayLike, x: float, max_depth: int) -> Tuple[float, float]:
+    """
+    Refine the maximum using sinc interpolation and Brent's method.
+    Returns (refined_x, value_at_refined_x)
+    """
+    assert 0 <= x < len(y)
+
+    def _neg_sinc_interp(x_):
+        return -_sinc_interpolation(y, x_, max_depth)
+
+    xmin, fval, _, _ = scipy.optimize.brent(
+        _neg_sinc_interp,
+        brack=(x - 1, x, x + 1),
+        tol=1e-10,
+        full_output=True,
+        maxiter=60
+    )
+    return xmin, -fval
+
+
 def _find_pitch_candidates_(
         ac: ArrayLike,
         sr: int,
@@ -163,45 +223,19 @@ def _find_pitch_candidates_(
 
     candidates: list[Tuple[float, float]] = []
 
+    max_depth = 8  # window for sinc interpolation, can be tuned
     for lag in range(min_lag + 1, max_lag - 1):
         if ac[lag] > ac[lag - 1] and ac[lag] > ac[lag + 1]:
-            # parabolic interpolation
-            y_m1 = ac[lag - 1]
-            y_0 = ac[lag]
-            y_p1 = ac[lag + 1]
-            denom = (y_m1 - 2 * y_0 + y_p1)
-
-            if denom == 0:
-                refined_lag = lag
-            else:
-                refined_lag = lag + 0.5 * (y_m1 - y_p1) / denom
+            # Use sinc interpolation for sub-sample lag refinement
+            refined_lag, _ = _improve_sinc_maximum(ac, float(lag), max_depth)
 
             # cost function (Boersma 1993, eq 26)
-            r_tau = np.interp(refined_lag, np.arange(len(ac)), ac)
+            r_tau = _sinc_interpolation(ac, refined_lag, max_depth)
             strength = r_tau - octave_cost * 2 * np.log(min_pitch * refined_lag)
 
             # convert to pitch
             pitch = sr / refined_lag if refined_lag != 0 else 0
             candidates.append((pitch, strength))
-    # # interpolation for higher accuracy
-    # interp_ac = interp1d(np.arange(len(ac)), ac, kind='cubic', fill_value="extrapolate")
-
-    # def cost_fn(
-    #         lag: float
-    #         ) -> float:
-
-    #     if lag < min_lag or lag >= max_lag:
-    #         return -np.inf
-    #     r_tau = float(interp_ac(lag))
-    #     return float(r_tau - octave_cost * 2 * np.log(min_pitch * lag))
-
-    # candidates = []
-    # for lag in range(min_lag, max_lag):
-    #     if ac[lag] > ac[lag - 1] and ac[lag] > ac[lag + 1]:
-    #         res = minimize_scalar(lambda x: -cost_fn(x), bounds=(lag-1, lag+1), method='bounded')
-    #         pitch = sr / res.x
-    #         strength = -res.fun
-    #         candidates.append((pitch, strength))
 
     # Sort by strength and take top N-1
     candidates = sorted(candidates, key=lambda x: -x[1])[:num_candidates - 1]
@@ -324,21 +358,65 @@ def boersma(
         min_pitch: int = 75,
         max_pitch: int = 600,
         timestep: float = 0.01,
-        silence_thresh: float = 0.09,
-        voicing_thresh: float = 0.5,
-        max_candidates: int = 5,
-        octave_cost: float = 0.055,
+        silence_thresh: float = 0.03,
+        voicing_thresh: float = 0.45,
+        max_candidates: int = 15,
+        octave_cost: float = 0.01,
+        octave_jump_cost: float = 0.35,
+        voiced_unvoiced_cost: float = 0.14,
         plot: bool = False,
         **kwargs: Any
     ) -> Tuple[ArrayLike, ArrayLike]:
     """
+    Estimate the fundamental frequency track of a signal using a Praat/Boersma-style autocorrelation method.
+
+    Parameters
+    ----------
+    data : ArrayLike
+        Input audio signal (mono, normalized to [-1, 1]).
+    sr : int
+        Sampling rate (Hz).
+    min_pitch : int, optional
+        Minimum pitch to search for (Hz). Default is 75.
+    max_pitch : int, optional
+        Maximum pitch to search for (Hz). Default is 600.
+    timestep : float, optional
+        Time step between pitch frames (seconds). Default is 0.01.
+    silence_thresh : float, optional
+        Silence threshold for voicing decision. Default is 0.03.
+    voicing_thresh : float, optional
+        Voicing threshold for candidate selection. Default is 0.45.
+    max_candidates : int, optional
+        Maximum number of pitch candidates per frame. Default is 15.
+    octave_cost : float, optional
+        Cost for octave errors in candidate selection. Default is 0.01.
+    octave_jump_cost : float, optional
+        Cost for octave jumps in dynamic programming. Default is 0.35.
+    voiced_unvoiced_cost : float, optional
+        Cost for voiced/unvoiced transitions in dynamic programming. Default is 0.14.
+    plot : bool, optional
+        If True, plot the pitch track on a spectrogram. Default is False.
+    **kwargs : Any
+        Additional keyword arguments for plotting.
+
+    Returns
+    -------
+    time_points : np.ndarray
+        Array of time points (seconds) for each pitch frame.
+    pitch_track : np.ndarray
+        Array of estimated F0 values (Hz) for the best path.
+    all_candidates : list of list of (float, float)
+        List of candidate (frequency, strength) tuples for each frame.
+    intensities : np.ndarray
+        Array of frame intensities (relative to global peak).
+
     References
     ----------
     1. Boersma P. 1993 Accurate short-term analysis of the fundamental
-    frequency and the harmonics-to-noise ratio of a sampled sound.
-    IFA Proceedings 17, 97–110.
+       frequency and the harmonics-to-noise ratio of a sampled sound.
+       IFA Proceedings 17, 97–110.
     2. Anikin A. 2019. Soundgen: an open-source tool for synthesizing
-    nonverbal vocalizations. Behavior Research Methods, 51(2), 778-792.
+       nonverbal vocalizations. Behavior Research Methods, 51(2), 778-792.
     """
 
     # make sure, the signal is inside the bounds [-1, 1]
@@ -353,8 +431,10 @@ def boersma(
     # max_pitch = min(max_pitch, sr / 4)
 
     window_length = 3 * (1 / min_pitch)  # three periods of minimum frequency
-    data_preprocessed = _preprocess_for_pitch_(data, sr)
-    global_peak: float = np.max(np.abs(data_preprocessed))
+    data_preprocessed = data  # _preprocess_for_pitch_(data, sr)
+    global_peak = np.max(np.abs(data_preprocessed - np.mean(data_preprocessed)))
+
+    # global_peak: float = np.max(np.abs(data_preprocessed))
     window_length_samples = int(window_length * sr)
 
     # precalculate for padding to power of two (step 3.6)
@@ -369,6 +449,7 @@ def boersma(
     autocorr_hann = _autocorr(window, pad_width_for_pow2)
     autocorr_hann /= np.max(autocorr_hann)
     all_candidates = []
+    intensities = []
 
     for frame in framed_signal:
         # 3.2 subtract local average
@@ -377,16 +458,15 @@ def boersma(
 
         # 3.3 see 3.11
 
-        # 3.4 multipy by window function
+        # 3.4 multiply by window function
         windowed_frame = frame * window
 
         # 3.5-3.9
         lag_domain = _autocorr(windowed_frame, pad_width_for_pow2)
-        # normalize to range [-1,1]
-        lag_domain = 2 * (lag_domain-float(np.min(lag_domain))) / (float(np.max(lag_domain)) - float(np.min(lag_domain))) - 1
 
         # 3.10 divide by autocorrelation of window
         sampled_autocorr = lag_domain / autocorr_hann
+
         # only include up to half the window length because unreliable above (p. 100, fig)
         sampled_autocorr = sampled_autocorr[:(window_length_samples//2)]
 
@@ -405,12 +485,23 @@ def boersma(
 
         candidates = [(0.0, unvoiced_strength)] + voiced_candidates
         all_candidates.append(candidates)
+        intensities.append(local_peak / global_peak if global_peak > 0 else 0.0)
 
-    time_points = np.arange(len(framed_signal)) * timestep
+    # frame timing: match Yannicks code (centered on window)
+    n_frames = len(framed_signal)
+    t0 = 0.5 * (len(data) / sr - n_frames * timestep + timestep)
+    time_points = t0 + np.arange(n_frames) * timestep
+
+    # Praat-style: scale transition costs by time step as in Yannicks code
+    dt = timestep
+    time_step_correction = 0.01 / dt if dt else 1.0
+    octave_jump_cost_scaled = octave_jump_cost * time_step_correction
+    voiced_unvoiced_cost_scaled = voiced_unvoiced_cost * time_step_correction
+
     pitch_track = _viterbi_pitch_path(
         all_candidates,
-        voiced_unvoiced_cost=0.2,
-        octave_jump_cost=0.2
+        voiced_unvoiced_cost=voiced_unvoiced_cost_scaled,
+        octave_jump_cost=octave_jump_cost_scaled
     )
 
     if plot:
@@ -421,4 +512,5 @@ def boersma(
             time_points,
             pitch_track,
             **kwargs)
-    return np.asarray(time_points), np.asarray(pitch_track)
+
+    return np.asarray(time_points), np.asarray(pitch_track), all_candidates, np.asarray(intensities)
