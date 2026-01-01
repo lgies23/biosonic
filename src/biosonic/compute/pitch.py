@@ -148,11 +148,15 @@ def _preprocess_for_pitch_(
     return filtered_signal
 
 
-def _sinc_interpolation(y, x, max_depth):
+def _sinc_interpolation(
+        y: np.ndarray[np.floating],
+        x: float,
+        max_depth: int
+        ) -> float:
     midleft = np.floor(x).astype(int)
     midright = midleft + 1
     if x == midleft:
-        return y[midleft]
+        return np.float64(y[midleft])
 
     max_depth = min(min(max_depth, midleft), len(y) - midright)
     assert max_depth > 2
@@ -194,7 +198,7 @@ def _improve_sinc_maximum(y: ArrayLike, x: float, max_depth: int) -> Tuple[float
     """
     assert 0 <= x < len(y)
 
-    def _neg_sinc_interp(x_):
+    def _neg_sinc_interp(x_: float) -> float:
         return -_sinc_interpolation(y, x_, max_depth)
 
     xmin, fval, _, _ = scipy.optimize.brent(
@@ -366,7 +370,7 @@ def boersma(
         voiced_unvoiced_cost: float = 0.14,
         plot: bool = False,
         **kwargs: Any
-    ) -> Tuple[ArrayLike, ArrayLike]:
+    ) -> Tuple[ArrayLike, ArrayLike, List[List[Tuple[float, float]]], ArrayLike]:
     """
     Estimate the fundamental frequency track of a signal using a Praat/Boersma-style autocorrelation method.
 
@@ -432,7 +436,7 @@ def boersma(
 
     window_length = 3 * (1 / min_pitch)  # three periods of minimum frequency
     data_preprocessed = data  # _preprocess_for_pitch_(data, sr)
-    global_peak = np.max(np.abs(data_preprocessed - np.mean(data_preprocessed)))
+    global_peak: float = np.max(np.abs(data_preprocessed - np.mean(data_preprocessed)))
 
     # global_peak: float = np.max(np.abs(data_preprocessed))
     window_length_samples = int(window_length * sr)

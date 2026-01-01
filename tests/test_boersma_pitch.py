@@ -77,5 +77,5 @@ def test_boersma_matches_parselmouth(
     assert np.allclose(
         pm_f0[mask],
         py_f0[mask],
-        rtol=.15
+        rtol=.11
     )

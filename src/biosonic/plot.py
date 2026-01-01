@@ -472,7 +472,7 @@ def plot_pitch_on_spectrogram(
     title: str = "Spectrogram with Pitch Candidates",
     cmap: str = "binary",
     plot: Optional[Tuple[Figure, Axes]] = None,
-    **kwargs
+    **kwargs: Any
 ) -> None:
     """
     Plot a spectrogram of the input audio data and overlay pitch candidates.
