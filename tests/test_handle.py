@@ -319,14 +319,13 @@ def test_audio_segments_from_textgrid(
         "words"
     )
 
-    assert isinstance(segments, list)
+    assert isinstance(segments, pd.DataFrame)
     assert len(segments) == len(labeled)
 
-    for item, ref in zip(segments, labeled):
-        assert isinstance(item, dict)
-        assert "data" in item and "label" in item
-        assert isinstance(item["data"], np.ndarray)
-        assert item["label"] == ref["label"]
+    for (_, row), ref in zip(segments.iterrows(), labeled):
+        assert "waveform" in row and "label" in row
+        assert isinstance(row["waveform"], np.ndarray)
+        assert row["label"] == ref["label"]
 
     mock_plot.assert_called_once()
 

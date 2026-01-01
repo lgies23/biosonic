@@ -379,9 +379,10 @@ class TestDominantFrequencies(unittest.TestCase):
         self.assertTrue(np.any(np.abs(freqs - 100) < 10))
 
     def test_dominant_frequencies_multiple_explicit(self):
-        freqs = dominant_frequencies(self.multi_tone_signal, self.sample_rate, n_freqs=5)
+        freqs = dominant_frequencies(self.multi_tone_signal, self.sample_rate, n_freqs=3,
+                                     min_prominence=0.001, min_height=0.001, min_distance=0.001, threshold=0.001)
         self.assertEqual(freqs.ndim, 2)
-        self.assertEqual(freqs.shape[1], 5)
+        self.assertEqual(freqs.shape[1], 3)
         self.assertTrue(np.any(np.abs(freqs - 100) < 10))
         self.assertTrue(np.any(np.abs(freqs - 200) < 10))
         self.assertTrue(np.any(np.abs(freqs - 300) < 10))

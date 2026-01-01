@@ -96,6 +96,9 @@ def extract_all_features(
     sr: int,
     kernel_size: Optional[int] = None,
     n_dominant_freqs: int = 1,
+    plot: bool = False,
+    plot_kwargs: dict[str, Any] = {},
+    spec_kwargs: dict[str, Any] = {},
     **kwargs: dict[str, Any]
 ) -> dict[str, Any]:
     """
@@ -122,6 +125,9 @@ def extract_all_features(
     spectral_feats = spectral_features(data, sr)
     spectrotemporal_feats = spectrotemporal_features(data, sr, n_dominant_freqs, **kwargs)
 
+    if plot:
+        from biosonic.plot import plot_features
+        plot_features(data, sr, {**temporal_feats, **spectral_feats, **spectrotemporal_feats}, spec_kwargs, **plot_kwargs)
     return {**temporal_feats, **spectral_feats, **spectrotemporal_feats}
 
 
@@ -178,11 +184,11 @@ def transform_spectrogram_for_nn(
     """
     from .spectrotemporal import spectrogram
 
-    # Precomputed spectrogram
+    # precomputed spectrogram
     if isinstance(data, tuple) and len(data) == 3:
         spec, t, f = data
 
-    # Raw signal + sr
+    # raw signal + sr
     elif isinstance(data, np.ndarray):
         if sr is None:
             raise ValueError("sr must be provided when passing a signal array.")
@@ -213,7 +219,7 @@ def transform_spectrogram_for_nn(
         zoom_factors = (target_height / spec.shape[0], target_width / spec.shape[1])
         spec = zoom(spec, zoom_factors, order=1)  # bilinear interpolation
 
-    # add channel dimension (e.g., grayscale)
+    # add channel dimension
     if add_channel:
         if data_format == 'channels_last':
             spec = np.expand_dims(spec, axis=-1)  # (H, W, 1)

@@ -95,45 +95,79 @@ def test_exclude_trailing_and_leading_zeros():
 def test_transform_spectrogram_for_nn():
     from biosonic.compute.utils import transform_spectrogram_for_nn
 
-    # test normalization
-    spectrogram = np.array(np.random.rand(32, 32) * 255, dtype='float32')
-    transformed = transform_spectrogram_for_nn(spectrogram, add_channel=False)
+    # helper spectrogram
+    def make_spec(h, w, value_fn=np.random.rand):
+        spec = value_fn(h, w) * 255
+        t = np.linspace(0, 1, w)
+        f = np.linspace(0, 8000, h)
+        return spec, t, f
+
+    # normalization
+    spec, t, f = make_spec(32, 32)
+    transformed = transform_spectrogram_for_nn((spec, t, f), add_channel=False)
     assert np.isclose(transformed.max(), 1.0)
     assert np.isclose(transformed.min(), 0.0)
     assert transformed.shape == (32, 32)
 
-    # test type casting
-    spectrogram = np.array(np.random.rand(64, 64) * 255, dtype='uint8')
-    transformed = transform_spectrogram_for_nn(spectrogram, values_type='float64', add_channel=False)
+    # type casting
+    spec = (np.random.rand(64, 64) * 255).astype("uint8")
+    t = np.linspace(0, 1, 64)
+    f = np.linspace(0, 8000, 64)
+
+    transformed = transform_spectrogram_for_nn(
+        (spec, t, f),
+        values_type="float64",
+        add_channel=False
+    )
     assert transformed.dtype == np.float64
 
-    spectrogram = np.array(np.random.rand(64, 64) * 255, dtype='float32')
-    transformed = transform_spectrogram_for_nn(spectrogram, values_type='float64', add_channel=False)
+    spec = spec.astype("float32")
+    transformed = transform_spectrogram_for_nn(
+        (spec, t, f),
+        values_type="float64",
+        add_channel=False
+    )
     assert transformed.dtype == np.float64
 
-    # test channel addition (first)
-    spectrogram = np.array(np.random.rand(32, 32) * 255)
-    transformed = transform_spectrogram_for_nn(spectrogram, add_channel=True, data_format='channels_first')
+    # channel addition (first)
+    spec, t, f = make_spec(32, 32)
+    transformed = transform_spectrogram_for_nn(
+        (spec, t, f),
+        add_channel=True,
+        data_format="channels_first"
+    )
     assert transformed.shape == (1, 32, 32)
 
-    # test channel addition (last)
-    spectrogram = np.array(np.random.rand(32, 32) * 255)
-    transformed = transform_spectrogram_for_nn(spectrogram, add_channel=True, data_format='channels_last')
+    # channel addition (last)
+    transformed = transform_spectrogram_for_nn(
+        (spec, t, f),
+        add_channel=True,
+        data_format="channels_last"
+    )
     assert transformed.shape == (32, 32, 1)
 
     # test no channel addition
-    spectrogram = np.array(np.random.rand(32, 32) * 255)
-    transformed = transform_spectrogram_for_nn(spectrogram, add_channel=False)
+    transformed = transform_spectrogram_for_nn(
+        (spec, t, f),
+        add_channel=False
+    )
     assert transformed.shape == (32, 32)
 
-    # test zero (information) input
-    spectrogram = np.zeros((16, 16))
-    with pytest.warns(RuntimeWarning, match="Spectrogram contains no information"):
-        transformed = transform_spectrogram_for_nn(spectrogram)
+    # zero-information input (all zeros)
+    spec = np.zeros((16, 16))
+    t = np.linspace(0, 1, 16)
+    f = np.linspace(0, 8000, 16)
 
-    spectrogram = np.full((10, 10), fill_value=5)
     with pytest.warns(RuntimeWarning, match="Spectrogram contains no information"):
-        transformed = transform_spectrogram_for_nn(spectrogram)
+        transform_spectrogram_for_nn((spec, t, f))
+
+    # constant-value input
+    spec = np.full((10, 10), fill_value=5.0)
+    t = np.linspace(0, 1, 10)
+    f = np.linspace(0, 8000, 10)
+
+    with pytest.warns(RuntimeWarning, match="Spectrogram contains no information"):
+        transform_spectrogram_for_nn((spec, t, f))
 
 
 def test_shannon_enropy():

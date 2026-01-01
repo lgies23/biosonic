@@ -324,10 +324,12 @@ def boersma(
         min_pitch: int = 75,
         max_pitch: int = 600,
         timestep: float = 0.01,
-        silence_thresh: float = 0.05,
-        voicing_thresh: float = 0.4,
+        silence_thresh: float = 0.09,
+        voicing_thresh: float = 0.5,
         max_candidates: int = 5,
-        octave_cost: float = 0.01
+        octave_cost: float = 0.055,
+        plot: bool = False,
+        **kwargs: Any
     ) -> Tuple[ArrayLike, ArrayLike]:
     """
     References
@@ -410,4 +412,13 @@ def boersma(
         voiced_unvoiced_cost=0.2,
         octave_jump_cost=0.2
     )
-    return time_points, pitch_track
+
+    if plot:
+        from biosonic.plot import plot_pitch_on_spectrogram
+        plot_pitch_on_spectrogram(
+            data,
+            sr,
+            time_points,
+            pitch_track,
+            **kwargs)
+    return np.asarray(time_points), np.asarray(pitch_track)
