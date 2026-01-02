@@ -149,7 +149,7 @@ def _preprocess_for_pitch_(
 
 
 def _sinc_interpolation(
-        y: np.ndarray[np.floating],
+        y: NDArray[np.floating],
         x: float,
         max_depth: int
         ) -> float:
