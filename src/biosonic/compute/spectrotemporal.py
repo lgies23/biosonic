@@ -386,7 +386,7 @@ def dominant_frequencies(
     else:
         dominant_freqs = np.full((len(times), n_freqs), np.nan)
 
-    median_range = np.median([np.max(spec_real[:, t]) - np.min(spec_real[:, t]) for t in range(len(times))])
+    median_range: float = float(np.median([np.max(spec_real[:, t]) - np.min(spec_real[:, t]) for t in range(len(times))]))
     noise_threshold = median_range * noise_threshold
 
     for t in range(len(times)):

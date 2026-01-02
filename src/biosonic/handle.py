@@ -558,7 +558,7 @@ def audio_segments_from_textgrid(
         filepath_textgrid: Union[str, Path],
         tier_name: str,
         as_df: bool = True,
-        **kwargs
+        **kwargs: Any
     ) -> Union[pd.DataFrame, list[dict[str, Any]]]:
     """
     Extracts and visualizes audio segments corresponding to labeled intervals
