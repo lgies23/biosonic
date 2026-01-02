@@ -3,7 +3,7 @@ from typing import Union
 
 try:
     import textgrids
-except ImportError:
+except ModuleNotFoundError:
     raise ImportError("praat-textgrids is required for TextGrid support. Install it with: pip install biosonic[praat]")
 
 

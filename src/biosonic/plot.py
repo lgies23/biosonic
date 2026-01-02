@@ -5,7 +5,7 @@ try:
     import matplotlib.pyplot as plt
     from matplotlib.axes import Axes
     from matplotlib.figure import Figure
-except ImportError:
+except ModuleNotFoundError:
     plt = None  # type: ignore
     Axes = None  # type: ignore
     Figure = None  # type: ignore
@@ -475,6 +475,7 @@ def plot_pitch_candidates(
         plt.legend()
         plt.tight_layout()
         plt.show()
+        return None
 
     return ax
 
