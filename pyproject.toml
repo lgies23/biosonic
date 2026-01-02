@@ -41,6 +41,7 @@ flake8 = "*"
 isort = "*"
 pre-commit = "*"
 twine = "*"
+praat-parselmouth = "*"
 
 [project.urls]
 Homepage = "https://github.com/lenag23/biosonic.git"
