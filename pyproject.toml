@@ -42,8 +42,7 @@ readme = {file = "README.md", content-type = "text/markdown"}
 keywords = ["bioacoustics", "signal", "sound synthesis", "biology", "singal processing"]
 classifiers = [
   "Development Status :: 3 - Alpha",
-  "Programming Language :: Python",
-  "License :: BSD-3-Clause"
+  "Programming Language :: Python"
 ]
 license = "BSD-3-Clause"
 license-files = ["LICENSE*"]
@@ -53,7 +52,7 @@ praat = ["praat-textgrids>=1.4.0"]
 
 [project.urls]
 Homepage = "https://github.com/lenag23/biosonic.git"
-Documentation = "https://readthedocs.org" # update after registering
+Documentation = "https://biosonic.readthedocs.io"
 Repository = "https://github.com/lenag23/biosonic.git"
 "Bug Tracker" = "https://github.com/lenag23/biosonic/issues"
 
