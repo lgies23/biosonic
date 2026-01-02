@@ -501,7 +501,11 @@ def boundaries_from_textgrid(
     List[Dict[str, float]]
         A list of dictionaries, each containing 'begin', 'end', and 'label' keys for non-empty intervals in the specified tier.
     """
-    from biosonic.praat import _read_textgrid
+
+    try:
+        from biosonic.praat import _read_textgrid
+    except ImportError:
+        raise ImportError("praat-textgrids is required for TextGrid support. Install it with: pip install biosonic[praat]")
 
     grid = _read_textgrid(filepath)
     segments = grid.interval_tier_to_array(tier_name=tier_name)

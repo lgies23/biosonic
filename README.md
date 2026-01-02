@@ -13,7 +13,7 @@ BioSonic is a python package for bioacoustics analysis. It's goal is to provide 
 
 ### Dependencies
 
-BioSonic is written to be lightweight and only relies on numpy (>= 1.26), scipy (>= 1.12) and pandas (>=2.3) for it's basic functionality. If you want plotting, this can be specified during pip installing:
+BioSonic is written to be lightweight and only relies on numpy, scipy, and pandas for it's basic functionality. If you want plotting, this can be specified during pip installing:
 
 ```
 pip install biosonic[plots]

@@ -1,7 +1,10 @@
 from pathlib import Path
 from typing import Union
 
-import textgrids
+try:
+    import textgrids
+except ImportError:
+    raise ImportError("praat-textgrids is required for TextGrid support. Install it with: pip install biosonic[praat]")
 
 
 def _read_textgrid(

@@ -1,10 +1,16 @@
 import os
 from typing import Any, Dict, List, Literal, Optional, Tuple, Union
 
-import matplotlib.pyplot as plt
+try:
+    import matplotlib.pyplot as plt
+    from matplotlib.axes import Axes
+    from matplotlib.figure import Figure
+except ImportError:
+    plt = None
+    Axes = None
+    Figure = None
+
 import numpy as np
-from matplotlib.axes import Axes
-from matplotlib.figure import Figure
 from numpy.typing import ArrayLike
 from pandas import DataFrame
 
@@ -86,6 +92,9 @@ def plot_spectrogram(
     **kwargs : dict
         Additional keyword arguments passed to `matplotlib.pyplot.imshow`.
     """
+    if plt is None:
+        raise ImportError("matplotlib is required for plotting. Install it with: pip install biosonic[plot]")
+
     # Precomputed spectrogram
     if isinstance(data, tuple) and len(data) == 3:
         Sx, t, f = data
@@ -205,6 +214,9 @@ def plot_cepstrum(
     title : str or None
         Title for the plot. If None, a default will be generated.
     """
+    if plt is None:
+        raise ImportError("matplotlib is required for plotting. Install it with: pip install biosonic[plot]")
+
     ceps, quefs = cepstrum(data, sr, **kwargs)
 
     if max_quefrency is None:
@@ -274,6 +286,9 @@ def plot_cepstral_coefficients(
     **kwargs : dict, optional
         Additional keyword arguments passed to the cepstral_coefficients function.
     """
+    if plt is None:
+        raise ImportError("matplotlib is required for plotting. Install it with: pip install biosonic[plot]")
+
     ceps = cepstral_coefficients(
         data,
         sr,
@@ -311,6 +326,9 @@ def plot_features(
      **kwargs : dict[str, Any]
             Optional parameters for dominant frequency estimation.
     """
+    if plt is None:
+        raise ImportError("matplotlib is required for plotting. Install it with: pip install biosonic[plot]")
+
     data = check_signal_format(data)
     sr = check_sr_format(sr)
 
@@ -329,6 +347,7 @@ def plot_features(
 
     if spec_kwargs is None:
         spec_kwargs = {}
+
     plot_pitch_on_spectrogram(
         data=data,
         sr=sr,
@@ -414,6 +433,9 @@ def plot_pitch_candidates(
     show_strongest : bool
         If True, highlight the strongest voiced candidate per frame.
     """
+    if plt is None:
+        raise ImportError("matplotlib is required for plotting. Install it with: pip install biosonic[plot]")
+
     if ax is None:
         fig, ax = plt.subplots(figsize=(10, 5))
 
@@ -510,6 +532,9 @@ def plot_pitch_on_spectrogram(
     plot : tuple of (Figure, Axes), optional
         Existing matplotlib Figure and Axes to plot on. If None, a new figure is created.
     """
+    if plt is None:
+        raise ImportError("matplotlib is required for plotting. Install it with: pip install biosonic[plot]")
+
     if plot is None:
         fig, ax = plt.subplots(figsize=(10, 5))
     else:
@@ -563,6 +588,9 @@ def plot_boundaries_on_spectrogram(
     **kwargs : Any
         Additional keyword arguments passed to the spectrogram plotting function.
     """
+    if plt is None:
+        raise ImportError("matplotlib is required for plotting. Install it with: pip install biosonic[plot]")
+
     fig, ax = plt.subplots()
 
     plot_spectrogram(data, sr, plot=(fig, ax), **kwargs)
@@ -641,6 +669,9 @@ def plot_spectrogram_catalogue(
     >>> df = pd.DataFrame(data)
     >>> plot_spectrogram_catalogue(df, per_page=2, ncols=2, show=False, save_dir="plots")
     """
+    if plt is None:
+        raise ImportError("matplotlib is required for plotting. Install it with: pip install biosonic[plot]")
+
     if save_dir is not None:
         os.makedirs(save_dir, exist_ok=True)
 
