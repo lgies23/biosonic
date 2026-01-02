@@ -17,23 +17,24 @@ pretty = true
 exclude = ["tests/", "build/", "dist/", "docs/", "normalized/"]
 
 [project]
-name = "biosonic"
-version = "0.0"
+name = "biosonic_lenag23"
+version = "0.0.1"
 dependencies = [
+  "matplotlib>=3.9.4",
   "numpy>=1.26.4",
-  "scipy>=1.12",
-  "pandas>=2.3"
+  "pandas>=2.3.0",
+  "scipy>=1.12"
 ]
 
 requires-python = ">=3.9"
 
 authors = [
-  {name = "Lena Gies", email = "a12113065@unet.univie.ac.at"},
+  {name = "Lena Gies", email = "lena.gies@univie.ac.at"},
   {name = "Tecumseh Fitch", email = "tecumseh.fitch@unet.univie.ac.at"},
   {name = "Yannick Jadoul", email="yannick.jadoul@uniroma1.it"}
 ]
 maintainers = [
-  {name = "Lena Gies", email = "a12113065@unet.univie.ac.at"}
+  {name = "Lena Gies", email = "lena.gies@univie.ac.at"}
 ]
 
 description = "The BioSonic package contains tools for bioacoustic analysis."
@@ -42,11 +43,12 @@ keywords = ["bioacoustics", "signal", "sound synthesis", "biology", "singal proc
 classifiers = [
   "Development Status :: 3 - Alpha",
   "Programming Language :: Python",
-  "License :: OSI Approved :: MIT License"
+  "License :: BSD-3-Clause"
 ]
+license = "BSD-3-Clause"
+license-files = ["LICENSE*"]
 
 [project.optional-dependencies]
-plots = ["matplotlib.pyplot>=3.8"]
 praat = ["praat-textgrids>=1.4.0"]
 
 [project.urls]
