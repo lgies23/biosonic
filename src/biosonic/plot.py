@@ -6,9 +6,9 @@ try:
     from matplotlib.axes import Axes
     from matplotlib.figure import Figure
 except ImportError:
-    plt = None
-    Axes = None
-    Figure = None
+    plt = None  # type: ignore
+    Axes = None  # type: ignore
+    Figure = None  # type: ignore
 
 import numpy as np
 from numpy.typing import ArrayLike
@@ -38,10 +38,10 @@ def plot_spectrogram(
         n_bands: int = 40,
         corner_frequency: Optional[float] = None,
         after: Optional[Literal["fant", "koenig", "oshaughnessy", "umesh"]] = "oshaughnessy",
-        plot: Optional[Tuple[Figure, Axes]] = None,
+        plot: Optional[Any] = None,
         show_amplitude_bar: Optional[bool] = True,
         **kwargs: Any
-    ) -> Tuple[Figure, Axes]:
+    ) -> Any:
     """
     Plot a time-frequency spectrogram with optional dB scaling and frequency axis transformations.
 
@@ -475,7 +475,6 @@ def plot_pitch_candidates(
         plt.legend()
         plt.tight_layout()
         plt.show()
-        return
 
     return ax
 
