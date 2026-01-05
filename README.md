@@ -1,4 +1,4 @@
-# BioSonic
+# biosonic
 A python package for bioacoustics
 
 **This package is in active development. If you want to work with it, be aware that it is prone to bugs and the functionality might change. If you would like to collaborate, please reach out to us! We would love for this to become a comprehensive package for bioacoustics and a collaborative project.**
@@ -6,7 +6,7 @@ A python package for bioacoustics
 
 ## Description
 
-BioSonic is a python package for bioacoustics analysis. It's goal is to provide a solution for common workflows from normalization of files and basic acoustic feature extraction to extracting features commonly used in ML pipelines as well as pitch tracking with a user friendy function based structure and parametrization.
+biosonic is a python package for bioacoustics analysis. It's goal is to provide a solution for common workflows from normalization of files and basic acoustic feature extraction to extracting features commonly used in ML pipelines as well as pitch tracking with a user friendy function based structure and parametrization.
 
 
 ## Getting Started
@@ -21,19 +21,19 @@ pip install biosonic[plots]
 
 For full functionality, the current dependencies are:
 
-- matplotlib>=3.9.4
-- numpy>=1.26.4
-- pandas>=2.3.0
-- scipy>=1.12
-- praat-textgrids>=1.4.0
+- numpy (>=2.4.0,<3.0.0)
+- pandas (>=2.3.3,<3.0.0)
+- scipy (>=1.16.3,<2.0.0)
+- matplotlib
+- praat-textgrids
 
-Python 3.10 and above are supported. Python 3.9 may be prone to some errors due to type checking but can be used with caution.
+Python 3.11 and above are supported.
 
 ### Installing
 
-For now, clone the repository and run this command inside its root:
+For full functionality, including plotting and praat-textgrid support run
 ```
-pip install -e .
+pip install biosonic[all]
 ```
 
 ### Executing

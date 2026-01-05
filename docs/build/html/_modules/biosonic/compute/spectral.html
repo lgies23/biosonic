@@ -5,16 +5,17 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>biosonic.compute.spectral &mdash; BioSonic v0.0 documentation</title>
+  <title>biosonic.compute.spectral &mdash; BioSonic v0.0.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
-      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
 
   
       <script src="../../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../../_static/documentation_options.js?v=90b5f367"></script>
-      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
-      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../../../_static/documentation_options.js?v=2fea6348"></script>
+      <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="../../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" /> 
@@ -69,41 +70,43 @@
            <div itemprop="articleBody">
              
   <h1>Source code for biosonic.compute.spectral</h1><div class="highlight"><pre>
-<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">numpy.typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">NDArray</span><span class="p">,</span> <span class="n">ArrayLike</span>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">numpy.typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">ArrayLike</span><span class="p">,</span> <span class="n">NDArray</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">scipy</span><span class="w"> </span><span class="kn">import</span> <span class="n">fft</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">scipy.stats</span><span class="w"> </span><span class="kn">import</span> <span class="n">gmean</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Literal</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">.utils</span><span class="w"> </span><span class="kn">import</span>  <span class="p">(</span>
-    <span class="n">exclude_trailing_and_leading_zeros</span><span class="p">,</span> 
-    <span class="n">check_signal_format</span><span class="p">,</span>  
-    <span class="n">check_sr_format</span><span class="p">,</span>  
-    <span class="n">cumulative_distribution_function</span><span class="p">,</span>  
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">check_signal_format</span><span class="p">,</span>
+    <span class="n">check_sr_format</span><span class="p">,</span>
+    <span class="n">cumulative_distribution_function</span><span class="p">,</span>
+    <span class="n">exclude_trailing_and_leading_zeros</span><span class="p">,</span>
     <span class="n">shannon_entropy</span>
 <span class="p">)</span>
 
 
 <div class="viewcode-block" id="spectrum">
 <a class="viewcode-back" href="../../../biosonic.compute.html#biosonic.compute.spectral.spectrum">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">spectrum</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">,</span> 
+<span class="k">def</span><span class="w"> </span><span class="nf">spectrum</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">,</span>
              <span class="n">sr</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-             <span class="n">mode</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;amplitude&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">]],</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">]]:</span>
+             <span class="n">mode</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;amplitude&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">]],</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Computes the magnitude spectrum of a signal, allowing for amplitude, power, or arbitrary exponentiation of the magnitude.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 <span class="sd">        data : ArrayLike</span>
-<span class="sd">            The input time-domain signal as a 1D array-like. </span>
+<span class="sd">            The input time-domain signal as a 1D array-like.</span>
 <span class="sd">        sr: Optional Integer, default=None</span>
-<span class="sd">            Sampling rate in Hz as an integer. If given, returns the frequency bins </span>
+<span class="sd">            Sampling rate in Hz as an integer. If given, returns the frequency bins</span>
 <span class="sd">            of the magnitude spectrum. Defaults to None.</span>
 <span class="sd">        mode : Union[str, int], default=&#39;amplitude&#39;</span>
 <span class="sd">            Specifies how to compute the spectrum:</span>
-<span class="sd">            - &#39;amplitude&#39;: return the amplitude spectrum (\|FFT\|).</span>
-<span class="sd">            - &#39;power&#39;: return the power spectrum (\|FFT\|^2).</span>
-<span class="sd">            - int or float: raise the magnitude to the given power (e.g., 3 for \|FFT\|^3).</span>
+<span class="sd">            - &#39;amplitude&#39;: return the amplitude spectrum (|FFT|).</span>
+<span class="sd">            - &#39;power&#39;: return the power spectrum (|FFT|^2).</span>
+<span class="sd">            - int or float: raise the magnitude to the given power (e.g., 3 for |FFT|^3).</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -111,7 +114,7 @@
 <span class="sd">            A tuple (frequencies, spectrum), where:</span>
 <span class="sd">            - frequencies: If sr is provided. 1D array of frequency bins corresponding to the spectrum.</span>
 <span class="sd">            - spectrum: 1D array of the transformed frequency-domain representation (magnitude raised to the specified power).</span>
-<span class="sd">    </span>
+
 <span class="sd">    Raises</span>
 <span class="sd">    ------</span>
 <span class="sd">        ValueError</span>
@@ -125,12 +128,12 @@
 
     <span class="k">if</span> <span class="n">data</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
         <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;Input signal is empty; returning an empty spectrum.&quot;</span><span class="p">,</span> <span class="ne">RuntimeWarning</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">freqs</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
-    
+        <span class="k">return</span> <span class="n">freqs</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+
     <span class="k">if</span> <span class="n">sr</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">sr</span> <span class="o">=</span> <span class="n">check_sr_format</span><span class="p">(</span><span class="n">sr</span><span class="p">)</span>
         <span class="n">freqs</span> <span class="o">=</span> <span class="n">fft</span><span class="o">.</span><span class="n">rfftfreq</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="n">d</span><span class="o">=</span><span class="mi">1</span><span class="o">/</span><span class="n">sr</span><span class="p">)</span>
-    
+
     <span class="n">magnitude_spectrum</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">fft</span><span class="o">.</span><span class="n">rfft</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
 
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">mode</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
@@ -206,13 +209,13 @@
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Input is empty&quot;</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">data</span> <span class="o">==</span> <span class="mi">0</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Signal contains no nonzero values&quot;</span><span class="p">)</span>
-    
+
     <span class="n">frequencies</span><span class="p">,</span> <span class="n">envelope</span> <span class="o">=</span> <span class="n">spectrum</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sr</span><span class="o">=</span><span class="n">sr</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;power&quot;</span><span class="p">)</span>
     <span class="n">cdf</span> <span class="o">=</span> <span class="n">cumulative_distribution_function</span><span class="p">(</span><span class="n">envelope</span><span class="p">)</span>
 
-    <span class="k">if</span> <span class="n">frequencies</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">frequencies</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">envelope</span><span class="p">):</span> 
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Freuency bins don&#39;t match envelope&quot;</span><span class="p">)</span> 
-    
+    <span class="k">if</span> <span class="n">frequencies</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">frequencies</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">envelope</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Freuency bins don&#39;t match envelope&quot;</span><span class="p">)</span>
+
     <span class="k">return</span> <span class="n">frequencies</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">searchsorted</span><span class="p">(</span><span class="n">cdf</span><span class="p">,</span> <span class="mf">0.25</span><span class="p">)],</span> <span class="n">frequencies</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">searchsorted</span><span class="p">(</span><span class="n">cdf</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">)],</span> <span class="n">frequencies</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">searchsorted</span><span class="p">(</span><span class="n">cdf</span><span class="p">,</span> <span class="mf">0.75</span><span class="p">)]</span></div>
 
 
@@ -223,8 +226,8 @@
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Compute the spectral flatness (also known as Wiener entropy) of a signal.</span>
 
-<span class="sd">    Spectral flatness is a measure of how noise-like a signal is. A flatness close to 1 </span>
-<span class="sd">    indicates a flat (white noise-like) spectrum, whereas a value close to 0 indicates </span>
+<span class="sd">    Spectral flatness is a measure of how noise-like a signal is. A flatness close to 1</span>
+<span class="sd">    indicates a flat (white noise-like) spectrum, whereas a value close to 0 indicates</span>
 <span class="sd">    a peaky (tonal) spectrum.</span>
 
 <span class="sd">    Parameters</span>
@@ -235,7 +238,7 @@
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
 <span class="sd">        float</span>
-<span class="sd">            Spectral flatness value, defined as the ratio of the geometric mean to the arithmetic mean </span>
+<span class="sd">            Spectral flatness value, defined as the ratio of the geometric mean to the arithmetic mean</span>
 <span class="sd">            of the signal&#39;s power spectrum (excluding leading/trailing zeros).</span>
 
 <span class="sd">    Raises</span>
@@ -257,10 +260,11 @@
     <span class="n">ps_wo_zeros</span> <span class="o">=</span> <span class="n">exclude_trailing_and_leading_zeros</span><span class="p">(</span><span class="n">envelope</span><span class="p">)</span>
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ps_wo_zeros</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Input signal contained only zero values&quot;</span><span class="p">)</span>
-    
+
     <span class="n">flatness_</span> <span class="o">=</span> <span class="n">gmean</span><span class="p">(</span><span class="n">ps_wo_zeros</span><span class="p">)</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">ps_wo_zeros</span><span class="p">)</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isscalar</span><span class="p">(</span><span class="n">flatness_</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">flatness_</span><span class="p">,</span> <span class="p">(</span><span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">floating</span><span class="p">)):</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Received wrong data type for spectral flatness: </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">flatness_</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="c1"># TODO transform to dB</span>
     <span class="k">return</span> <span class="n">flatness_</span></div>
 
 
@@ -268,7 +272,7 @@
 <div class="viewcode-block" id="spectral_moments">
 <a class="viewcode-back" href="../../../biosonic.compute.html#biosonic.compute.spectral.spectral_moments">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">spectral_moments</span><span class="p">(</span>
-        <span class="n">data</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">,</span> 
+        <span class="n">data</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">,</span>
         <span class="n">sr</span><span class="p">:</span> <span class="nb">int</span>
         <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span>
             <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">floating</span><span class="p">[</span><span class="n">Any</span><span class="p">]],</span>
@@ -283,7 +287,7 @@
 <span class="sd">    ----------</span>
 <span class="sd">    data : ArrayLike</span>
 <span class="sd">        1D array-like representing the input signal.</span>
-<span class="sd">    sampling_rate : float </span>
+<span class="sd">    sampling_rate : float</span>
 <span class="sd">        Sampling rate of the signal in Hz.</span>
 
 <span class="sd">    Returns</span>
@@ -296,11 +300,11 @@
 <span class="sd">            Spectral skewness</span>
 <span class="sd">        float or np.floating</span>
 <span class="sd">            Spectral kurtosis</span>
-<span class="sd">            </span>
+
 
 <span class="sd">    References</span>
 <span class="sd">    ----------</span>
-<span class="sd">        Klapuri A, Davy M. 2006 Signal processing methods for music transcription. </span>
+<span class="sd">        Klapuri A, Davy M. 2006 Signal processing methods for music transcription.</span>
 <span class="sd">        New York: Springer. p.136</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">data</span> <span class="o">=</span> <span class="n">check_signal_format</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
@@ -311,7 +315,7 @@
 
     <span class="n">freqs</span><span class="p">,</span> <span class="n">ms</span> <span class="o">=</span> <span class="n">spectrum</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sr</span><span class="o">=</span><span class="n">sr</span><span class="p">)</span>
     <span class="c1"># normalize spectrum</span>
-    <span class="n">ms</span> <span class="o">=</span>  <span class="n">ms</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">ms</span><span class="p">)</span> 
+    <span class="n">ms</span> <span class="o">=</span> <span class="n">ms</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">ms</span><span class="p">)</span>
     <span class="n">centroid_</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">average</span><span class="p">(</span><span class="n">freqs</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="n">ms</span><span class="p">)</span>
     <span class="n">bandwidth_</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">ms</span> <span class="o">*</span> <span class="p">(</span><span class="n">freqs</span><span class="o">-</span><span class="n">centroid_</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
     <span class="k">if</span> <span class="n">bandwidth_</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
@@ -326,30 +330,30 @@
 
 <div class="viewcode-block" id="centroid">
 <a class="viewcode-back" href="../../../biosonic.compute.html#biosonic.compute.spectral.centroid">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">centroid</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">,</span> <span class="n">sr</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span><span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">floating</span><span class="p">[</span><span class="n">Any</span><span class="p">]]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">centroid</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">,</span> <span class="n">sr</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">floating</span><span class="p">[</span><span class="n">Any</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Compute the spectral centroid of a signal.</span>
 
 <span class="sd">    The spectral centroid represents the &quot;center of mass&quot; of the power spectrum,</span>
-<span class="sd">    giving a measure of where the energy of the spectrum is concentrated. It is </span>
-<span class="sd">    calculated as the first spectral moment, or the weighted average of the frequency components, using the </span>
-<span class="sd">    magnitude spectrum as weights: </span>
-<span class="sd">        </span>
+<span class="sd">    giving a measure of where the energy of the spectrum is concentrated. It is</span>
+<span class="sd">    calculated as the first spectral moment, or the weighted average of the frequency components, using the</span>
+<span class="sd">    magnitude spectrum as weights:</span>
+
 <span class="sd">        .. math::</span>
 <span class="sd">            C_f=\sum_{k \epsilon K_+}k X(k)</span>
-<span class="sd">    </span>
+
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 <span class="sd">        data : ArrayLike</span>
 <span class="sd">            Input time-domain signal. Must be one-dimensional and convertible to a NumPy array.</span>
-<span class="sd">        </span>
+
 <span class="sd">        sr : int</span>
 <span class="sd">            Sampling rate of the input signal in Hz.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
 <span class="sd">        float or np.floating</span>
-<span class="sd">            Spectral centroid in Hz. A higher value indicates that the signal&#39;s energy </span>
+<span class="sd">            Spectral centroid in Hz. A higher value indicates that the signal&#39;s energy</span>
 <span class="sd">            is biased toward higher frequencies.</span>
 
 <span class="sd">    Raises</span>
@@ -366,10 +370,10 @@
 
 <span class="sd">    References</span>
 <span class="sd">    ----------</span>
-<span class="sd">        Klapuri A, Davy M. 2006 Signal processing methods for music transcription. </span>
+<span class="sd">        Klapuri A, Davy M. 2006 Signal processing methods for music transcription.</span>
 <span class="sd">        New York: Springer. p.136</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">centroid_</span><span class="p">,</span><span class="n">_</span><span class="p">,</span><span class="n">_</span><span class="p">,</span><span class="n">_</span> <span class="o">=</span> <span class="n">spectral_moments</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sr</span><span class="p">)</span>
+    <span class="n">centroid_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">spectral_moments</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sr</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">centroid_</span></div>
 
@@ -379,12 +383,12 @@
 <a class="viewcode-back" href="../../../biosonic.compute.html#biosonic.compute.spectral.bandwidth">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">bandwidth</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">,</span> <span class="n">sr</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">floating</span><span class="p">[</span><span class="n">Any</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Compute the mean spectral bandwidth (standard deviation or second spectral moment) of a signal. </span>
+<span class="sd">    Compute the mean spectral bandwidth (standard deviation or second spectral moment) of a signal.</span>
 <span class="sd">    It is calculated as</span>
 
 <span class="sd">        .. math::</span>
 <span class="sd">            S_f=S_f=\sqrt{\sum_{k \epsilon K_+}(k-C_f)^2 X(k)}</span>
-<span class="sd">        </span>
+
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 <span class="sd">        data : ArrayLike</span>
@@ -396,7 +400,7 @@
 <span class="sd">    -------</span>
 <span class="sd">        float or np.floating</span>
 <span class="sd">            The standard deviation of the signal.</span>
-<span class="sd">    </span>
+
 <span class="sd">    Examples</span>
 <span class="sd">    --------</span>
 <span class="sd">        &gt;&gt;&gt; import numpy as np</span>
@@ -406,12 +410,12 @@
 
 <span class="sd">    References</span>
 <span class="sd">    ----------</span>
-<span class="sd">        Klapuri A, Davy M. 2006 Signal processing methods for music transcription. </span>
+<span class="sd">        Klapuri A, Davy M. 2006 Signal processing methods for music transcription.</span>
 <span class="sd">        New York: Springer. p.136</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">_</span><span class="p">,</span><span class="n">bandwidth_</span><span class="p">,</span><span class="n">_</span><span class="p">,</span><span class="n">_</span> <span class="o">=</span> <span class="n">spectral_moments</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sr</span><span class="p">)</span>
+    <span class="n">_</span><span class="p">,</span> <span class="n">bandwidth_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">spectral_moments</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sr</span><span class="p">)</span>
 
-    <span class="k">return</span> <span class="n">bandwidth_</span></div>
+    <span class="k">return</span> <span class="n">bandwidth_</span>  <span class="c1"># TODO change to variance and let people define bandwidth through percentiles</span></div>
 
 
 
@@ -419,13 +423,13 @@
 <a class="viewcode-back" href="../../../biosonic.compute.html#biosonic.compute.spectral.skewness">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">skewness</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">,</span> <span class="n">sr</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">floating</span><span class="p">[</span><span class="n">Any</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Compute the spectral skewness (third spectral moment) of a signal. </span>
-<span class="sd">    The skewness describes the asymmetry of the spectrum </span>
+<span class="sd">    Compute the spectral skewness (third spectral moment) of a signal.</span>
+<span class="sd">    The skewness describes the asymmetry of the spectrum</span>
 <span class="sd">    around the spectral centroid and is calculated as</span>
 
 <span class="sd">        .. math::</span>
 <span class="sd">            \gamma_1=\frac{\sum_{k \epsilon K_+}(k-C_f)^3 X(k)}{S_f^3}</span>
-<span class="sd">        </span>
+
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 <span class="sd">    data : ArrayLike</span>
@@ -437,16 +441,16 @@
 <span class="sd">    -------</span>
 <span class="sd">        float or np.floating</span>
 <span class="sd">            The skewness of the signal.</span>
-<span class="sd">    </span>
+
 <span class="sd">    References</span>
 <span class="sd">    ----------</span>
-<span class="sd">        Klapuri A, Davy M. 2006 Signal processing methods for music transcription. </span>
+<span class="sd">        Klapuri A, Davy M. 2006 Signal processing methods for music transcription.</span>
 <span class="sd">        New York: Springer. p.136</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">data</span> <span class="o">=</span> <span class="n">check_signal_format</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
     <span class="n">sr</span> <span class="o">=</span> <span class="n">check_sr_format</span><span class="p">(</span><span class="n">sr</span><span class="p">)</span>
 
-    <span class="n">_</span><span class="p">,</span><span class="n">_</span><span class="p">,</span><span class="n">skew</span><span class="p">,</span><span class="n">_</span> <span class="o">=</span> <span class="n">spectral_moments</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sr</span><span class="p">)</span>
+    <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">skew</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">spectral_moments</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sr</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">skew</span></div>
 
 
@@ -455,13 +459,13 @@
 <a class="viewcode-back" href="../../../biosonic.compute.html#biosonic.compute.spectral.kurtosis">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">kurtosis</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">,</span> <span class="n">sr</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">floating</span><span class="p">[</span><span class="n">Any</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Compute the spectral kurtosis (fourth spectral moment) of a signal. </span>
-<span class="sd">    The skewness describes the &#39;peakedness&#39; of the spectrum </span>
+<span class="sd">    Compute the spectral kurtosis (fourth spectral moment) of a signal.</span>
+<span class="sd">    The skewness describes the &#39;peakedness&#39; of the spectrum</span>
 <span class="sd">    and is calculated as</span>
 
 <span class="sd">        .. math::</span>
 <span class="sd">            \gamma_2=\frac{\sum_{k \epsilon K_+}(k-C_f)^4 X(k)}{S_f^4}</span>
-<span class="sd">        </span>
+
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 <span class="sd">    data : ArrayLike</span>
@@ -473,16 +477,16 @@
 <span class="sd">    -------</span>
 <span class="sd">        float or np.floating</span>
 <span class="sd">            The kurtosis of the signal.</span>
-<span class="sd">    </span>
+
 <span class="sd">    References</span>
 <span class="sd">    ----------</span>
-<span class="sd">        Klapuri A, Davy M. 2006 Signal processing methods for music transcription. </span>
+<span class="sd">        Klapuri A, Davy M. 2006 Signal processing methods for music transcription.</span>
 <span class="sd">        New York: Springer. p.136</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">data</span> <span class="o">=</span> <span class="n">check_signal_format</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
     <span class="n">sr</span> <span class="o">=</span> <span class="n">check_sr_format</span><span class="p">(</span><span class="n">sr</span><span class="p">)</span>
 
-    <span class="n">_</span><span class="p">,</span><span class="n">_</span><span class="p">,</span><span class="n">_</span><span class="p">,</span><span class="n">kurt</span> <span class="o">=</span> <span class="n">spectral_moments</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sr</span><span class="p">)</span>
+    <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">kurt</span> <span class="o">=</span> <span class="n">spectral_moments</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sr</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">kurt</span></div>
 
 
@@ -501,7 +505,7 @@
 <span class="sd">    ----------</span>
 <span class="sd">    data : ArrayLike</span>
 <span class="sd">        1D array-like representing the input signal.</span>
-<span class="sd">    sampling_rate : float </span>
+<span class="sd">    sampling_rate : float</span>
 <span class="sd">        Sampling rate of the signal in Hz.</span>
 
 <span class="sd">    Returns</span>
@@ -539,11 +543,11 @@
 <div class="viewcode-block" id="power_spectral_entropy">
 <a class="viewcode-back" href="../../../biosonic.compute.html#biosonic.compute.spectral.power_spectral_entropy">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">power_spectral_entropy</span><span class="p">(</span>
-        <span class="n">data</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">,</span> 
-        <span class="n">sr</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> 
+        <span class="n">data</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">,</span>
+        <span class="n">sr</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">unit</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;bits&quot;</span><span class="p">,</span> <span class="s2">&quot;nat&quot;</span><span class="p">,</span> <span class="s2">&quot;dits&quot;</span><span class="p">,</span> <span class="s2">&quot;bans&quot;</span><span class="p">,</span> <span class="s2">&quot;hartleys&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;bits&quot;</span><span class="p">,</span>
-        <span class="o">*</span><span class="n">args</span> <span class="p">:</span> <span class="n">Any</span><span class="p">,</span> 
-        <span class="o">**</span><span class="n">kwargs</span> <span class="p">:</span> <span class="n">Any</span>
+        <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span>
         <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Calculates the power spectral entropy as follows:</span>
@@ -557,12 +561,12 @@
 <span class="sd">        sr : int</span>
 <span class="sd">            Sampling rate in Hz.</span>
 <span class="sd">        unit : str, optional</span>
-<span class="sd">            Desired unit of the entropy, determines the logarithmic base used for calculatein. </span>
+<span class="sd">            Desired unit of the entropy, determines the logarithmic base used for calculatein.</span>
 <span class="sd">            Choose from &quot;bits&quot; (log2), &quot;nat&quot; (ln), or &quot;dits&quot;/&quot;bans&quot;/&quot;hartleys&quot; (log10).</span>
 <span class="sd">            Defaults to &quot;bits&quot;.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        float </span>
+<span class="sd">        float</span>
 <span class="sd">            Power spectral entropy.</span>
 <span class="sd">    References:</span>
 <span class="sd">        1. https://de.mathworks.com/help/signal/ref/spectralentropy.html accessed January 13th, 2025. 18:34 pm</span>
@@ -573,11 +577,11 @@
     <span class="n">data</span> <span class="o">=</span> <span class="n">check_signal_format</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
     <span class="n">sr</span> <span class="o">=</span> <span class="n">check_sr_format</span><span class="p">(</span><span class="n">sr</span><span class="p">)</span>
 
-    <span class="c1"># _, psd = signal.welch(data, sr, nperseg=N_FFT, noverlap=N_FFT//HOP_OVERLAP) # would return psd - frequency spectrum squared and scaled by sum - </span>
+    <span class="c1"># _, psd = signal.welch(data, sr, nperseg=N_FFT, noverlap=N_FFT//HOP_OVERLAP) # would return psd - frequency spectrum squared and scaled by sum -</span>
     <span class="n">_</span><span class="p">,</span> <span class="n">psd</span> <span class="o">=</span> <span class="n">spectrum</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sr</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;power&quot;</span><span class="p">)</span>
     <span class="n">psd</span> <span class="o">=</span> <span class="n">exclude_trailing_and_leading_zeros</span><span class="p">(</span><span class="n">psd</span><span class="p">)</span>
 
-    <span class="n">psd_sum</span> <span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">psd</span><span class="p">)</span>
+    <span class="n">psd_sum</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">psd</span><span class="p">)</span>
     <span class="n">psd_norm</span> <span class="o">=</span> <span class="n">psd</span> <span class="o">/</span> <span class="n">psd_sum</span>
     <span class="c1"># Ensure no zero values in normalized power distribution because H is undefined with p=0</span>
     <span class="n">psd_norm</span> <span class="o">=</span> <span class="n">psd_norm</span><span class="p">[</span><span class="n">psd_norm</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">]</span>
@@ -587,7 +591,7 @@
 
 <div class="viewcode-block" id="spectral_features">
 <a class="viewcode-back" href="../../../biosonic.compute.html#biosonic.compute.spectral.spectral_features">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">spectral_features</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">,</span> 
+<span class="k">def</span><span class="w"> </span><span class="nf">spectral_features</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">,</span>
                       <span class="n">sr</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
                       <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">floating</span><span class="p">,</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">]]]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
@@ -596,7 +600,7 @@
 <span class="sd">    Args:</span>
 <span class="sd">        data : ArrayLike</span>
 <span class="sd">            The input signal as a 1D ArrayLike.</span>
-<span class="sd">        sr : int </span>
+<span class="sd">        sr : int</span>
 <span class="sd">            Sampling rate of the signal in Hz.</span>
 
 <span class="sd">    Retuns:</span>
@@ -610,25 +614,28 @@
 <span class="sd">        &quot;spectral_skew&quot;: float,</span>
 <span class="sd">        &quot;spectral_kurtosis&quot;: float,</span>
 <span class="sd">        &quot;spectral_sd&quot;: float,</span>
-<span class="sd">        &quot;peak_frequency&quot;: float}</span>
+<span class="sd">        &quot;peak_frequency&quot;: float,</span>
+<span class="sd">        &quot;pse&quot;: float</span>
+<span class="sd">        }</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">data</span> <span class="o">=</span> <span class="n">check_signal_format</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
     <span class="n">check_sr_format</span><span class="p">(</span><span class="n">sr</span><span class="p">)</span>
 
     <span class="n">fq_q1_bin</span><span class="p">,</span> <span class="n">fq_median_bin</span><span class="p">,</span> <span class="n">fq_q3_bin</span> <span class="o">=</span> <span class="n">quartiles</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sr</span><span class="p">)</span>
     <span class="n">freqs</span><span class="p">,</span> <span class="n">ps</span> <span class="o">=</span> <span class="n">spectrum</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sr</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;power&quot;</span><span class="p">)</span>
-    
+
     <span class="n">features</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="c1">#&quot;mean_frequency&quot; : np.average(freqs, weights=ps), # because centroid is based on magnitude spectrum</span>
+        <span class="c1"># &quot;mean_frequency&quot; : np.average(freqs, weights=ps),  # because centroid is based on magnitude spectrum</span>
         <span class="s2">&quot;fq_q1&quot;</span><span class="p">:</span> <span class="n">fq_q1_bin</span><span class="p">,</span>
         <span class="s2">&quot;fq_median&quot;</span><span class="p">:</span> <span class="n">fq_median_bin</span><span class="p">,</span>
         <span class="s2">&quot;fq_q3&quot;</span><span class="p">:</span> <span class="n">fq_q3_bin</span><span class="p">,</span>
         <span class="s2">&quot;spectral_flatness&quot;</span><span class="p">:</span> <span class="n">flatness</span><span class="p">(</span><span class="n">data</span><span class="p">),</span>
         <span class="s2">&quot;spectral_centroid&quot;</span><span class="p">:</span> <span class="n">centroid</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sr</span><span class="p">),</span>
         <span class="s2">&quot;spectral_sd&quot;</span><span class="p">:</span> <span class="n">bandwidth</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sr</span><span class="p">),</span>
-        <span class="s2">&quot;spectral_skew&quot;</span> <span class="p">:</span> <span class="n">skewness</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sr</span><span class="p">),</span>
-        <span class="s2">&quot;spectral_kurtosis&quot;</span> <span class="p">:</span> <span class="n">kurtosis</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sr</span><span class="p">),</span>
+        <span class="s2">&quot;spectral_skew&quot;</span><span class="p">:</span> <span class="n">skewness</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sr</span><span class="p">),</span>
+        <span class="s2">&quot;spectral_kurtosis&quot;</span><span class="p">:</span> <span class="n">kurtosis</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sr</span><span class="p">),</span>
         <span class="s2">&quot;peak_frequency&quot;</span><span class="p">:</span> <span class="n">peak_frequency</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sr</span><span class="p">),</span>
+        <span class="s2">&quot;pse&quot;</span><span class="p">:</span> <span class="n">power_spectral_entropy</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sr</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
     <span class="p">}</span>
 
     <span class="k">return</span> <span class="n">features</span></div>

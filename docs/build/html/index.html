@@ -6,21 +6,21 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Welcome to BioSonic’s documentation! &mdash; BioSonic v0.0 documentation</title>
+  <title>biosonic: bioacoustic signal analysis toolkit &mdash; BioSonic v0.0.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
-      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
 
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=90b5f367"></script>
-      <script src="_static/doctools.js?v=9bcbadda"></script>
-      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
-      <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      <script src="_static/documentation_options.js?v=2fea6348"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="biosonic package" href="biosonic.html" /> 
+    <link rel="next" title="Example usage" href="example_usage.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -42,8 +42,9 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
 <ul>
+<li class="toctree-l1"><a class="reference internal" href="example_usage.html">Example usage</a></li>
 <li class="toctree-l1"><a class="reference internal" href="biosonic.html">biosonic package</a></li>
 </ul>
 
@@ -61,7 +62,7 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="#" class="icon icon-home" aria-label="Home"></a></li>
-      <li class="breadcrumb-item active">Welcome to BioSonic’s documentation!</li>
+      <li class="breadcrumb-item active">biosonic: bioacoustic signal analysis toolkit</li>
       <li class="wy-breadcrumbs-aside">
             <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
       </li>
@@ -71,51 +72,49 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="welcome-to-biosonic-s-documentation">
-<h1>Welcome to BioSonic’s documentation!<a class="headerlink" href="#welcome-to-biosonic-s-documentation" title="Link to this heading"></a></h1>
+  <section id="biosonic-bioacoustic-signal-analysis-toolkit">
+<h1>biosonic: bioacoustic signal analysis toolkit<a class="headerlink" href="#biosonic-bioacoustic-signal-analysis-toolkit" title="Link to this heading"></a></h1>
+<p>biosonic is a Python toolkit for advanced bioacoustic signal analysis, visualization, and feature extraction.
+It provides tools for reading, processing, and visualizing animal sound recordings, with a focus on flexibility and reproducibility while staying lightweight.</p>
+<section id="features">
+<h2>Features<a class="headerlink" href="#features" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>Read and handle audio and annotation files</p></li>
+<li><p>Spectrogram and feature visualization</p></li>
+<li><p>Cepstral and spectral analysis</p></li>
+<li><p>Batch processing and normalization</p></li>
+<li><p>Pitch tracking and segmentation</p></li>
+</ul>
+</section>
+<section id="quickstart">
+<h2>Quickstart<a class="headerlink" href="#quickstart" title="Link to this heading"></a></h2>
+<p>Install biosonic and its dependencies:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>biosonic<span class="o">[</span>all<span class="o">]</span>
+</pre></div>
+</div>
+<p>See the <a class="reference internal" href="example_usage.html"><span class="doc">Example usage</span></a> notebook for a hands-on introduction.</p>
 <div class="toctree-wrapper compound">
-<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
 <ul>
+<li class="toctree-l1"><a class="reference internal" href="example_usage.html">Example usage</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="example_usage.html#Read-file-and-plot-spectrogram">Read file and plot spectrogram</a></li>
+<li class="toctree-l2"><a class="reference internal" href="example_usage.html#Cepstrum-and-cepstral-coefficients">Cepstrum and cepstral coefficients</a></li>
+<li class="toctree-l2"><a class="reference internal" href="example_usage.html#Filter-signal">Filter signal</a></li>
+<li class="toctree-l2"><a class="reference internal" href="example_usage.html#Pitch-tracking">Pitch tracking</a></li>
+<li class="toctree-l2"><a class="reference internal" href="example_usage.html#Audio-feature-extraction">Audio feature extraction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="example_usage.html#Batch-normalize-files-in-a-folder-and-export-features-as-csv">Batch normalize files in a folder and export features as csv</a></li>
+<li class="toctree-l2"><a class="reference internal" href="example_usage.html#Parse-praat-TextGrids-and-extract-segments-from-file">Parse praat TextGrids and extract segments from file</a></li>
+<li class="toctree-l2"><a class="reference internal" href="example_usage.html#Read-all-files-in-a-folder-into-DataFrame-and-plot-spectrogram-catalogue">Read all files in a folder into DataFrame and plot spectrogram catalogue</a></li>
+<li class="toctree-l2"><a class="reference internal" href="example_usage.html#Future">Future</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="biosonic.html">biosonic package</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="biosonic.html#subpackages">Subpackages</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="biosonic.compute.html">biosonic.compute package</a></li>
-</ul>
-</li>
+<li class="toctree-l2"><a class="reference internal" href="biosonic.html#subpackages">Subpackages</a></li>
 <li class="toctree-l2"><a class="reference internal" href="biosonic.html#submodules">Submodules</a></li>
-<li class="toctree-l2"><a class="reference internal" href="biosonic.html#module-biosonic.filter">biosonic.filter module</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="biosonic.html#biosonic.filter.filter"><code class="docutils literal notranslate"><span class="pre">filter()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="biosonic.html#biosonic.filter.filterbank"><code class="docutils literal notranslate"><span class="pre">filterbank()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="biosonic.html#biosonic.filter.linear_filterbank"><code class="docutils literal notranslate"><span class="pre">linear_filterbank()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="biosonic.html#biosonic.filter.log_filterbank"><code class="docutils literal notranslate"><span class="pre">log_filterbank()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="biosonic.html#biosonic.filter.mel_filterbank"><code class="docutils literal notranslate"><span class="pre">mel_filterbank()</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="biosonic.html#module-biosonic.handle">biosonic.handle module</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="biosonic.html#biosonic.handle.audio_segments_from_textgrid"><code class="docutils literal notranslate"><span class="pre">audio_segments_from_textgrid()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="biosonic.html#biosonic.handle.batch_extract_features"><code class="docutils literal notranslate"><span class="pre">batch_extract_features()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="biosonic.html#biosonic.handle.batch_normalize_wav_files"><code class="docutils literal notranslate"><span class="pre">batch_normalize_wav_files()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="biosonic.html#biosonic.handle.boundaries_from_textgrid"><code class="docutils literal notranslate"><span class="pre">boundaries_from_textgrid()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="biosonic.html#biosonic.handle.convert_channels"><code class="docutils literal notranslate"><span class="pre">convert_channels()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="biosonic.html#biosonic.handle.convert_dtype"><code class="docutils literal notranslate"><span class="pre">convert_dtype()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="biosonic.html#biosonic.handle.read_wav"><code class="docutils literal notranslate"><span class="pre">read_wav()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="biosonic.html#biosonic.handle.resample_audio"><code class="docutils literal notranslate"><span class="pre">resample_audio()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="biosonic.html#biosonic.handle.segments_from_signal"><code class="docutils literal notranslate"><span class="pre">segments_from_signal()</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="biosonic.html#module-biosonic.plot">biosonic.plot module</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="biosonic.html#biosonic.plot.plot_boundaries_on_spectrogram"><code class="docutils literal notranslate"><span class="pre">plot_boundaries_on_spectrogram()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="biosonic.html#biosonic.plot.plot_cepstral_coefficients"><code class="docutils literal notranslate"><span class="pre">plot_cepstral_coefficients()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="biosonic.html#biosonic.plot.plot_cepstrum"><code class="docutils literal notranslate"><span class="pre">plot_cepstrum()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="biosonic.html#biosonic.plot.plot_features"><code class="docutils literal notranslate"><span class="pre">plot_features()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="biosonic.html#biosonic.plot.plot_pitch_candidates"><code class="docutils literal notranslate"><span class="pre">plot_pitch_candidates()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="biosonic.html#biosonic.plot.plot_pitch_on_spectrogram"><code class="docutils literal notranslate"><span class="pre">plot_pitch_on_spectrogram()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="biosonic.html#biosonic.plot.plot_spectrogram"><code class="docutils literal notranslate"><span class="pre">plot_spectrogram()</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="biosonic.html#module-biosonic.synthesize">biosonic.synthesize module</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="biosonic.html#biosonic.synthesize.amplitude_modulated"><code class="docutils literal notranslate"><span class="pre">amplitude_modulated()</span></code></a></li>
-</ul>
-</li>
+<li class="toctree-l2"><a class="reference internal" href="biosonic.html#module-biosonic.filter">biosonic.filter module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="biosonic.html#module-biosonic.handle">biosonic.handle module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="biosonic.html#module-biosonic.plot">biosonic.plot module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="biosonic.html#module-biosonic.synthesize">biosonic.synthesize module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="biosonic.html#module-biosonic">Module contents</a></li>
 </ul>
 </li>
@@ -123,19 +122,34 @@
 </div>
 </section>
 <section id="indices-and-tables">
-<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Link to this heading"></a></h1>
+<h2>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Link to this heading"></a></h2>
 <ul class="simple">
 <li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
 <li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
 <li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
 </ul>
 </section>
+<section id="acknowledgments-and-references">
+<h2>Acknowledgments and References<a class="headerlink" href="#acknowledgments-and-references" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>Anikin A. 2019. Soundgen: an open-source tool for synthesizing nonverbal vocalizations. Behavior Research Methods, 51(2), 778-792.</p></li>
+<li><p>Boersma P. (1993) Accurate short-term analysis of the fundamental frequency and the harmonics-to-noise ratio of a sampled sound. IFA Proceedings 17, 97–110.</p></li>
+<li><p>Childers DG, Skinner DP, Kemerait RC. (1977) The cepstrum: A guide to processing. Proc. IEEE 65, 1428–1443. <a class="reference external" href="https://doi.org/10.1109/PROC.1977.10747">https://doi.org/10.1109/PROC.1977.10747</a></p></li>
+<li><p>Klapuri A, Davy M. (2006) Signal processing methods for music transcription. New York: Springer. p.136</p></li>
+<li><p>Shannon C. E. (1948) A mathematical theory of communication. The Bell System Technical Journal XXVII.</p></li>
+<li><p>Sueur, J. (2018). Sound Analysis and Synthesis with R (Springer International Publishing). <a class="reference external" href="https://doi.org/10.1007/978-3-319-77647-7">https://doi.org/10.1007/978-3-319-77647-7</a>.</p></li>
+<li><p>Pauli Virtanen, Ralf Gommers, Travis E. Oliphant, Matt Haberland, Tyler Reddy, David Cournapeau, Evgeni Burovski, Pearu Peterson, Warren Weckesser, Jonathan Bright, Stéfan J. van der Walt, Matthew Brett, Joshua Wilson, K. Jarrod Millman, Nikolay Mayorov, Andrew R. J. Nelson, Eric Jones, Robert Kern, Eric Larson, CJ Carey, İlhan Polat, Yu Feng, Eric W. Moore, Jake VanderPlas, Denis Laxalde, Josef Perktold, Robert Cimrman, Ian Henriksen, E.A. Quintero, Charles R Harris, Anne M. Archibald, Antônio H. Ribeiro, Fabian Pedregosa, Paul van Mulbregt, and SciPy 1.0 Contributors. (2020) SciPy 1.0: Fundamental Algorithms for Scientific Computing in Python. Nature Methods, 17(3), 261-272. <a class="reference external" href="https://doi.org/10.1038/s41592-019-0686-2">https://doi.org/10.1038/s41592-019-0686-2</a>.</p></li>
+<li><p><a class="reference external" href="https://de.mathworks.com/help/signal/ref/spectralentropy.html">https://de.mathworks.com/help/signal/ref/spectralentropy.html</a> accessed January 13th, 2025. 18:34 pm</p></li>
+<li><p><a class="reference external" href="https://docs.scipy.org/doc/scipy-1.15.2/reference/generated/scipy.stats.entropy.html">https://docs.scipy.org/doc/scipy-1.15.2/reference/generated/scipy.stats.entropy.html</a> accessed May 20th 2025, 11:32 am</p></li>
+</ul>
+</section>
+</section>
 
 
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="biosonic.html" class="btn btn-neutral float-right" title="biosonic package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="example_usage.html" class="btn btn-neutral float-right" title="Example usage" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

@@ -98,7 +98,7 @@ def _filterbank(
     if np.any(filterbank.max(axis=1) == 0):
         print(
             "Empty filters detected in mel filterbank. "
-            "Consider reducing n_filters or increasing n_fft."
+            "Consider reducing number of bands or increasing n_fft."
         )
 
     return filterbank

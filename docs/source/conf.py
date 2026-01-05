@@ -24,6 +24,7 @@ extensions: list[str] = [
     'sphinx.ext.napoleon',         # Google/NumPy style docstrings
     'sphinx.ext.viewcode',         # source code
     'sphinx_autodoc_typehints',    # type hints
+    'nbsphinx',                    # Jupyter Notebooks
 ]
 
 templates_path: list[str] = ['_templates']

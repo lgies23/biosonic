@@ -6,17 +6,17 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>biosonic package &mdash; BioSonic v0.0 documentation</title>
+  <title>biosonic package &mdash; BioSonic v0.0.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
-      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
 
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=90b5f367"></script>
-      <script src="_static/doctools.js?v=9bcbadda"></script>
-      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
-      <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      <script src="_static/documentation_options.js?v=2fea6348"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -53,16 +53,18 @@
 <li class="toctree-l2"><a class="reference internal" href="#submodules">Submodules</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#module-biosonic.filter">biosonic.filter module</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#biosonic.filter.filter"><code class="docutils literal notranslate"><span class="pre">filter()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#biosonic.filter.filterbank"><code class="docutils literal notranslate"><span class="pre">filterbank()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#biosonic.filter.linear_filterbank"><code class="docutils literal notranslate"><span class="pre">linear_filterbank()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#biosonic.filter.log_filterbank"><code class="docutils literal notranslate"><span class="pre">log_filterbank()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#biosonic.filter.mel_filterbank"><code class="docutils literal notranslate"><span class="pre">mel_filterbank()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#module-biosonic.handle">biosonic.handle module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#biosonic.handle.audio_segments_from_raven"><code class="docutils literal notranslate"><span class="pre">audio_segments_from_raven()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#biosonic.handle.audio_segments_from_textgrid"><code class="docutils literal notranslate"><span class="pre">audio_segments_from_textgrid()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#biosonic.handle.batch_extract_features"><code class="docutils literal notranslate"><span class="pre">batch_extract_features()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#biosonic.handle.batch_normalize_wav_files"><code class="docutils literal notranslate"><span class="pre">batch_normalize_wav_files()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#biosonic.handle.batch_read_files_to_df"><code class="docutils literal notranslate"><span class="pre">batch_read_files_to_df()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#biosonic.handle.boundaries_from_raven"><code class="docutils literal notranslate"><span class="pre">boundaries_from_raven()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#biosonic.handle.boundaries_from_textgrid"><code class="docutils literal notranslate"><span class="pre">boundaries_from_textgrid()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#biosonic.handle.convert_channels"><code class="docutils literal notranslate"><span class="pre">convert_channels()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#biosonic.handle.convert_dtype"><code class="docutils literal notranslate"><span class="pre">convert_dtype()</span></code></a></li>
@@ -79,6 +81,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#biosonic.plot.plot_pitch_candidates"><code class="docutils literal notranslate"><span class="pre">plot_pitch_candidates()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#biosonic.plot.plot_pitch_on_spectrogram"><code class="docutils literal notranslate"><span class="pre">plot_pitch_on_spectrogram()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#biosonic.plot.plot_spectrogram"><code class="docutils literal notranslate"><span class="pre">plot_spectrogram()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#biosonic.plot.plot_spectrogram_catalogue"><code class="docutils literal notranslate"><span class="pre">plot_spectrogram_catalogue()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#module-biosonic.synthesize">biosonic.synthesize module</a><ul>
@@ -88,6 +91,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#module-biosonic">Module contents</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="example_usage.html">Example usage of the biosonic package</a></li>
 </ul>
 
         </div>
@@ -143,13 +147,18 @@
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="biosonic.compute.html#module-biosonic.compute.spectrotemporal">biosonic.compute.spectrotemporal module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="biosonic.compute.html#biosonic.compute.spectrotemporal.SNR"><code class="docutils literal notranslate"><span class="pre">SNR()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="biosonic.compute.html#biosonic.compute.spectrotemporal.calculate_dominant_frequency_features"><code class="docutils literal notranslate"><span class="pre">calculate_dominant_frequency_features()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="biosonic.compute.html#biosonic.compute.spectrotemporal.cepstral_coefficients"><code class="docutils literal notranslate"><span class="pre">cepstral_coefficients()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="biosonic.compute.html#biosonic.compute.spectrotemporal.cepstrum"><code class="docutils literal notranslate"><span class="pre">cepstrum()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="biosonic.compute.html#biosonic.compute.spectrotemporal.dominant_frequencies"><code class="docutils literal notranslate"><span class="pre">dominant_frequencies()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="biosonic.compute.html#biosonic.compute.spectrotemporal.lpc_estimate"><code class="docutils literal notranslate"><span class="pre">lpc_estimate()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="biosonic.compute.html#biosonic.compute.spectrotemporal.spectrogram"><code class="docutils literal notranslate"><span class="pre">spectrogram()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="biosonic.compute.html#biosonic.compute.spectrotemporal.spectrotemporal_entropy"><code class="docutils literal notranslate"><span class="pre">spectrotemporal_entropy()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="biosonic.compute.html#biosonic.compute.spectrotemporal.spectrotemporal_features"><code class="docutils literal notranslate"><span class="pre">spectrotemporal_features()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="biosonic.compute.html#biosonic.compute.spectrotemporal.tokuda_nlm"><code class="docutils literal notranslate"><span class="pre">tokuda_nlm()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="biosonic.compute.html#biosonic.compute.spectrotemporal.zero_crossing_rate"><code class="docutils literal notranslate"><span class="pre">zero_crossing_rate()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="biosonic.compute.html#biosonic.compute.spectrotemporal.zero_crossings"><code class="docutils literal notranslate"><span class="pre">zero_crossings()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="biosonic.compute.html#module-biosonic.compute.temporal">biosonic.compute.temporal module</a><ul>
@@ -209,7 +218,7 @@ Values must be within (0, Nyquist), where Nyquist = sr / 2.</p></li>
 <li><p><strong>order</strong> (<em>int</em>) – Filter order. Higher values result in a steeper frequency cutoff,
 but can introduce more edge artifacts and potential instability.
 Defaults to 2, resulting in a slope of 40 dB per decade (i.e. ten-fold change in frequency).</p></li>
-<li><p><strong>data</strong> (<em>_Buffer</em><em> | </em><em>_SupportsArray</em><em>[</em><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.dtype.html#numpy.dtype" title="(in NumPy v2.3)"><em>dtype</em></a><em>[</em><em>Any</em><em>]</em><em>] </em><em>| </em><em>_NestedSequence</em><em>[</em><em>_SupportsArray</em><em>[</em><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.dtype.html#numpy.dtype" title="(in NumPy v2.3)"><em>dtype</em></a><em>[</em><em>Any</em><em>]</em><em>]</em><em>] </em><em>| </em><em>bool</em><em> | </em><em>int</em><em> | </em><em>float</em><em> | </em><em>complex</em><em> | </em><em>str</em><em> | </em><em>bytes</em><em> | </em><em>_NestedSequence</em><em>[</em><em>bool</em><em> | </em><em>int</em><em> | </em><em>float</em><em> | </em><em>complex</em><em> | </em><em>str</em><em> | </em><em>bytes</em><em>]</em>)</p></li>
+<li><p><strong>data</strong> (<em>ArrayLike</em>)</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -227,43 +236,6 @@ ensuring zero-phase distortion.</p></li>
 <p class="rubric">References</p>
 <p>Virtanen P et al. 2020 SciPy 1.0: fundamental algorithms for scientific computing in Python.
 Nat Methods 17, 261–272. (doi:10.1038/s41592-019-0686-2)</p>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="biosonic.filter.filterbank">
-<span class="sig-prename descclassname"><span class="pre">biosonic.filter.</span></span><span class="sig-name descname"><span class="pre">filterbank</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n_filters</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_fft</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bin_indices</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/biosonic/filter.html#filterbank"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#biosonic.filter.filterbank" title="Link to this definition"></a></dt>
-<dd><p>Construct a triangular filter bank for spectral analysis.</p>
-<p>This function creates a bank of <cite>n_filters</cite> triangular filters to be applied
-to the magnitude spectrum of an audio signal, commonly used in feature
-extraction methods such as Mel-frequency cepstral coefficients (MFCCs).
-Each filter is shaped like a triangle and spans a range of FFT bins
-determined by the <cite>bin_indices</cite> array.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>n_filters</strong> (<em>int</em>) – Number of filters in the filter bank.</p></li>
-<li><p><strong>n_fft</strong> (<em>int</em>) – FFT size used to compute the frequency bins. Determines the number of
-frequency bins available.</p></li>
-<li><p><strong>bin_indices</strong> (<em>ArrayLike</em>) – Array of bin indices (length = n_filters + 2) that specify the start,
-center, and end points of each triangular filter in the filter bank.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>filterbank</strong> – A 2D array of shape <cite>(n_filters, n_fft // 2 + 1)</cite> containing the filter
-bank matrix. Each row represents a single triangular filter applied
-across the FFT bins.</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>ArrayLike</p>
-</dd>
-</dl>
-<p class="rubric">Notes</p>
-<p>The filters are normalized according to the method used in <cite>librosa</cite> to
-ensure energy preservation.</p>
-<p class="rubric">References</p>
-<p>McFee, Brian, Colin Raffel, Dawen Liang, Daniel PW Ellis, Matt McVicar, Eric Battenberg,
-and Oriol Nieto. “librosa: Audio and music signal analysis in python.” In Proceedings
-of the 14th python in science conference, pp. 18-25. 2015.</p>
 </dd></dl>
 
 <dl class="py function">
@@ -315,17 +287,17 @@ of the 14th python in science conference, pp. 18-25. 2015.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="biosonic.filter.mel_filterbank">
-<span class="sig-prename descclassname"><span class="pre">biosonic.filter.</span></span><span class="sig-name descname"><span class="pre">mel_filterbank</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n_filters</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">window_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fmin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fmax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/biosonic/filter.html#mel_filterbank"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#biosonic.filter.mel_filterbank" title="Link to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">biosonic.filter.</span></span><span class="sig-name descname"><span class="pre">mel_filterbank</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n_filters</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_fft</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fmin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fmax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/biosonic/filter.html#mel_filterbank"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#biosonic.filter.mel_filterbank" title="Link to this definition"></a></dt>
 <dd><p>Create a mel spaced triangular filterbank.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>n_filters</strong> (<em>int</em>) – Number of triangular filters.</p></li>
-<li><p><strong>n_fft</strong> (<em>int</em>) – FFT size (defines frequency resolution).</p></li>
+<li><p><strong>window_length</strong> (<em>int</em>) – Window size in samples.</p></li>
 <li><p><strong>sr</strong> (<em>int</em>) – Sampling rate of the signal in Hz.</p></li>
 <li><p><strong>fmin</strong> (<em>float</em>) – Minimum frequency in Hz. Must be &gt; 0.</p></li>
 <li><p><strong>fmax</strong> (<em>float</em><em>, </em><em>optional</em>) – Maximum frequency in Hz. Defaults to Nyquist (sr/2).</p></li>
-<li><p><strong>window_length</strong> (<em>int</em>)</p></li>
+<li><p><strong>n_fft</strong> (<em>int</em>)</p></li>
 <li><p><strong>kwargs</strong> (<em>Any</em>)</p></li>
 </ul>
 </dd>
@@ -342,17 +314,16 @@ of the 14th python in science conference, pp. 18-25. 2015.</p>
 <section id="module-biosonic.handle">
 <span id="biosonic-handle-module"></span><h2>biosonic.handle module<a class="headerlink" href="#module-biosonic.handle" title="Link to this heading"></a></h2>
 <dl class="py function">
-<dt class="sig sig-object py" id="biosonic.handle.audio_segments_from_textgrid">
-<span class="sig-prename descclassname"><span class="pre">biosonic.handle.</span></span><span class="sig-name descname"><span class="pre">audio_segments_from_textgrid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filepath_textgrid</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tier_name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/biosonic/handle.html#audio_segments_from_textgrid"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#biosonic.handle.audio_segments_from_textgrid" title="Link to this definition"></a></dt>
-<dd><p>Extracts and visualizes audio segments corresponding to labeled intervals
-in a TextGrid file.</p>
+<dt class="sig sig-object py" id="biosonic.handle.audio_segments_from_raven">
+<span class="sig-prename descclassname"><span class="pre">biosonic.handle.</span></span><span class="sig-name descname"><span class="pre">audio_segments_from_raven</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filepath_raven</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/biosonic/handle.html#audio_segments_from_raven"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#biosonic.handle.audio_segments_from_raven" title="Link to this definition"></a></dt>
+<dd><p>Extracts and visualizes audio segments corresponding to intervals
+in a Raven selection table.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>data</strong> (<em>NDArray</em>) – The audio signal array.</p></li>
 <li><p><strong>sr</strong> (<em>int</em>) – Sampling rate of the audio signal.</p></li>
-<li><p><strong>filepath_textgrid</strong> (<em>Union</em><em>[</em><em>str</em><em>, </em><em>Path</em><em>]</em>) – Path to the TextGrid file containing segmentation information.</p></li>
-<li><p><strong>tier_name</strong> (<em>str</em>) – Name of the tier to extract labeled segments from.</p></li>
+<li><p><strong>filepath_raven</strong> (<em>Union</em><em>[</em><em>str</em><em>, </em><em>Path</em><em>]</em>) – Path to the txt file containing segmentation information.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -362,6 +333,34 @@ in a TextGrid file.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>List[Dict[NDArray, str]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="biosonic.handle.audio_segments_from_textgrid">
+<span class="sig-prename descclassname"><span class="pre">biosonic.handle.</span></span><span class="sig-name descname"><span class="pre">audio_segments_from_textgrid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filepath_textgrid</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tier_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">as_df</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/biosonic/handle.html#audio_segments_from_textgrid"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#biosonic.handle.audio_segments_from_textgrid" title="Link to this definition"></a></dt>
+<dd><p>Extracts and visualizes audio segments corresponding to labeled intervals
+in a praat TextGrid file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<em>NDArray</em>) – The audio signal array.</p></li>
+<li><p><strong>sr</strong> (<em>int</em>) – Sampling rate of the audio signal.</p></li>
+<li><p><strong>filepath_textgrid</strong> (<em>Union</em><em>[</em><em>str</em><em>, </em><em>Path</em><em>]</em>) – Path to the TextGrid file containing segmentation information.</p></li>
+<li><p><strong>tier_name</strong> (<em>str</em>) – Name of the tier to extract labeled segments from.</p></li>
+<li><p><strong>as_df</strong> (<em>Optional</em><em>[</em><em>bool</em><em>]</em>) – Whether to return as pandas DataFrame or list of dictionaries. Defaults to true.</p></li>
+<li><p><strong>kwargs</strong> (<em>Any</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A list of dictionaries, each containing:
+- The audio segment (NDArray) for each labeled interval.
+- The corresponding label (str).
+Or a homologue dataframe, additionally holding sr and filepath.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>List[Dict[NDArray, str]] or DataFrame</p>
 </dd>
 </dl>
 </dd></dl>
@@ -430,14 +429,70 @@ will be created inside <cite>folder_path</cite>.</p></li>
 <ul class="simple">
 <li><p>Input WAV files with extensions ‘.wav’ and ‘.WAV’ are processed.</p></li>
 <li><p>Uses <cite>read_wav</cite> for loading and converting audio files. This attaches to scipys wavfile.io.read function.</p></li>
-<li><p>Output files are saved with the same filename in the output directory. So if you set output_dir to your folder_path, <strong>all origninal files will be overwritten!</strong></p></li>
+<li><p>Output files are saved with the same filename in the output directory. So if you set output_dir to your folder_path,
+<strong>all origninal files will be overwritten!</strong></p></li>
 </ul>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="biosonic.handle.batch_read_files_to_df">
+<span class="sig-prename descclassname"><span class="pre">biosonic.handle.</span></span><span class="sig-name descname"><span class="pre">batch_read_files_to_df</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">folder_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_csv_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/biosonic/handle.html#batch_read_files_to_df"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#biosonic.handle.batch_read_files_to_df" title="Link to this definition"></a></dt>
+<dd><p>Extract features from all WAV files in a folder.</p>
+<p>This function processes all <cite>.wav</cite> and <cite>.WAV</cite> files in the specified folder,
+and returns a DataFrame containing the waveforms and filenames. Optionally, the
+results can be saved to a CSV file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>folder_path</strong> (<em>str</em><em> or </em><em>pathlib.Path</em>) – Path to the folder containing <cite>.wav</cite> audio files.</p></li>
+<li><p><strong>save_csv_path</strong> (<em>str</em><em>, </em><em>optional</em>) – Path to save the resulting DataFrame as a CSV file.
+If None (default), the CSV is not saved.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A DataFrame where each row contains waveform, sample rate and filename from one WAV file.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>pandas.DataFrame</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>This function handles file-level errors internally and prints tracebacks</strong><strong>,</strong> – </p></li>
+<li><p><strong>but it does not raise exceptions during feature extraction</strong><strong> or </strong><strong>saving.</strong> – </p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<ul class="simple">
+<li><p>This function relies on <cite>read_wav</cite>.</p></li>
+<li><p>Files that fail to process are skipped, and their errors are printed.</p></li>
+</ul>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="biosonic.handle.boundaries_from_raven">
+<span class="sig-prename descclassname"><span class="pre">biosonic.handle.</span></span><span class="sig-name descname"><span class="pre">boundaries_from_raven</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filepath</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/biosonic/handle.html#boundaries_from_raven"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#biosonic.handle.boundaries_from_raven" title="Link to this definition"></a></dt>
+<dd><p>Extracts one segment per selection from a Raven selection table (.txt).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>filepath</strong> (<em>str</em><em> or </em><em>Path</em>) – Path to the Raven selection table file.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A list of dicts, each containing:
+- ‘begin’: start time in seconds
+- ‘end’: end time in seconds
+- ‘label’: merged annotation text from all rows of that selection</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>List[Dict[str, float]]</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="biosonic.handle.boundaries_from_textgrid">
 <span class="sig-prename descclassname"><span class="pre">biosonic.handle.</span></span><span class="sig-name descname"><span class="pre">boundaries_from_textgrid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filepath</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tier_name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/biosonic/handle.html#boundaries_from_textgrid"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#biosonic.handle.boundaries_from_textgrid" title="Link to this definition"></a></dt>
-<dd><p>Extracts segment boundaries from a specified tier in a TextGrid file.</p>
+<dd><p>Extracts segment boundaries from a specified tier in a praat TextGrid file.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -495,7 +550,7 @@ will be created inside <cite>folder_path</cite>.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a>[<code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">...</span></code>], <a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.dtype.html#numpy.dtype" title="(in NumPy v2.3)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dtype</span></code></a>[<code class="xref py py-class docutils literal notranslate"><span class="pre">TypeVar</span></code>(<code class="docutils literal notranslate"><span class="pre">_ScalarType_co</span></code>, bound= <a class="reference external" href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.generic" title="(in NumPy v2.3)"><code class="xref py py-class docutils literal notranslate"><span class="pre">generic</span></code></a>, covariant=True)]]</span></p>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a>[<code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">...</span></code>], <a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.dtype.html#numpy.dtype" title="(in NumPy v2.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dtype</span></code></a>[<code class="xref py py-class docutils literal notranslate"><span class="pre">TypeVar</span></code>(<code class="docutils literal notranslate"><span class="pre">_ScalarT</span></code>, bound= <a class="reference external" href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.generic" title="(in NumPy v2.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">generic</span></code></a>)]]</span></p>
 </dd>
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p><dl class="simple">
@@ -718,7 +773,7 @@ Default is ‘mel’.</p></li>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="biosonic.plot.plot_cepstrum">
-<span class="sig-prename descclassname"><span class="pre">biosonic.plot.</span></span><span class="sig-name descname"><span class="pre">plot_cepstrum</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_quefrency</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ylim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/biosonic/plot.html#plot_cepstrum"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#biosonic.plot.plot_cepstrum" title="Link to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">biosonic.plot.</span></span><span class="sig-name descname"><span class="pre">plot_cepstrum</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_quefrency</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_quefrency</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ylim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/biosonic/plot.html#plot_cepstrum"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#biosonic.plot.plot_cepstrum" title="Link to this definition"></a></dt>
 <dd><p>Plot the cepstrum against quefrency (in seconds).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -726,9 +781,10 @@ Default is ‘mel’.</p></li>
 <li><p><strong>data</strong> (<em>ArrayLike</em>) – Signal to use for cepstrum calculation.</p></li>
 <li><p><strong>sr</strong> (<em>int</em>) – Sampling rate of the original signal.</p></li>
 <li><p><strong>max_quefrency</strong> (<em>float</em><em>, </em><em>optional</em>) – Maximum quefrency (in seconds) to plot. Defaults to 0.05s.</p></li>
-<li><p><strong>log_scale</strong> (<em>bool</em><em>, </em><em>optional</em>) – Wether to log-scale the y-axis. Defaults to True.</p></li>
+<li><p><strong>log_scale</strong> (<em>bool</em><em>, </em><em>optional</em>) – Wether to log-scale the y-axis. Defaults to False.</p></li>
 <li><p><strong>ylim</strong> (<em>tuple</em><em>, </em><em>optional</em>) – Limits for the y-axis.</p></li>
 <li><p><strong>title</strong> (<em>str</em><em> or </em><em>None</em>) – Title for the plot. If None, a default will be generated.</p></li>
+<li><p><strong>min_quefrency</strong> (<em>float</em><em> | </em><em>None</em>)</p></li>
 <li><p><strong>kwargs</strong> (<em>Any</em>)</p></li>
 </ul>
 </dd>
@@ -740,13 +796,21 @@ Default is ‘mel’.</p></li>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="biosonic.plot.plot_features">
-<span class="sig-prename descclassname"><span class="pre">biosonic.plot.</span></span><span class="sig-name descname"><span class="pre">plot_features</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sr</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/biosonic/plot.html#plot_features"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#biosonic.plot.plot_features" title="Link to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">biosonic.plot.</span></span><span class="sig-name descname"><span class="pre">plot_features</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">features</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spec_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/biosonic/plot.html#plot_features"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#biosonic.plot.plot_features" title="Link to this definition"></a></dt>
 <dd><p>Plot audio signal features using precomputed feature dictionary.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>data</strong> (<em>ArrayLike</em>) – Audio time series data.</p></li>
-<li><p><strong>sr</strong> (<em>int</em>) – Sampling rate of the audio data in Hz.</p></li>
+<li><p><strong>sr</strong> (<em>int</em>) – <p>Sampling rate of the audio data in Hz.
+<a href="#id1"><span class="problematic" id="id2">**</span></a>kwargs : dict[str, Any]</p>
+<blockquote>
+<div><p>Optional parameters for dominant frequency estimation.</p>
+</div></blockquote>
+</p></li>
+<li><p><strong>features</strong> (<em>dict</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>] </em><em>| </em><em>None</em>)</p></li>
+<li><p><strong>spec_kwargs</strong> (<em>dict</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>] </em><em>| </em><em>None</em>)</p></li>
+<li><p><strong>kwargs</strong> (<em>Any</em>)</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
@@ -777,7 +841,7 @@ Default is ‘mel’.</p></li>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="biosonic.plot.plot_pitch_on_spectrogram">
-<span class="sig-prename descclassname"><span class="pre">biosonic.plot.</span></span><span class="sig-name descname"><span class="pre">plot_pitch_on_spectrogram</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_points</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">all_candidates</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">window_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">512</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overlap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_strongest</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">db_scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tlim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Spectrogram</span> <span class="pre">with</span> <span class="pre">Pitch</span> <span class="pre">Candidates'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cmap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'grey'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/biosonic/plot.html#plot_pitch_on_spectrogram"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#biosonic.plot.plot_pitch_on_spectrogram" title="Link to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">biosonic.plot.</span></span><span class="sig-name descname"><span class="pre">plot_pitch_on_spectrogram</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_points</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">all_candidates</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">window_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">512</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overlap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_strongest</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">db_scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tlim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Spectrogram</span> <span class="pre">with</span> <span class="pre">Pitch</span> <span class="pre">Candidates'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cmap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'binary'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/biosonic/plot.html#plot_pitch_on_spectrogram"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#biosonic.plot.plot_pitch_on_spectrogram" title="Link to this definition"></a></dt>
 <dd><p>Plot a spectrogram of the input audio data and overlay pitch candidates.</p>
 <p>This function computes and displays a spectrogram of the given audio data,
 then overlays pitch candidates over time. It can optionally highlight the
@@ -796,8 +860,9 @@ strongest pitch candidate per time frame.</p>
 <li><p><strong>flim</strong> (<em>tuple</em><em> of </em><em>float</em><em>, </em><em>optional</em>) – Frequency limits (min_freq, max_freq) to display in the spectrogram. Default is None (no limit).</p></li>
 <li><p><strong>tlim</strong> (<em>tuple</em><em> of </em><em>float</em><em>, </em><em>optional</em>) – Time limits (start_time, end_time) for the plot. Default is None (full duration).</p></li>
 <li><p><strong>title</strong> (<em>str</em><em>, </em><em>optional</em>) – Title of the plot. Default is “Spectrogram with Pitch Candidates”.</p></li>
-<li><p><strong>cmap</strong> (<em>str</em><em>, </em><em>optional</em>) – Colormap to use for the spectrogram. Default is ‘grey’.</p></li>
+<li><p><strong>cmap</strong> (<em>str</em><em>, </em><em>optional</em>) – Colormap to use for the spectrogram. Default is ‘binary’.</p></li>
 <li><p><strong>plot</strong> (<em>tuple</em><em> of </em><em>(</em><em>Figure</em><em>, </em><em>Axes</em><em>)</em><em>, </em><em>optional</em>) – Existing matplotlib Figure and Axes to plot on. If None, a new figure is created.</p></li>
+<li><p><strong>kwargs</strong> (<em>Any</em>)</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
@@ -808,12 +873,12 @@ strongest pitch candidate per time frame.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="biosonic.plot.plot_spectrogram">
-<span class="sig-prename descclassname"><span class="pre">biosonic.plot.</span></span><span class="sig-name descname"><span class="pre">plot_spectrogram</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">db_scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cmap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'grey'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">db_ref</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dynamic_range</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tlim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">freq_scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'linear'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">window_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">512</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">window</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'hann'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overlap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">noisereduction</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_bands</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">40</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">corner_frequency</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/biosonic/plot.html#plot_spectrogram"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#biosonic.plot.plot_spectrogram" title="Link to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">biosonic.plot.</span></span><span class="sig-name descname"><span class="pre">plot_spectrogram</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">db_scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cmap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'binary'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">db_ref</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dynamic_range</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tlim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">freq_scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'linear'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">window_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">512</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">window</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'hann'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overlap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">noisereduction</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_bands</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">40</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">corner_frequency</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">after</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'oshaughnessy'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_amplitude_bar</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/biosonic/plot.html#plot_spectrogram"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#biosonic.plot.plot_spectrogram" title="Link to this definition"></a></dt>
 <dd><p>Plot a time-frequency spectrogram with optional dB scaling and frequency axis transformations.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>data</strong> (<em>ArrayLike</em>) – Input signal.</p></li>
+<li><p><strong>data</strong> (<em>Union</em><em>[</em><em>np.ndarray</em><em>, </em><em>Tuple</em><em>[</em><em>np.ndarray</em><em>, </em><em>np.ndarray</em><em>, </em><em>np.ndarray</em><em>]</em><em>]</em><em>,</em>) – Input signal. Either as precomputed spectrogram (S, t, f) or 1D signal array.</p></li>
 <li><p><strong>sr</strong> (<em>int</em>) – Sampling rate in Hz.</p></li>
 <li><p><strong>db_scale</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether to convert the spectrogram to decibel scale. Default is True.</p></li>
 <li><p><strong>cmap</strong> (<em>str</em><em>, </em><em>optional</em>) – Colormap for the spectrogram.</p></li>
@@ -828,17 +893,80 @@ Useful for suppressing low-amplitude noise. Default is 100.</p></li>
 <li><p><strong>window</strong> (<em>str</em><em> or </em><em>ArrayLike</em><em>, </em><em>optional</em>) – Windowing function used for the STFT. Default is “hann”.</p></li>
 <li><p><strong>zero_padding</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of zeros to pad each windowed frame. Default is 0.</p></li>
 <li><p><strong>overlap</strong> (<em>float</em><em>, </em><em>optional</em>) – Percentage of overlap between successive windows (0 to 100). Default is 50.</p></li>
-<li><p><strong>noisereduction</strong> (<em>int</em><em>, </em><em>optional</em>) – Level of noise reduction to apply, if any. Default is None (no reduction).</p></li>
-<li><p><strong>n_bands</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of frequency bands for mel or log scaling. Default is 40.</p></li>
+<li><p><strong>noisereduction</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether to apply noise reduction. Default is False (no reduction).</p></li>
+<li><p><strong>n_bands</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of frequency bands for mel scaling. Default is 40.</p></li>
 <li><p><strong>corner_frequency</strong> (<em>float</em><em>, </em><em>optional</em>) – Corner frequency for perceptual frequency scaling (used in mel scale).</p></li>
+<li><p><strong>(</strong><strong>Literal</strong><strong>)</strong> (<em>after</em>) – <ul>
+<li><p>‘fant’: Classic formula with <cite>a=b=1000</cite>: <cite>F_m = a * np.log(1 + f / b)</cite></p></li>
+<li><p>’koenig’: (Not yet implemented)</p></li>
+<li><p>’oshaughnessy’ or ‘beranek’: Commonly used formula as fant, but with <cite>a=2595</cite>, <cite>b=700</cite></p></li>
+<li><p>’umesh’: Formula using rational function with <cite>a=0.0004</cite>, <cite>b=0.603</cite>.</p></li>
+</ul>
+</p></li>
 <li><p><strong>plot</strong> (<em>tuple</em><em>(</em><em>matplotlib.figure.Figure</em><em>, </em><em>matplotlib.axes.Axes</em><em>)</em><em>, </em><em>optional</em>) – Existing matplotlib Figure and Axes objects to plot into. If None, a new figure and axes are created.</p></li>
-<li><p><strong>**kwargs</strong> (<em>dict</em>) – Additional keyword arguments passed to <cite>matplotlib.pyplot.imshow</cite>.</p></li>
+<li><p><strong>**kwargs</strong> (<em>Any</em>) – Additional keyword arguments passed to <cite>matplotlib.pyplot.imshow</cite>.</p></li>
+<li><p><strong>after</strong> (<em>Literal</em><em>[</em><em>'fant'</em><em>, </em><em>'koenig'</em><em>, </em><em>'oshaughnessy'</em><em>, </em><em>'umesh'</em><em>] </em><em>| </em><em>None</em>)</p></li>
+<li><p><strong>show_amplitude_bar</strong> (<em>bool</em><em> | </em><em>None</em>)</p></li>
+<li><p><strong>**kwargs</strong></p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Figure</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Axes</span></code>]</span></p>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></span></p>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="biosonic.plot.plot_spectrogram_catalogue">
+<span class="sig-prename descclassname"><span class="pre">biosonic.plot.</span></span><span class="sig-name descname"><span class="pre">plot_spectrogram_catalogue</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">column</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'waveform'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">per_page</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">20</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ncols</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_dir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prefix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'spectrograms'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">title_columns</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">['filename']</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/biosonic/plot.html#plot_spectrogram_catalogue"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#biosonic.plot.plot_spectrogram_catalogue" title="Link to this definition"></a></dt>
+<dd><p>Plot a catalogue of spectrograms from a DataFrame.</p>
+<p>This function generates spectrogram plots for waveforms stored in a DataFrame.
+The plots are arranged in a paginated grid and can be saved to disk.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>df</strong> (<em>pandas.DataFrame</em>) – Input DataFrame containing waveform data and associated metadata.</p></li>
+<li><p><strong>column</strong> (<em>str</em><em>, </em><em>default=&quot;waveform&quot;</em>) – Column name in <cite>df</cite> that contains the waveform arrays.</p></li>
+<li><p><strong>per_page</strong> (<em>int</em><em>, </em><em>default=20</em>) – Number of spectrograms to display per page.</p></li>
+<li><p><strong>ncols</strong> (<em>int</em><em>, </em><em>default=2</em>) – Number of subplot columns per page.</p></li>
+<li><p><strong>save_dir</strong> (<em>str</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Directory to save the generated figure pages. If None, figures are not saved.</p></li>
+<li><p><strong>show</strong> (<em>bool</em><em>, </em><em>default=True</em>) – If True, display the figures interactively. If False, figures are closed after saving.</p></li>
+<li><p><strong>prefix</strong> (<em>str</em><em>, </em><em>default=&quot;spectrograms&quot;</em>) – Prefix for saved figure filenames if <cite>save_dir</cite> is provided.</p></li>
+<li><p><strong>title_columns</strong> (<em>list</em><em> of </em><em>str</em><em>, </em><em>default=</em><em>[</em><em>&quot;filename&quot;</em><em>]</em>) – List of column names from <cite>df</cite> to include in subplot titles, joined by a vertical bar (<cite>|</cite>).</p></li>
+<li><p><strong>**kwargs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Additional keyword arguments passed to the underlying <cite>plot_spectrogram</cite> function.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>This function does not return anything. It produces matplotlib figures,
+optionally displaying them or saving them to disk.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<ul class="simple">
+<li><dl class="simple">
+<dt>The function expects each row of the DataFrame to contain:</dt><dd><ul>
+<li><p><cite>df[column]</cite>: waveform array-like</p></li>
+<li><p><cite>df[“sr”]</cite>: sampling rate (int)</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><p>If a waveform entry is <cite>None</cite>, its subplot will be empty.</p></li>
+</ul>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">data</span> <span class="o">=</span> <span class="p">{</span>
+<span class="gp">... </span>    <span class="s2">&quot;ID&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
+<span class="gp">... </span>    <span class="s2">&quot;waveform&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">wave1</span><span class="p">,</span> <span class="n">wave2</span><span class="p">],</span>
+<span class="gp">... </span>    <span class="s2">&quot;sr&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">16000</span><span class="p">,</span> <span class="mi">16000</span><span class="p">]</span>
+<span class="gp">... </span><span class="p">}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">plot_spectrogram_catalogue</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">per_page</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">ncols</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">show</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">save_dir</span><span class="o">=</span><span class="s2">&quot;plots&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
 </dd></dl>
 
 </section>

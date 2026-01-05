@@ -131,7 +131,7 @@ def plot_spectrogram(
     # Apply dB scale
     if db_scale:
         ref = np.max(Sx) if db_ref is None else db_ref
-        Sx = 20 * np.log10(Sx / ref)
+        Sx = 20 * np.log10(Sx / ref + 1e-30)  # add small value to avoid log(0)
 
         if dynamic_range is not None:
             if dynamic_range is not None:

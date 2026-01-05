@@ -9,7 +9,7 @@ from biosonic.handle import read_wav
 @pytest.mark.parametrize(
     "wav_path, min_pitch, max_pitch, timestep",
     [
-        ("./example_data/201.wav", 2000, 6000, 0.02),
+        ("./docs/source/example_data/201.wav", 2000, 6000, 0.02),
     ],
 )
 def test_boersma_matches_parselmouth(

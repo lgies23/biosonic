@@ -5,16 +5,17 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>biosonic.compute.temporal &mdash; BioSonic v0.0 documentation</title>
+  <title>biosonic.compute.temporal &mdash; BioSonic v0.0.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
-      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
 
   
       <script src="../../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../../_static/documentation_options.js?v=90b5f367"></script>
-      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
-      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../../../_static/documentation_options.js?v=2fea6348"></script>
+      <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="../../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" /> 
@@ -69,17 +70,19 @@
            <div itemprop="articleBody">
              
   <h1>Source code for biosonic.compute.temporal</h1><div class="highlight"><pre>
-<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">numpy.typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">NDArray</span><span class="p">,</span> <span class="n">ArrayLike</span>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">numpy.typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">ArrayLike</span><span class="p">,</span> <span class="n">NDArray</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">scipy</span><span class="w"> </span><span class="kn">import</span> <span class="n">signal</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">scipy.stats</span><span class="w"> </span><span class="kn">import</span> <span class="n">kurtosis</span><span class="p">,</span> <span class="n">skew</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">Any</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+
 <span class="kn">from</span><span class="w"> </span><span class="nn">.utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-    <span class="n">exclude_trailing_and_leading_zeros</span><span class="p">,</span> 
-    <span class="n">check_signal_format</span><span class="p">,</span> 
-    <span class="n">check_sr_format</span><span class="p">,</span> 
+    <span class="n">check_signal_format</span><span class="p">,</span>
+    <span class="n">check_sr_format</span><span class="p">,</span>
     <span class="n">cumulative_distribution_function</span><span class="p">,</span>
+    <span class="n">exclude_trailing_and_leading_zeros</span><span class="p">,</span>
     <span class="n">shannon_entropy</span>
 <span class="p">)</span>
 
@@ -87,18 +90,18 @@
 <div class="viewcode-block" id="amplitude_envelope">
 <a class="viewcode-back" href="../../../biosonic.compute.html#biosonic.compute.temporal.amplitude_envelope">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">amplitude_envelope</span><span class="p">(</span>
-        <span class="n">data</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">,</span> 
+        <span class="n">data</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">,</span>
         <span class="n">kernel_size</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">remove_trailing_zeros</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-        <span class="n">avoid_zero_values</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="n">remove_trailing_zeros</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">avoid_zero_values</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Computes the amplitude envelope of a signal using the Hilbert transform.</span>
-<span class="sd">    </span>
+
 <span class="sd">    The function applies the Hilbert transform to calculate the analytic signal of the input data</span>
-<span class="sd">    and then computes the envelope as the absolute value of the analytic signal. Optionally, </span>
+<span class="sd">    and then computes the envelope as the absolute value of the analytic signal. Optionally,</span>
 <span class="sd">    a smoothing kernel (Daniell kernel, moving average) can be applied to smooth the envelope.</span>
-<span class="sd">    </span>
+
 <span class="sd">    Args:</span>
 <span class="sd">        data : ArrayLike</span>
 <span class="sd">            A 1D array-like representing the input signal.</span>
@@ -106,16 +109,16 @@
 <span class="sd">            The size of the moving average kernel to smooth the envelope. Must be an uneven number.</span>
 <span class="sd">            If `None`, no smoothing is applied (default is `None`).</span>
 <span class="sd">        remove_trailing_zeros : Optional[bool]</span>
-<span class="sd">            If `True`, removes leading and trailing zeros of the envelope after applying Hilbert transform. </span>
+<span class="sd">            If `True`, removes leading and trailing zeros of the envelope after applying Hilbert transform.</span>
 <span class="sd">            Defaults to `True`</span>
 <span class="sd">        avoid_zero_values : Optional[bool]</span>
-<span class="sd">            If `True`, replaces zero values with 1e-10 after applying Hilbert transform and removing leading and trailing zeros. </span>
+<span class="sd">            If `True`, replaces zero values with 1e-10 after applying Hilbert transform and removing leading and trailing zeros.</span>
 <span class="sd">            Defaults to `False`</span>
-<span class="sd">    </span>
+
 <span class="sd">    Returns:</span>
 <span class="sd">        NDArray[np.float64]</span>
 <span class="sd">            A 1D NumPy array of float64 values representing the amplitude envelope of the signal.</span>
-<span class="sd">    </span>
+
 <span class="sd">    Example:</span>
 <span class="sd">        &gt;&gt;&gt; import numpy as np</span>
 <span class="sd">        &gt;&gt;&gt; signal = np.array([0, 1, 2, 3, 2, 1, 0], dtype=np.float64)</span>
@@ -131,9 +134,9 @@
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
         <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;Input signal is empty; returning an empty array.&quot;</span><span class="p">,</span> <span class="ne">RuntimeWarning</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
-    
+
     <span class="n">data</span> <span class="o">=</span> <span class="n">check_signal_format</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
-    
+
     <span class="c1"># compute the analytic signal using Hilbert transform</span>
     <span class="n">analytic_signal</span> <span class="o">=</span> <span class="n">signal</span><span class="o">.</span><span class="n">hilbert</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
     <span class="n">envelope</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">analytic_signal</span><span class="p">)</span>
@@ -144,7 +147,7 @@
 
         <span class="c1"># apply kernel to smooth envelope</span>
         <span class="n">envelope</span> <span class="o">=</span> <span class="n">signal</span><span class="o">.</span><span class="n">convolve</span><span class="p">(</span><span class="n">envelope</span><span class="p">,</span> <span class="n">kernel</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;same&#39;</span><span class="p">)</span>
-    
+
     <span class="k">if</span> <span class="n">remove_trailing_zeros</span><span class="p">:</span>
         <span class="n">envelope</span> <span class="o">=</span> <span class="n">exclude_trailing_and_leading_zeros</span><span class="p">(</span><span class="n">envelope</span><span class="p">)</span>
 
@@ -161,15 +164,15 @@
 <span class="k">def</span><span class="w"> </span><span class="nf">duration</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">,</span> <span class="n">sr</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">exclude_surrounding_silences</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Returns the duration in seconds of a signal.</span>
-<span class="sd">    </span>
+
 <span class="sd">    Args:</span>
 <span class="sd">        data : ArrayLike</span>
 <span class="sd">            The audio signal data.</span>
 <span class="sd">        sr : int</span>
 <span class="sd">            The sample rate of the audio signal (samples per second).</span>
-<span class="sd">        exclude_surrounding_silences : bool, optional </span>
-<span class="sd">            If True, leading and trailing silences (zeros) in the audio </span>
-<span class="sd">            signal will be removed before calculating duration. </span>
+<span class="sd">        exclude_surrounding_silences : bool, optional</span>
+<span class="sd">            If True, leading and trailing silences (zeros) in the audio</span>
+<span class="sd">            signal will be removed before calculating duration.</span>
 <span class="sd">            Defaults to False.</span>
 
 <span class="sd">    Returns:</span>
@@ -229,9 +232,9 @@
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Input is empty&quot;</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">data</span> <span class="o">==</span> <span class="mi">0</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Signal contains no nonzero values&quot;</span><span class="p">)</span>
-    
+
     <span class="n">envelope</span> <span class="o">=</span> <span class="n">amplitude_envelope</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">kernel_size</span><span class="p">)</span>
-    
+
     <span class="n">cdf</span> <span class="o">=</span> <span class="n">cumulative_distribution_function</span><span class="p">(</span><span class="n">envelope</span><span class="p">)</span>
 
     <span class="c1"># temporal quartiles (Q1, median, Q3)</span>
@@ -254,7 +257,7 @@
 <span class="sd">            The signal, stored as a 1D NumPy array of float64 values.</span>
 <span class="sd">        sr : int</span>
 <span class="sd">            The sample rate of the signal (Hz).</span>
-<span class="sd">        kernel_size : Optional[int] </span>
+<span class="sd">        kernel_size : Optional[int]</span>
 <span class="sd">            Optional smoothing kernel applied to the amplitude envelope.</span>
 
 <span class="sd">    Returns:</span>
@@ -263,7 +266,7 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">data</span> <span class="o">=</span> <span class="n">check_signal_format</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
     <span class="n">check_sr_format</span><span class="p">(</span><span class="n">sr</span><span class="p">)</span>
-    
+
     <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">amplitude_envelope</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">kernel_size</span><span class="p">)))</span></div>
 
 
@@ -275,7 +278,7 @@
 <span class="sd">    Computes the temporal skew of the signal.</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        data : ArrayLike </span>
+<span class="sd">        data : ArrayLike</span>
 <span class="sd">            The signal, stored as a 1D NumPy array of float64 values.</span>
 <span class="sd">        sr : int</span>
 <span class="sd">            The sample rate of the signal (Hz).</span>
@@ -288,9 +291,9 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">data</span> <span class="o">=</span> <span class="n">check_signal_format</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
     <span class="n">check_sr_format</span><span class="p">(</span><span class="n">sr</span><span class="p">)</span>
-    
+
     <span class="n">skew_</span> <span class="o">=</span> <span class="n">skew</span><span class="p">(</span><span class="n">amplitude_envelope</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">kernel_size</span><span class="p">))</span>
-    <span class="k">if</span> <span class="n">skew_</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">skew_</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;All values are equal, returning None for skew.&quot;</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">skew_</span><span class="p">)</span></div>
@@ -306,7 +309,7 @@
 <span class="sd">    Args:</span>
 <span class="sd">        data : ArrayLike</span>
 <span class="sd">            The signal, stored as a 1D NumPy array of float64 values.</span>
-<span class="sd">        sr : int </span>
+<span class="sd">        sr : int</span>
 <span class="sd">            The sample rate of the signal (Hz).</span>
 <span class="sd">        kernel_size : Optional[int]</span>
 <span class="sd">            Optional smoothing kernel applied to the amplitude envelope.</span>
@@ -317,10 +320,10 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">data</span> <span class="o">=</span> <span class="n">check_signal_format</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
     <span class="n">sr</span> <span class="o">=</span> <span class="n">check_sr_format</span><span class="p">(</span><span class="n">sr</span><span class="p">)</span>
-    
+
     <span class="n">kurtosis_</span> <span class="o">=</span> <span class="n">kurtosis</span><span class="p">(</span><span class="n">amplitude_envelope</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">kernel_size</span><span class="p">))</span>
 
-    <span class="k">if</span> <span class="n">kurtosis_</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">kurtosis_</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;All values are equal, returning None for kurtosis.&quot;</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">kurtosis_</span><span class="p">)</span></div>
@@ -330,10 +333,10 @@
 <div class="viewcode-block" id="temporal_entropy">
 <a class="viewcode-back" href="../../../biosonic.compute.html#biosonic.compute.temporal.temporal_entropy">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">temporal_entropy</span><span class="p">(</span>
-        <span class="n">data</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">,</span>  
+        <span class="n">data</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">,</span>
         <span class="n">unit</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;bits&quot;</span><span class="p">,</span> <span class="s2">&quot;nat&quot;</span><span class="p">,</span> <span class="s2">&quot;dits&quot;</span><span class="p">,</span> <span class="s2">&quot;bans&quot;</span><span class="p">,</span> <span class="s2">&quot;hartleys&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;bits&quot;</span><span class="p">,</span>
-        <span class="o">*</span><span class="n">args</span> <span class="p">:</span> <span class="n">Any</span><span class="p">,</span> 
-        <span class="o">**</span><span class="n">kwargs</span> <span class="p">:</span> <span class="n">Any</span>
+        <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Calculates the entropy of the amplitude envelope as follows:</span>
@@ -345,12 +348,12 @@
 <span class="sd">        data : ArrayLike</span>
 <span class="sd">            Input signal as a 1D ArrayLike.</span>
 <span class="sd">        unit : str, optional</span>
-<span class="sd">            Desired unit of the entropy, determines the logarithmic base used for calculatein. </span>
+<span class="sd">            Desired unit of the entropy, determines the logarithmic base used for calculatein.</span>
 <span class="sd">            Choose from &quot;bits&quot; (log2), &quot;nat&quot; (ln), or &quot;dits&quot;/&quot;bans&quot;/&quot;hartleys&quot; (log10).</span>
 <span class="sd">            Defaults to &quot;bits&quot;.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        float </span>
+<span class="sd">        float</span>
 <span class="sd">            Temporal entropy.</span>
 <span class="sd">    References:</span>
 <span class="sd">        1. https://de.mathworks.com/help/signal/ref/spectralentropy.html accessed January 13th, 2025. 18:34 pm</span>
@@ -372,10 +375,10 @@
 <div class="viewcode-block" id="temporal_features">
 <a class="viewcode-back" href="../../../biosonic.compute.html#biosonic.compute.temporal.temporal_features">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">temporal_features</span><span class="p">(</span>
-        <span class="n">data</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">],</span> 
-        <span class="n">sr</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> 
+        <span class="n">data</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">],</span>
+        <span class="n">sr</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">kernel_size</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">]]]:</span>
+        <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">]]]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Extracts a set of temporal features from the amplitude envelope of a signal.</span>
 
@@ -390,13 +393,14 @@
 <span class="sd">        &quot;temporal_skew&quot;: float,</span>
 <span class="sd">        &quot;temporal_kurtosis&quot;: float,</span>
 <span class="sd">        &quot;amplitude_envelope&quot;: NDArray[np.float64],</span>
-<span class="sd">        &quot;duration&quot;: float</span>
+<span class="sd">        &quot;duration&quot;: float,</span>
+<span class="sd">        &quot;temporal_entropy&quot;: float</span>
 <span class="sd">        }</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">envelope</span> <span class="o">=</span> <span class="n">amplitude_envelope</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
     <span class="n">times</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span><span class="o">/</span><span class="n">sr</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
     <span class="n">t_q1</span><span class="p">,</span> <span class="n">t_median</span><span class="p">,</span> <span class="n">t_q3</span> <span class="o">=</span> <span class="n">temporal_quartiles</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sr</span><span class="p">,</span> <span class="n">kernel_size</span><span class="p">)</span>
-    
+
     <span class="n">features</span> <span class="o">=</span> <span class="p">{</span>
         <span class="s2">&quot;t_q1&quot;</span><span class="p">:</span> <span class="n">t_q1</span><span class="p">,</span>
         <span class="s2">&quot;t_median&quot;</span><span class="p">:</span> <span class="n">t_median</span><span class="p">,</span>
@@ -406,7 +410,8 @@
         <span class="s2">&quot;temporal_skew&quot;</span><span class="p">:</span> <span class="n">skewness</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sr</span><span class="p">,</span> <span class="n">kernel_size</span><span class="p">),</span>
         <span class="s2">&quot;temporal_kurtosis&quot;</span><span class="p">:</span> <span class="n">temporal_kurtosis</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sr</span><span class="p">,</span> <span class="n">kernel_size</span><span class="p">),</span>
         <span class="s2">&quot;amplitude_envelope&quot;</span><span class="p">:</span> <span class="n">envelope</span><span class="p">,</span>
-        <span class="s2">&quot;duration&quot;</span><span class="p">:</span> <span class="n">duration</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sr</span><span class="p">,</span> <span class="n">exclude_surrounding_silences</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="s2">&quot;duration&quot;</span><span class="p">:</span> <span class="n">duration</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sr</span><span class="p">,</span> <span class="n">exclude_surrounding_silences</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+        <span class="s2">&quot;temporal_entropy&quot;</span><span class="p">:</span> <span class="n">temporal_entropy</span><span class="p">(</span><span class="n">data</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
     <span class="p">}</span>
 
     <span class="k">return</span> <span class="n">features</span></div>
