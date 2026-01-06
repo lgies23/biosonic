@@ -1,7 +1,7 @@
 biosonic: bioacoustic signal analysis toolkit
 =============================================
 
-biosonic is a Python toolkit for advanced bioacoustic signal analysis, visualization, and feature extraction. 
+biosonic is a Python toolkit for advanced bioacoustic signal analysis, visualization, and feature extraction.
 It provides tools for reading, processing, and visualizing animal sound recordings, with a focus on flexibility and reproducibility while staying lightweight.
 
 Features

@@ -94,11 +94,11 @@ def cumulative_distribution_function(envelope: NDArray[np.float32]) -> NDArray[n
 def extract_all_features(
     data: ArrayLike,
     sr: int,
-    kernel_size: Optional[int] = None,
     n_dominant_freqs: int = 1,
     plot: bool = False,
     plot_kwargs: dict[str, Any] = {},
     spec_kwargs: dict[str, Any] = {},
+    envelope_kwargs: dict[str, Any] = {},
     **kwargs: dict[str, Any]
 ) -> dict[str, Any]:
     """
@@ -107,7 +107,6 @@ def extract_all_features(
     Args:
         data (ArrayLike): Input 1D signal.
         sr (int): Sampling rate in Hz.
-        kernel_size (Optional[int]): Size of smoothing kernel for amplitude envelope.
         n_dominant_freqs (int): Number of dominant frequencies to extract per frame.
         **kwargs (dict[str, Any]): Optional parameters for dominant frequency estimation.
 
@@ -121,7 +120,7 @@ def extract_all_features(
     data = check_signal_format(data)
     sr = check_sr_format(sr)
 
-    temporal_feats = temporal_features(data, sr, kernel_size)
+    temporal_feats = temporal_features(data, sr, return_trim_indices=plot, **envelope_kwargs)
     spectral_feats = spectral_features(data, sr)
     spectrotemporal_feats = spectrotemporal_features(data, sr, n_dominant_freqs, **kwargs)
 
@@ -439,8 +438,10 @@ def frame_signal(
         timestep: float = 0.01,
         normalize: bool = False
     ) -> ArrayLike:
-    samples_step = timestep * sr
-    data = np.pad(data, int(window_length / 2), mode='reflect')
+
+    samples_step = int(timestep * sr)
+
+    data = np.pad(data, int(window_length / 2), mode='edge')
 
     frame_num = int((len(data) - window_length) / samples_step) + 1
     frames = np.zeros((frame_num, window_length))
@@ -477,3 +478,35 @@ def window_signal(
     frames = frame_signal(data, sr, window_length, timestep, normalize)
 
     return frames * window
+
+
+def rms(
+        data: ArrayLike,
+        sr: int,
+        window_length: int = 512,
+        timestep: float = 0.01
+    ) -> Tuple[NDArray[np.float32], NDArray[np.float32]]:
+    """
+    Compute RMS amplitude over sliding windows.
+
+    Parameters
+    ----------
+    data : ArrayLike
+        1D array containing the audio signal.
+    sr : int
+        Sampling rate of the audio signal in Hz.
+    window_length : int, optional
+        Length of each analysis window in samples. Default is 512.
+    timestep : float, optional
+        Step size between consecutive windows in seconds. Default is 0.01 s.
+
+    Returns
+    -------
+    rms : np.ndarray
+        RMS values per frame.
+    """
+
+    frames = frame_signal(data, sr, window_length=window_length, timestep=timestep, normalize=False)
+    rms_vals = np.sqrt(np.mean(np.square(frames), axis=1))
+    times_s = np.arange(len(rms_vals)) * timestep
+    return rms_vals, times_s

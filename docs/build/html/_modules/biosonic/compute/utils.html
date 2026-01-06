@@ -40,8 +40,9 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
 <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../example_usage.html">Example usage</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../biosonic.html">biosonic package</a></li>
 </ul>
 
@@ -183,11 +184,11 @@
 <span class="k">def</span><span class="w"> </span><span class="nf">extract_all_features</span><span class="p">(</span>
     <span class="n">data</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">,</span>
     <span class="n">sr</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-    <span class="n">kernel_size</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">n_dominant_freqs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
     <span class="n">plot</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">plot_kwargs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{},</span>
     <span class="n">spec_kwargs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{},</span>
+    <span class="n">envelope_kwargs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{},</span>
     <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
@@ -196,7 +197,6 @@
 <span class="sd">    Args:</span>
 <span class="sd">        data (ArrayLike): Input 1D signal.</span>
 <span class="sd">        sr (int): Sampling rate in Hz.</span>
-<span class="sd">        kernel_size (Optional[int]): Size of smoothing kernel for amplitude envelope.</span>
 <span class="sd">        n_dominant_freqs (int): Number of dominant frequencies to extract per frame.</span>
 <span class="sd">        **kwargs (dict[str, Any]): Optional parameters for dominant frequency estimation.</span>
 
@@ -210,7 +210,7 @@
     <span class="n">data</span> <span class="o">=</span> <span class="n">check_signal_format</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
     <span class="n">sr</span> <span class="o">=</span> <span class="n">check_sr_format</span><span class="p">(</span><span class="n">sr</span><span class="p">)</span>
 
-    <span class="n">temporal_feats</span> <span class="o">=</span> <span class="n">temporal_features</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sr</span><span class="p">,</span> <span class="n">kernel_size</span><span class="p">)</span>
+    <span class="n">temporal_feats</span> <span class="o">=</span> <span class="n">temporal_features</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sr</span><span class="p">,</span> <span class="n">return_trim_indices</span><span class="o">=</span><span class="n">plot</span><span class="p">,</span> <span class="o">**</span><span class="n">envelope_kwargs</span><span class="p">)</span>
     <span class="n">spectral_feats</span> <span class="o">=</span> <span class="n">spectral_features</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sr</span><span class="p">)</span>
     <span class="n">spectrotemporal_feats</span> <span class="o">=</span> <span class="n">spectrotemporal_features</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sr</span><span class="p">,</span> <span class="n">n_dominant_freqs</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
@@ -543,8 +543,10 @@
         <span class="n">timestep</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.01</span><span class="p">,</span>
         <span class="n">normalize</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ArrayLike</span><span class="p">:</span>
-    <span class="n">samples_step</span> <span class="o">=</span> <span class="n">timestep</span> <span class="o">*</span> <span class="n">sr</span>
-    <span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">pad</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">window_length</span> <span class="o">/</span> <span class="mi">2</span><span class="p">),</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;reflect&#39;</span><span class="p">)</span>
+
+    <span class="n">samples_step</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">timestep</span> <span class="o">*</span> <span class="n">sr</span><span class="p">)</span>
+
+    <span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">pad</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">window_length</span> <span class="o">/</span> <span class="mi">2</span><span class="p">),</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;edge&#39;</span><span class="p">)</span>
 
     <span class="n">frame_num</span> <span class="o">=</span> <span class="nb">int</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="o">-</span> <span class="n">window_length</span><span class="p">)</span> <span class="o">/</span> <span class="n">samples_step</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
     <span class="n">frames</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">frame_num</span><span class="p">,</span> <span class="n">window_length</span><span class="p">))</span>
@@ -584,6 +586,41 @@
     <span class="n">frames</span> <span class="o">=</span> <span class="n">frame_signal</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sr</span><span class="p">,</span> <span class="n">window_length</span><span class="p">,</span> <span class="n">timestep</span><span class="p">,</span> <span class="n">normalize</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">frames</span> <span class="o">*</span> <span class="n">window</span></div>
+
+
+
+<div class="viewcode-block" id="rms">
+<a class="viewcode-back" href="../../../biosonic.compute.html#biosonic.compute.utils.rms">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">rms</span><span class="p">(</span>
+        <span class="n">data</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">,</span>
+        <span class="n">sr</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">window_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">512</span><span class="p">,</span>
+        <span class="n">timestep</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.01</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">],</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Compute RMS amplitude over sliding windows.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    data : ArrayLike</span>
+<span class="sd">        1D array containing the audio signal.</span>
+<span class="sd">    sr : int</span>
+<span class="sd">        Sampling rate of the audio signal in Hz.</span>
+<span class="sd">    window_length : int, optional</span>
+<span class="sd">        Length of each analysis window in samples. Default is 512.</span>
+<span class="sd">    timestep : float, optional</span>
+<span class="sd">        Step size between consecutive windows in seconds. Default is 0.01 s.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    rms : np.ndarray</span>
+<span class="sd">        RMS values per frame.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">frames</span> <span class="o">=</span> <span class="n">frame_signal</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sr</span><span class="p">,</span> <span class="n">window_length</span><span class="o">=</span><span class="n">window_length</span><span class="p">,</span> <span class="n">timestep</span><span class="o">=</span><span class="n">timestep</span><span class="p">,</span> <span class="n">normalize</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">rms_vals</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">frames</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
+    <span class="n">times_s</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">rms_vals</span><span class="p">))</span> <span class="o">*</span> <span class="n">timestep</span>
+    <span class="k">return</span> <span class="n">rms_vals</span><span class="p">,</span> <span class="n">times_s</span></div>
 
 </pre></div>
 

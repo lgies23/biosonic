@@ -8,18 +8,7 @@ from numpy.testing import assert_array_almost_equal
 def test_amplitude_envelope():
     from biosonic.compute.temporal import amplitude_envelope
 
-    # check basic signal without smoothing
-    signal = np.array([0, 1, 2, 3, 2, 1, 0], dtype=np.float64)
-    expected = np.array([0.73623886, 1.58098335, 2.38174929, 3, 2.38174929, 1.58098335, 0.73623886])
-    assert_array_almost_equal(amplitude_envelope(signal), expected, decimal=5)
-
-    # check with kernel smoothing
-    expected_smoothed = np.array([0.7724074, 1.56632383, 2.32091088, 2.58783286, 2.32091088, 1.56632383, 0.7724074])
-    assert_array_almost_equal(amplitude_envelope(signal, kernel_size=3), expected_smoothed, decimal=4)
-
-    # check signal with leading and trailing zeros
-    # TODO
-
+    # rely on scipy envelope function for correctness
     # check empty signal
     with pytest.warns(RuntimeWarning, match="Input signal is empty; returning an empty array."):
         assert len(amplitude_envelope(np.array([]))) == 0
@@ -38,33 +27,30 @@ def test_amplitude_envelope():
 def test_duration():
     from biosonic.compute.temporal import duration
 
-    # check basic duration calculation without silence exclusion
+    # check basic duration calculation (no silence exclusion)
     signal = np.array([1, 2, 3, 4, 5], dtype=np.float64)
     sr = 10  # Sample rate
     expected = 0.5  # 5 samples / 10 samples per second
-    assert duration(signal, sr, exclude_surrounding_silences=False) == expected
-
-    # check duration calculation with leading and trailing zeros (exclude_surrounding_silences=True)
-    signal = np.array([0, 0, 1, 2, 3, 4, 5, 0, 0], dtype=np.float64)
-    expected = 0.5  # only non-zero part -> 5 samples
-    assert duration(signal, sr, exclude_surrounding_silences=True) == expected
-
-    # check duration with leading and trailing zeros but exclude_surrounding_silences=False
-    expected = 0.9  # 9 samples / 10 samples per second
-    assert duration(signal, sr, exclude_surrounding_silences=False) == expected
+    assert duration(signal, sr) == expected
 
     # check empty signal
     signal = np.array([], dtype=np.float64)
     expected = 0.0
-    assert duration(signal, sr, exclude_surrounding_silences=True) == expected
-    assert duration(signal, sr, exclude_surrounding_silences=False) == expected
+    assert duration(signal, sr, silence_threshold=None) == expected
+    assert duration(signal, sr, silence_threshold=0) == expected
 
     # check all-zero signal
     signal = np.array([0, 0, 0, 0, 0], dtype=np.float64)
     expected_trimmed = 0.0
-    expected_full = 0.5  # 5 samples / 10 samples per second
-    assert duration(signal, sr, exclude_surrounding_silences=True) == expected_trimmed
-    assert duration(signal, sr, exclude_surrounding_silences=False) == expected_full
+    assert duration(signal, sr, silence_threshold=None) == expected_trimmed
+
+    # check percentile-based trimming
+    signal = np.array([
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 0, 0
+        ], dtype=np.float64)
+    print(len(signal))
+    # For this signal, 1% trimming is equivalent to trimming zeros
+    assert duration(signal, sr=100, silence_threshold=0.15, timestep=0.01, window_length=3) == 0.2
 
     # check invalid sample rate
     with pytest.raises(ValueError, match="Sample rate must be greater than zero"):

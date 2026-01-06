@@ -335,6 +335,10 @@ def plot_features(
     if not features:
         features = extract_all_features(data, sr, **kwargs)
 
+    if "trim_indices" not in features:
+        features["trim_indices"] = (0, len(data))
+        features["trim_times"] = (0, len(data) / sr)
+
     _, times, _ = spectrogram(data, sr)
     freq_ms, ms = spectrum(data, sr)
 
@@ -393,14 +397,16 @@ def plot_features(
     ax3.set_title("Waveform with Amplitude Envelope and Time-domain Features")
     times_waveform = np.linspace(0, len(data) / sr, num=len(data))
     ax3.plot(times_waveform, data, label="Waveform", color="grey", alpha=0.3)
-    ax3.plot(times_waveform, features["amplitude_envelope"], label="Amplitude Envelope", color="#A2A2A2")
-    ax3.axvline(features["t_median"], color="#48ad46b5", linestyle="-", label="Median")
-    ax3.axvline(features["t_q1"], color="#88d253aa", linestyle="-", label="Q1")
-    ax3.axvline(features["t_q3"], color="#267746A9", linestyle="-", label="Q3")
-    ax3.fill_betweenx(
-        y=[0, np.max(features["amplitude_envelope"])],
-        x1=features["temporal_centroid"] - features["temporal_sd"],
-        x2=features["temporal_centroid"] + features["temporal_sd"],
+    ax3.plot(times_waveform[features["trim_indices"][0]:features["trim_indices"][1]], features["amplitude_envelope"],
+             label="Amplitude Envelope", color="#A2A2A2")
+    if features["trim_times"][0] >= 0 or features["trim_times"][1] <= len(data) / sr:
+        ax3.axvspan(features["trim_times"][0], features["trim_times"][1], color="#696969C5", label="Processed Region", alpha=0.1)
+    ax3.axvline(features["t_median"]+features["trim_times"][0], color="#48ad46b5", linestyle="-", label="Median")
+    ax3.axvline(features["t_q1"]+features["trim_times"][0], color="#88d253aa", linestyle="-", label="Q1")
+    ax3.axvline(features["t_q3"]+features["trim_times"][0], color="#267746A9", linestyle="-", label="Q3")
+    ax3.axvspan(
+        features["temporal_centroid"] - features["temporal_sd"],
+        features["temporal_centroid"] + features["temporal_sd"],
         color='grey',
         alpha=0.2,
         label='Bandwidth'

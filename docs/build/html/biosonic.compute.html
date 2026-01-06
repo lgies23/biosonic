@@ -22,7 +22,6 @@
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Example usage of the biosonic package" href="example_usage.html" />
     <link rel="prev" title="biosonic package" href="biosonic.html" /> 
 </head>
 
@@ -45,8 +44,9 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
 <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="example_usage.html">Example usage</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="biosonic.html">biosonic package</a><ul class="current">
 <li class="toctree-l2 current"><a class="reference internal" href="biosonic.html#subpackages">Subpackages</a><ul class="current">
 <li class="toctree-l3 current"><a class="current reference internal" href="#">biosonic.compute package</a><ul>
@@ -70,7 +70,6 @@
 <li class="toctree-l2"><a class="reference internal" href="biosonic.html#module-biosonic">Module contents</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="example_usage.html">Example usage of the biosonic package</a></li>
 </ul>
 
         </div>
@@ -969,29 +968,33 @@ Optional parameters for dominant frequency estimation.</p></li>
 <span id="biosonic-compute-temporal-module"></span><h2>biosonic.compute.temporal module<a class="headerlink" href="#module-biosonic.compute.temporal" title="Link to this heading"></a></h2>
 <dl class="py function">
 <dt class="sig sig-object py" id="biosonic.compute.temporal.amplitude_envelope">
-<span class="sig-prename descclassname"><span class="pre">biosonic.compute.temporal.</span></span><span class="sig-name descname"><span class="pre">amplitude_envelope</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">remove_trailing_zeros</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">avoid_zero_values</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/biosonic/compute/temporal.html#amplitude_envelope"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#biosonic.compute.temporal.amplitude_envelope" title="Link to this definition"></a></dt>
-<dd><p>Computes the amplitude envelope of a signal using the Hilbert transform.</p>
-<p>The function applies the Hilbert transform to calculate the analytic signal of the input data
-and then computes the envelope as the absolute value of the analytic signal. Optionally,
-a smoothing kernel (Daniell kernel, moving average) can be applied to smooth the envelope.</p>
+<span class="sig-prename descclassname"><span class="pre">biosonic.compute.temporal.</span></span><span class="sig-name descname"><span class="pre">amplitude_envelope</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_out</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">avoid_zero_values</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">silence_threshold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_indices</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">rms_kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/biosonic/compute/temporal.html#amplitude_envelope"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#biosonic.compute.temporal.amplitude_envelope" title="Link to this definition"></a></dt>
+<dd><p>Computes the amplitude envelope of a signal using scipy.signal.envelope.
+Optionally, silences can be removed based on percentile thresholds.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>data</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">TypeAliasType</span></code></span>) – ArrayLike
 A 1D array-like representing the input signal.</p></li>
-<li><p><strong>kernel_size</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]</span>) – Optional[int]
-The size of the moving average kernel to smooth the envelope. Must be an uneven number.
-If <cite>None</cite>, no smoothing is applied (default is <cite>None</cite>).</p></li>
-<li><p><strong>remove_trailing_zeros</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></span>) – Optional[bool]
-If <cite>True</cite>, removes leading and trailing zeros of the envelope after applying Hilbert transform.
-Defaults to <cite>True</cite></p></li>
+<li><p><strong>n_out</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]</span>) – Optional[int]
+The number of points in the output envelope. If <cite>None</cite>, the output length is the same as the input length.</p></li>
 <li><p><strong>avoid_zero_values</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></span>) – Optional[bool]
 If <cite>True</cite>, replaces zero values with 1e-10 after applying Hilbert transform and removing leading and trailing zeros.
 Defaults to <cite>False</cite></p></li>
+<li><p><strong>silence_threshold</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]</span>) – Optional[float]
+If None, leading and trailing silences (zeros) in the audio signal will be removed before calculating duration.
+If a float between 0 and 50, trims the given percentile from both ends based on amplitude envelope (e.g., 1.0 trims 1 percentile from each end).
+Defaults to None.</p></li>
+<li><p><strong>return_indices</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></span>) – Optional[bool]
+If <cite>True</cite>, returns a tuple containing the amplitude envelope and a tuple of start and end sample indices used for trimming silences.
+Defaults to <cite>False</cite>.</p></li>
+<li><p><strong>**rms_kwargs</strong> (<em>Any</em>) – Additional keyword arguments passed to the <cite>rms</cite> function for silence trimming.</p></li>
+<li><p><strong>sr</strong> (<em>int</em><em> | </em><em>None</em>)</p></li>
+<li><p><strong>**rms_kwargs</strong></p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a>[<code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">...</span></code>], <a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.dtype.html#numpy.dtype" title="(in NumPy v2.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dtype</span></code></a>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float64</span></code>]]</span></p>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a>[<code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">...</span></code>], <a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.dtype.html#numpy.dtype" title="(in NumPy v2.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dtype</span></code></a>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float64</span></code>]], <code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a>[<code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">...</span></code>], <a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.dtype.html#numpy.dtype" title="(in NumPy v2.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dtype</span></code></a>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float64</span></code>]], <code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]]]</span></p>
 </dd>
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p><dl class="simple">
@@ -1011,16 +1014,20 @@ Defaults to <cite>False</cite></p></li>
 </div>
 <p class="rubric">Notes</p>
 <ul class="simple">
-<li><p>The Hilbert transform is used to generate the analytic signal.</p></li>
-<li><p>If <cite>kernel_size</cite> is provided, a moving average filter (Daniell kernel) is applied to smooth the envelope.</p></li>
-<li><p>The envelope is processed to remove any leading or trailing zeros using the <cite>exclude_trailing_and_leading_zeros</cite> function.</p></li>
+<li><p>This function relies on <cite>scipy.signal.envelope</cite> to compute the amplitude envelope.</p></li>
+<li><p>The optional <cite>silence_threshold</cite> parameter allows for trimming of leading and trailing silences based on a</p></li>
 </ul>
+<p>relative RMS threshold as in librosa and soundgen (see references).</p>
+<p class="rubric">References</p>
+<ol class="arabic simple">
+<li><p><a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.envelope.html">https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.envelope.html</a> accessed January 5th, 2026. 2:49 pm</p></li>
+</ol>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="biosonic.compute.temporal.duration">
-<span class="sig-prename descclassname"><span class="pre">biosonic.compute.temporal.</span></span><span class="sig-name descname"><span class="pre">duration</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exclude_surrounding_silences</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/biosonic/compute/temporal.html#duration"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#biosonic.compute.temporal.duration" title="Link to this definition"></a></dt>
-<dd><p>Returns the duration in seconds of a signal.</p>
+<span class="sig-prename descclassname"><span class="pre">biosonic.compute.temporal.</span></span><span class="sig-name descname"><span class="pre">duration</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sr</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">envelope_kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/biosonic/compute/temporal.html#duration"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#biosonic.compute.temporal.duration" title="Link to this definition"></a></dt>
+<dd><p>Returns the duration in seconds of a signal, optionally trimming leading and trailing silences based on percentiles.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -1028,10 +1035,12 @@ Defaults to <cite>False</cite></p></li>
 The audio signal data.</p></li>
 <li><p><strong>sr</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span>) – int
 The sample rate of the audio signal (samples per second).</p></li>
-<li><p><strong>exclude_surrounding_silences</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>]</span>) – bool, optional
-If True, leading and trailing silences (zeros) in the audio
-signal will be removed before calculating duration.
-Defaults to False.</p></li>
+<li><p><strong>percentile_silence</strong> – Optional[float]
+If None, leading and trailing silences (zeros) in the audio signal will be removed before calculating duration.
+If a float between 0 and 50, trims the given percentile from both ends based on amplitude envelope (e.g., 1.0 trims 1 percentile from each end).
+Defaults to None.</p></li>
+<li><p><strong>**rms_kwargs</strong> – Additional keyword arguments passed to the <cite>rms</cite> function for silence trimming.</p></li>
+<li><p><strong>envelope_kwargs</strong> (<em>Any</em>)</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
@@ -1049,17 +1058,18 @@ Defaults to False.</p></li>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="biosonic.compute.temporal.skewness">
-<span class="sig-prename descclassname"><span class="pre">biosonic.compute.temporal.</span></span><span class="sig-name descname"><span class="pre">skewness</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/biosonic/compute/temporal.html#skewness"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#biosonic.compute.temporal.skewness" title="Link to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">biosonic.compute.temporal.</span></span><span class="sig-name descname"><span class="pre">skewness</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">envelope_kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/biosonic/compute/temporal.html#skewness"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#biosonic.compute.temporal.skewness" title="Link to this definition"></a></dt>
 <dd><p>Computes the temporal skew of the signal.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>data</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">TypeAliasType</span></code></span>) – ArrayLike
 The signal, stored as a 1D NumPy array of float64 values.</p></li>
-<li><p><strong>sr</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span>) – int
+<li><p><strong>sr</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]</span>) – int
 The sample rate of the signal (Hz).</p></li>
-<li><p><strong>kernel_size</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]</span>) – Optional[int]
+<li><p><strong>kernel_size</strong> – Optional[int]
 Optional smoothing kernel applied to the amplitude envelope.</p></li>
+<li><p><strong>envelope_kwargs</strong> (<em>Any</em>)</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
@@ -1077,7 +1087,7 @@ Optional smoothing kernel applied to the amplitude envelope.</p></li>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="biosonic.compute.temporal.temporal_entropy">
-<span class="sig-prename descclassname"><span class="pre">biosonic.compute.temporal.</span></span><span class="sig-name descname"><span class="pre">temporal_entropy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">unit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'bits'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/biosonic/compute/temporal.html#temporal_entropy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#biosonic.compute.temporal.temporal_entropy" title="Link to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">biosonic.compute.temporal.</span></span><span class="sig-name descname"><span class="pre">temporal_entropy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">unit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'bits'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">norm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">envelope_kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/biosonic/compute/temporal.html#temporal_entropy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#biosonic.compute.temporal.temporal_entropy" title="Link to this definition"></a></dt>
 <dd><p>Calculates the entropy of the amplitude envelope as follows:
 1. Compute the amplitude envelope.
 2. Calculate a discrete probability distribution from the histogram of the envelope.
@@ -1091,8 +1101,12 @@ Input signal as a 1D ArrayLike.</p></li>
 Desired unit of the entropy, determines the logarithmic base used for calculatein.
 Choose from “bits” (log2), “nat” (ln), or “dits”/”bans”/”hartleys” (log10).
 Defaults to “bits”.</p></li>
-<li><p><strong>args</strong> (<em>Any</em>)</p></li>
-<li><p><strong>kwargs</strong> (<em>Any</em>)</p></li>
+<li><p><strong>norm</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></span>) – bool, optional
+If True, normalizes the entropy by dividing it by the log of the number of bins.
+Defaults to False.</p></li>
+<li><p><strong>**envelope_kwargs</strong> (<em>Any</em>) – Additional keyword arguments passed to the <cite>amplitude_envelope</cite> function.</p></li>
+<li><p><strong>sr</strong> (<em>int</em><em> | </em><em>None</em>)</p></li>
+<li><p><strong>**envelope_kwargs</strong></p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
@@ -1118,11 +1132,11 @@ Defaults to “bits”.</p></li>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="biosonic.compute.temporal.temporal_features">
-<span class="sig-prename descclassname"><span class="pre">biosonic.compute.temporal.</span></span><span class="sig-name descname"><span class="pre">temporal_features</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/biosonic/compute/temporal.html#temporal_features"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#biosonic.compute.temporal.temporal_features" title="Link to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">biosonic.compute.temporal.</span></span><span class="sig-name descname"><span class="pre">temporal_features</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_trim_indices</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">envelope_kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/biosonic/compute/temporal.html#temporal_features"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#biosonic.compute.temporal.temporal_features" title="Link to this definition"></a></dt>
 <dd><p>Extracts a set of temporal features from the amplitude envelope of a signal.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a>[<code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">...</span></code>], <a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.dtype.html#numpy.dtype" title="(in NumPy v2.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dtype</span></code></a>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float32</span></code>]]]]</span></p>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a>[<code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">...</span></code>], <a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.dtype.html#numpy.dtype" title="(in NumPy v2.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dtype</span></code></a>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float32</span></code>]], <code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]]]</span></p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>dict
@@ -1142,7 +1156,8 @@ Defaults to “bits”.</p></li>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>data</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><em>ndarray</em></a><em>[</em><em>tuple</em><em>[</em><em>Any</em><em>, </em><em>...</em><em>]</em><em>, </em><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.dtype.html#numpy.dtype" title="(in NumPy v2.4)"><em>dtype</em></a><em>[</em><em>float32</em><em>]</em><em>]</em>)</p></li>
 <li><p><strong>sr</strong> (<em>int</em>)</p></li>
-<li><p><strong>kernel_size</strong> (<em>int</em><em> | </em><em>None</em>)</p></li>
+<li><p><strong>return_trim_indices</strong> (<em>bool</em>)</p></li>
+<li><p><strong>envelope_kwargs</strong> (<em>Any</em>)</p></li>
 </ul>
 </dd>
 </dl>
@@ -1150,17 +1165,18 @@ Defaults to “bits”.</p></li>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="biosonic.compute.temporal.temporal_kurtosis">
-<span class="sig-prename descclassname"><span class="pre">biosonic.compute.temporal.</span></span><span class="sig-name descname"><span class="pre">temporal_kurtosis</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/biosonic/compute/temporal.html#temporal_kurtosis"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#biosonic.compute.temporal.temporal_kurtosis" title="Link to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">biosonic.compute.temporal.</span></span><span class="sig-name descname"><span class="pre">temporal_kurtosis</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">envelope_kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/biosonic/compute/temporal.html#temporal_kurtosis"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#biosonic.compute.temporal.temporal_kurtosis" title="Link to this definition"></a></dt>
 <dd><p>Computes the temporal kurtosis of the signal.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>data</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">TypeAliasType</span></code></span>) – ArrayLike
 The signal, stored as a 1D NumPy array of float64 values.</p></li>
-<li><p><strong>sr</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span>) – int
+<li><p><strong>sr</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]</span>) – int
 The sample rate of the signal (Hz).</p></li>
-<li><p><strong>kernel_size</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]</span>) – Optional[int]
+<li><p><strong>kernel_size</strong> – Optional[int]
 Optional smoothing kernel applied to the amplitude envelope.</p></li>
+<li><p><strong>envelope_kwargs</strong> (<em>Any</em>)</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
@@ -1178,7 +1194,7 @@ Optional smoothing kernel applied to the amplitude envelope.</p></li>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="biosonic.compute.temporal.temporal_quartiles">
-<span class="sig-prename descclassname"><span class="pre">biosonic.compute.temporal.</span></span><span class="sig-name descname"><span class="pre">temporal_quartiles</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/biosonic/compute/temporal.html#temporal_quartiles"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#biosonic.compute.temporal.temporal_quartiles" title="Link to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">biosonic.compute.temporal.</span></span><span class="sig-name descname"><span class="pre">temporal_quartiles</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sr</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">envelope_kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/biosonic/compute/temporal.html#temporal_quartiles"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#biosonic.compute.temporal.temporal_quartiles" title="Link to this definition"></a></dt>
 <dd><p>Computes the temporal quartiles (Q1, median, Q3) of the amplitude envelope.</p>
 <p>This function takes a signal and its sample rate, then normalizes the
 signal to obtain the amplitude envelope. It calculates the cumulative sum of the normalized
@@ -1192,8 +1208,9 @@ quartiles (Q1, median, Q3) of the signal.</p>
 The signal, stored as a 1D NumPy array of float64 values.</p></li>
 <li><p><strong>sr</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span>) – int
 The sample rate of the signal (Hz).</p></li>
-<li><p><strong>kernel_size</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]</span>) – Optional[int]
+<li><p><strong>kernel_size</strong> – Optional[int]
 Optional smoothing kernel applied to the amplitude envelope.</p></li>
+<li><p><strong>envelope_kwargs</strong> (<em>Any</em>)</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
@@ -1225,7 +1242,7 @@ time values in seconds.</p></li>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="biosonic.compute.temporal.temporal_sd">
-<span class="sig-prename descclassname"><span class="pre">biosonic.compute.temporal.</span></span><span class="sig-name descname"><span class="pre">temporal_sd</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/biosonic/compute/temporal.html#temporal_sd"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#biosonic.compute.temporal.temporal_sd" title="Link to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">biosonic.compute.temporal.</span></span><span class="sig-name descname"><span class="pre">temporal_sd</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sr</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">envelope_kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/biosonic/compute/temporal.html#temporal_sd"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#biosonic.compute.temporal.temporal_sd" title="Link to this definition"></a></dt>
 <dd><p>Computes the temporal standard deviation of the amplitude envelope.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -1234,8 +1251,9 @@ time values in seconds.</p></li>
 The signal, stored as a 1D NumPy array of float64 values.</p></li>
 <li><p><strong>sr</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span>) – int
 The sample rate of the signal (Hz).</p></li>
-<li><p><strong>kernel_size</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]</span>) – Optional[int]
+<li><p><strong>kernel_size</strong> – Optional[int]
 Optional smoothing kernel applied to the amplitude envelope.</p></li>
+<li><p><strong>envelope_kwargs</strong> (<em>Any</em>)</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
@@ -1336,19 +1354,19 @@ and last non-zero elements from the original array.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="biosonic.compute.utils.extract_all_features">
-<span class="sig-prename descclassname"><span class="pre">biosonic.compute.utils.</span></span><span class="sig-name descname"><span class="pre">extract_all_features</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_dominant_freqs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spec_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/biosonic/compute/utils.html#extract_all_features"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#biosonic.compute.utils.extract_all_features" title="Link to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">biosonic.compute.utils.</span></span><span class="sig-name descname"><span class="pre">extract_all_features</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_dominant_freqs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spec_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">envelope_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/biosonic/compute/utils.html#extract_all_features"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#biosonic.compute.utils.extract_all_features" title="Link to this definition"></a></dt>
 <dd><p>Extracts a comprehensive set of temporal and spectral features from a signal.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>data</strong> (<em>ArrayLike</em>) – Input 1D signal.</p></li>
 <li><p><strong>sr</strong> (<em>int</em>) – Sampling rate in Hz.</p></li>
-<li><p><strong>kernel_size</strong> (<em>Optional</em><em>[</em><em>int</em><em>]</em>) – Size of smoothing kernel for amplitude envelope.</p></li>
 <li><p><strong>n_dominant_freqs</strong> (<em>int</em>) – Number of dominant frequencies to extract per frame.</p></li>
 <li><p><strong>**kwargs</strong> (<em>dict</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>]</em>) – Optional parameters for dominant frequency estimation.</p></li>
 <li><p><strong>plot</strong> (<em>bool</em>)</p></li>
 <li><p><strong>plot_kwargs</strong> (<em>dict</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>]</em>)</p></li>
 <li><p><strong>spec_kwargs</strong> (<em>dict</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>]</em>)</p></li>
+<li><p><strong>envelope_kwargs</strong> (<em>dict</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>]</em>)</p></li>
 <li><p><strong>**kwargs</strong></p></li>
 </ul>
 </dd>
@@ -1469,6 +1487,28 @@ using one of several inverse Mel formulas.</p>
 </dd>
 <dt class="field-even">Parameters<span class="colon">:</span></dt>
 <dd class="field-even"><p><strong>envelope</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><em>ndarray</em></a><em>[</em><em>tuple</em><em>[</em><em>Any</em><em>, </em><em>...</em><em>]</em><em>, </em><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.dtype.html#numpy.dtype" title="(in NumPy v2.4)"><em>dtype</em></a><em>[</em><em>float32</em><em>]</em><em>]</em>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="biosonic.compute.utils.rms">
+<span class="sig-prename descclassname"><span class="pre">biosonic.compute.utils.</span></span><span class="sig-name descname"><span class="pre">rms</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">window_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">512</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timestep</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.01</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/biosonic/compute/utils.html#rms"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#biosonic.compute.utils.rms" title="Link to this definition"></a></dt>
+<dd><p>Compute RMS amplitude over sliding windows.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<em>ArrayLike</em>) – 1D array containing the audio signal.</p></li>
+<li><p><strong>sr</strong> (<em>int</em>) – Sampling rate of the audio signal in Hz.</p></li>
+<li><p><strong>window_length</strong> (<em>int</em><em>, </em><em>optional</em>) – Length of each analysis window in samples. Default is 512.</p></li>
+<li><p><strong>timestep</strong> (<em>float</em><em>, </em><em>optional</em>) – Step size between consecutive windows in seconds. Default is 0.01 s.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>rms</strong> – RMS values per frame.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>np.ndarray</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1600,7 +1640,6 @@ data type, and optionally with a channel dimension added.</p>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
         <a href="biosonic.html" class="btn btn-neutral float-left" title="biosonic package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="example_usage.html" class="btn btn-neutral float-right" title="Example usage of the biosonic package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

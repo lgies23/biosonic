@@ -90,7 +90,7 @@
   <section id="Example-usage">
 <h1>Example usage<a class="headerlink" href="#Example-usage" title="Link to this heading"></a></h1>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[73]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[34]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
@@ -107,7 +107,7 @@ zsh:1: no matches found: biosonic[praat]
 </pre></div></div>
 </div>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[74]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[35]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">biosonic</span><span class="w"> </span><span class="kn">import</span> <span class="n">handle</span><span class="p">,</span> <span class="n">plot</span><span class="p">,</span> <span class="n">compute</span><span class="p">,</span> <span class="nb">filter</span>
@@ -117,7 +117,7 @@ zsh:1: no matches found: biosonic[praat]
 <section id="Read-file-and-plot-spectrogram">
 <h2>Read file and plot spectrogram<a class="headerlink" href="#Read-file-and-plot-spectrogram" title="Link to this heading"></a></h2>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[75]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[36]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">data_folder</span> <span class="o">=</span> <span class="s2">&quot;./example_data/&quot;</span>
@@ -125,7 +125,7 @@ zsh:1: no matches found: biosonic[praat]
 </div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[76]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[37]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">data</span><span class="p">,</span> <span class="n">sr</span><span class="p">,</span> <span class="n">n_ch</span><span class="p">,</span> <span class="n">quant</span> <span class="o">=</span> <span class="n">handle</span><span class="o">.</span><span class="n">read_wav</span><span class="p">(</span><span class="n">data_folder</span><span class="o">+</span><span class="s2">&quot;GT00024_G00219_Dagobert_distance.wav&quot;</span><span class="p">)</span>
@@ -142,7 +142,7 @@ sampling rate: 44100, number of channels: 1, quantization: float32
 </pre></div></div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[77]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[38]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">WINDOW_LENGTH</span> <span class="o">=</span> <span class="mi">512</span>
@@ -160,7 +160,7 @@ sampling rate: 44100, number of channels: 1, quantization: float32
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[77]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[38]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
@@ -170,7 +170,7 @@ sampling rate: 44100, number of channels: 1, quantization: float32
 </pre></div></div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[78]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[39]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
@@ -199,7 +199,7 @@ sampling rate: 44100, number of channels: 1, quantization: float32
 </div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[79]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[40]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">plot</span><span class="o">.</span><span class="n">plot_spectrogram</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sr</span><span class="o">=</span><span class="n">sr</span><span class="p">,</span> <span class="n">window_length</span><span class="o">=</span><span class="n">WINDOW_LENGTH</span><span class="p">,</span> <span class="n">overlap</span><span class="o">=</span><span class="mi">95</span><span class="p">,</span> <span class="n">dynamic_range</span><span class="o">=</span><span class="n">DYNAMIC_RANGE</span><span class="p">,</span> <span class="n">freq_scale</span><span class="o">=</span><span class="s2">&quot;mel&quot;</span><span class="p">,</span> <span class="n">n_bands</span><span class="o">=</span><span class="mi">40</span><span class="p">)</span>
@@ -222,7 +222,7 @@ sampling rate: 44100, number of channels: 1, quantization: float32
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[79]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[40]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
@@ -232,7 +232,7 @@ sampling rate: 44100, number of channels: 1, quantization: float32
 </pre></div></div>
 </div>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[80]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[41]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># import librosa</span>
@@ -248,7 +248,7 @@ sampling rate: 44100, number of channels: 1, quantization: float32
 </div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[81]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[42]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">plot</span><span class="o">.</span><span class="n">plot_spectrogram</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sr</span><span class="o">=</span><span class="n">sr</span><span class="p">,</span> <span class="n">window_length</span><span class="o">=</span><span class="n">WINDOW_LENGTH</span><span class="p">,</span> <span class="n">overlap</span><span class="o">=</span><span class="mi">95</span><span class="p">,</span> <span class="n">dynamic_range</span><span class="o">=</span><span class="n">DYNAMIC_RANGE</span><span class="p">,</span> <span class="n">freq_scale</span><span class="o">=</span><span class="s2">&quot;log&quot;</span><span class="p">)</span>
@@ -263,7 +263,7 @@ sampling rate: 44100, number of channels: 1, quantization: float32
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[81]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[42]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
@@ -276,7 +276,7 @@ sampling rate: 44100, number of channels: 1, quantization: float32
 <section id="Cepstrum-and-cepstral-coefficients">
 <h2>Cepstrum and cepstral coefficients<a class="headerlink" href="#Cepstrum-and-cepstral-coefficients" title="Link to this heading"></a></h2>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[82]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[43]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">ceps</span> <span class="o">=</span> <span class="n">compute</span><span class="o">.</span><span class="n">spectrotemporal</span><span class="o">.</span><span class="n">cepstrum</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sr</span><span class="p">)</span>
@@ -292,7 +292,7 @@ sampling rate: 44100, number of channels: 1, quantization: float32
 </div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[83]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[44]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">plot</span><span class="o">.</span><span class="n">plot_cepstral_coefficients</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sr</span><span class="p">,</span> <span class="n">WINDOW_LENGTH</span><span class="p">,</span> <span class="n">filterbank_type</span><span class="o">=</span><span class="s2">&quot;log&quot;</span><span class="p">,</span> <span class="n">n_ceps</span><span class="o">=</span><span class="mi">18</span><span class="p">,</span> <span class="n">fmin</span><span class="o">=</span><span class="mi">2000</span><span class="p">)</span>
@@ -307,7 +307,7 @@ sampling rate: 44100, number of channels: 1, quantization: float32
 </div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[84]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[45]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">plot</span><span class="o">.</span><span class="n">plot_cepstral_coefficients</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sr</span><span class="p">,</span> <span class="n">WINDOW_LENGTH</span><span class="p">,</span> <span class="n">filterbank_type</span><span class="o">=</span><span class="s2">&quot;linear&quot;</span><span class="p">,</span> <span class="n">n_ceps</span><span class="o">=</span><span class="mi">18</span><span class="p">,</span> <span class="n">fmin</span><span class="o">=</span><span class="mi">2000</span><span class="p">)</span>
@@ -322,7 +322,7 @@ sampling rate: 44100, number of channels: 1, quantization: float32
 </div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[85]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[46]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">plot</span><span class="o">.</span><span class="n">plot_cepstral_coefficients</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sr</span><span class="p">,</span> <span class="n">WINDOW_LENGTH</span><span class="p">,</span> <span class="n">filterbank_type</span><span class="o">=</span><span class="s2">&quot;mel&quot;</span><span class="p">,</span> <span class="n">n_ceps</span><span class="o">=</span><span class="mi">18</span><span class="p">,</span> <span class="n">fmin</span><span class="o">=</span><span class="mi">2000</span><span class="p">)</span>
@@ -337,7 +337,7 @@ sampling rate: 44100, number of channels: 1, quantization: float32
 </div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[86]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[47]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">scipy.signal</span><span class="w"> </span><span class="kn">import</span> <span class="n">sawtooth</span>
@@ -364,7 +364,7 @@ sampling rate: 44100, number of channels: 1, quantization: float32
 <section id="Filter-signal">
 <h2>Filter signal<a class="headerlink" href="#Filter-signal" title="Link to this heading"></a></h2>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[87]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[48]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">data</span><span class="p">,</span> <span class="n">sr</span><span class="p">,</span> <span class="n">n_ch</span><span class="p">,</span> <span class="n">quant</span> <span class="o">=</span> <span class="n">handle</span><span class="o">.</span><span class="n">read_wav</span><span class="p">(</span><span class="n">data_folder</span><span class="o">+</span><span class="s2">&quot;/201.wav&quot;</span><span class="p">)</span>
@@ -389,7 +389,7 @@ sampling rate: 44100, number of channels: 1, quantization: float32
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[87]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[48]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
@@ -399,7 +399,7 @@ sampling rate: 44100, number of channels: 1, quantization: float32
 </pre></div></div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[88]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[49]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">x_filtered</span> <span class="o">=</span> <span class="nb">filter</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sr</span><span class="p">,</span> <span class="n">f_cutoff</span><span class="o">=</span><span class="mi">2500</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;highpass&quot;</span><span class="p">)</span>
@@ -415,7 +415,7 @@ sampling rate: 44100, number of channels: 1, quantization: float32
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[88]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[49]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
@@ -425,7 +425,7 @@ sampling rate: 44100, number of channels: 1, quantization: float32
 </pre></div></div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[89]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[50]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># change order for steeper frequency cutoff</span>
@@ -442,7 +442,7 @@ sampling rate: 44100, number of channels: 1, quantization: float32
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[89]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[50]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
@@ -455,7 +455,7 @@ sampling rate: 44100, number of channels: 1, quantization: float32
 <section id="Pitch-tracking">
 <h2>Pitch tracking<a class="headerlink" href="#Pitch-tracking" title="Link to this heading"></a></h2>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[90]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[51]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># praat autocorrelation pitch tracking</span>
@@ -474,10 +474,10 @@ sampling rate: 44100, number of channels: 1, quantization: float32
 <section id="Audio-feature-extraction">
 <h2>Audio feature extraction<a class="headerlink" href="#Audio-feature-extraction" title="Link to this heading"></a></h2>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[91]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[52]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">features</span> <span class="o">=</span> <span class="n">compute</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">extract_all_features</span><span class="p">(</span><span class="n">x_filtered</span><span class="p">,</span> <span class="n">sr</span><span class="p">,</span> <span class="n">min_prominence</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span> <span class="n">noise_threshold</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">plot</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">spec_kwargs</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;dynamic_range&quot;</span><span class="p">:</span> <span class="n">DYNAMIC_RANGE</span><span class="p">})</span> <span class="c1"># lower resolution for dom freqs?</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">features</span> <span class="o">=</span> <span class="n">compute</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">extract_all_features</span><span class="p">(</span><span class="n">x_filtered</span><span class="p">,</span> <span class="n">sr</span><span class="p">,</span> <span class="n">min_prominence</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span> <span class="n">noise_threshold</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">plot</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">envelope_kwargs</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;silence_threshold&quot;</span><span class="p">:</span> <span class="mf">0.05</span><span class="p">},</span> <span class="n">spec_kwargs</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;dynamic_range&quot;</span><span class="p">:</span> <span class="n">DYNAMIC_RANGE</span><span class="p">})</span> <span class="c1"># lower resolution for dom freqs?</span>
 </pre></div>
 </div>
 </div>
@@ -489,152 +489,139 @@ sampling rate: 44100, number of channels: 1, quantization: float32
 </div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[92]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[53]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">features</span> <span class="c1"># percentile based duration? #TODO spectral flux - more parameters</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">x2</span><span class="p">,</span> <span class="n">sr2</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">handle</span><span class="o">.</span><span class="n">read_wav</span><span class="p">(</span><span class="n">data_folder</span><span class="o">+</span><span class="s2">&quot;GT00024_G00219_Dagobert_distance.wav&quot;</span><span class="p">)</span>
+<span class="n">features</span> <span class="o">=</span> <span class="n">compute</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">extract_all_features</span><span class="p">(</span><span class="n">x2</span><span class="p">,</span> <span class="n">sr2</span><span class="p">,</span> <span class="n">min_prominence</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span> <span class="n">noise_threshold</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">plot</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">envelope_kwargs</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;silence_threshold&quot;</span><span class="p">:</span> <span class="mf">0.01</span><span class="p">},</span> <span class="n">spec_kwargs</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;dynamic_range&quot;</span><span class="p">:</span> <span class="n">DYNAMIC_RANGE</span><span class="p">})</span> <span class="c1"># lower resolution for dom freqs?</span>
 </pre></div>
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[92]:
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/example_usage_25_0.png" src="_images/example_usage_25_0.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">features</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-{&#39;t_q1&#39;: 1.3120634920634922,
- &#39;t_median&#39;: 1.635986394557823,
- &#39;t_q3&#39;: 1.96,
- &#39;temporal_centroid&#39;: np.float64(1.575421034756307),
- &#39;temporal_sd&#39;: 0.14219745993614197,
- &#39;temporal_skew&#39;: 1.701041579246521,
- &#39;temporal_kurtosis&#39;: 2.3180131912231445,
- &#39;amplitude_envelope&#39;: array([0.00216412, 0.00484224, 0.00438172, ..., 0.00178456, 0.00274392,
-        0.00248053], shape=(101762,), dtype=float32),
- &#39;duration&#39;: 2.307482993197279,
- &#39;temporal_entropy&#39;: 0.6972431441258984,
- &#39;fq_q1&#39;: np.float64(3319.135826732965),
- &#39;fq_median&#39;: np.float64(3570.920382854111),
- &#39;fq_q3&#39;: np.float64(3950.1139914702935),
- &#39;spectral_flatness&#39;: np.float32(0.00031226903),
- &#39;spectral_centroid&#39;: np.float64(4689.2712607487265),
- &#39;spectral_sd&#39;: np.float64(2320.8410518589726),
- &#39;spectral_skew&#39;: np.float64(2.8069179393064907),
- &#39;spectral_kurtosis&#39;: np.float64(12.066579155497605),
- &#39;peak_frequency&#39;: 3254.564572237181,
- &#39;pse&#39;: 0.7195254033497382,
- &#39;spectrotemporal_entropy&#39;: 0.5016841545100267,
+{&#39;t_q1&#39;: 0.13582766439909297,
+ &#39;t_median&#39;: 0.21848072562358276,
+ &#39;t_q3&#39;: 0.3056689342403628,
+ &#39;temporal_centroid&#39;: np.float64(0.390789263881122),
+ &#39;temporal_sd&#39;: 0.16312278807163239,
+ &#39;temporal_skew&#39;: 1.1527855396270752,
+ &#39;temporal_kurtosis&#39;: 1.427086353302002,
+ &#39;amplitude_envelope&#39;: array([0.01064709, 0.00333164, 0.0036631 , ..., 0.02279189, 0.01959393,
+        0.01777992], shape=(23814,), dtype=float32),
+ &#39;duration&#39;: 0.54,
+ &#39;temporal_entropy&#39;: 5.1806151021833085,
+ &#39;trim_indices&#39;: (7056, 30870),
+ &#39;trim_times&#39;: (0.16, 0.7),
+ &#39;fq_q1&#39;: np.float64(1859.7795850763384),
+ &#39;fq_median&#39;: np.float64(3345.9176523050137),
+ &#39;fq_q3&#39;: np.float64(3821.631665003292),
+ &#39;spectral_flatness&#39;: np.float32(0.00090685516),
+ &#39;spectral_centroid&#39;: np.float64(4687.6186591089645),
+ &#39;spectral_sd&#39;: np.float64(3471.778381314025),
+ &#39;spectral_skew&#39;: np.float64(1.5079534767972311),
+ &#39;spectral_kurtosis&#39;: np.float64(4.963427221706459),
+ &#39;peak_frequency&#39;: 1904.7289406068844,
+ &#39;pse&#39;: 0.6840756522188091,
+ &#39;spectrotemporal_entropy&#39;: 2.6155203100838933,
  &#39;dominant_freqs&#39;: array([         nan,          nan,          nan,          nan,
-                 nan,          nan,          nan, 3531.4453125,
-        7235.15625  , 7235.15625  , 7149.0234375, 3531.4453125,
-        6804.4921875, 6718.359375 , 3273.046875 ,          nan,
-                 nan,          nan,          nan,          nan,
-                 nan,          nan,          nan,          nan,
-                 nan,          nan,          nan, 3703.7109375,
-        4048.2421875, 8096.484375 , 3962.109375 , 7924.21875  ,
-                 nan, 3962.109375 , 3962.109375 , 7838.0859375,
-        7665.8203125, 3617.578125 , 6976.7578125,          nan,
-                 nan,          nan,          nan,          nan,
-                 nan,          nan,          nan,          nan,
-                 nan,          nan,          nan,          nan,
-                 nan,          nan, 4220.5078125, 8699.4140625,
-                 nan, 4220.5078125, 8354.8828125, 8354.8828125,
-                 nan, 8268.75     , 4048.2421875, 8096.484375 ,
-        7838.0859375, 7579.6875   , 7407.421875 ,          nan,
-                 nan,          nan,          nan,          nan,
-                 nan,          nan,          nan,          nan,
-                 nan,          nan,          nan,          nan,
-                 nan,          nan, 5254.1015625, 5254.1015625,
-        5167.96875  , 5167.96875  , 4220.5078125, 4134.375    ,
-        4134.375    , 4134.375    , 4048.2421875, 8182.6171875,
-        7924.21875  , 7924.21875  ,          nan,          nan,
-                 nan,          nan,          nan,          nan,
-                 nan,          nan,          nan,          nan,
-                 nan,          nan,          nan,          nan,
-                 nan,          nan,          nan, 4220.5078125,
-        4306.640625 , 4306.640625 , 4220.5078125, 4134.375    ,
-        4048.2421875, 4048.2421875, 4220.5078125, 4134.375    ,
                  nan,          nan,          nan,          nan,
                  nan,          nan,          nan,          nan,
                  nan,          nan,          nan,          nan,
                  nan,          nan,          nan,          nan,
-        4048.2421875,          nan, 4134.375    , 4134.375    ,
-        3962.109375 , 4048.2421875, 4134.375    , 4048.2421875,
-        3962.109375 , 3962.109375 , 3875.9765625,          nan,
-                 nan,          nan, 4134.375    , 4134.375    ,
                  nan,          nan,          nan,          nan,
                  nan,          nan,          nan,          nan,
-                 nan,          nan, 4220.5078125, 4220.5078125,
-        4220.5078125, 4220.5078125, 4134.375    , 4134.375    ,
-        4134.375    , 4134.375    , 4134.375    , 4048.2421875,
-        3962.109375 , 3962.109375 , 3789.84375  ,          nan,
-                 nan,          nan, 3962.109375 ,          nan,
+        1636.5234375, 1722.65625  , 1636.5234375,          nan,
+        1808.7890625, 1808.7890625, 1808.7890625, 1808.7890625,
+        3703.7109375, 1894.921875 , 1894.921875 , 1894.921875 ,
+        3789.84375  , 3789.84375  , 3789.84375  , 3789.84375  ,
+        3789.84375  , 3789.84375  , 1894.921875 , 1894.921875 ,
+        1808.7890625, 1808.7890625, 1808.7890625, 1808.7890625,
+        1894.921875 , 1894.921875 , 1894.921875 , 1894.921875 ,
+        1894.921875 , 1894.921875 , 3789.84375  , 3789.84375  ,
+        3789.84375  , 3789.84375  , 3789.84375  , 3789.84375  ,
+        3789.84375  , 3789.84375  , 3789.84375  , 3789.84375  ,
+        3789.84375  , 3789.84375  , 3789.84375  , 1894.921875 ,
+        1894.921875 , 1894.921875 , 1894.921875 , 1894.921875 ,
+        3703.7109375, 3703.7109375, 3703.7109375, 3703.7109375,
+        3703.7109375, 1808.7890625, 1808.7890625, 1808.7890625,
+        3531.4453125, 1894.921875 , 3617.578125 , 3703.7109375,
+        1808.7890625, 1033.59375  , 3617.578125 , 1808.7890625,
+        3531.4453125,          nan, 3186.9140625, 1808.7890625,
+        1808.7890625, 1808.7890625, 1119.7265625, 1119.7265625,
+                 nan, 1205.859375 , 1119.7265625, 1119.7265625,
+        1033.59375  , 1722.65625  , 1033.59375  , 1119.7265625,
+        1033.59375  , 1033.59375  , 1033.59375  , 1033.59375  ,
+        1033.59375  , 1033.59375  , 1033.59375  , 1033.59375  ,
+        3531.4453125, 1378.125    , 3273.046875 , 3273.046875 ,
+        3186.9140625,          nan,          nan,          nan,
                  nan,          nan,          nan,          nan,
                  nan,          nan,          nan,          nan,
-                 nan,          nan, 4134.375    , 4048.2421875,
-        4048.2421875, 3875.9765625, 3617.578125 , 3617.578125 ,
-        3617.578125 , 3617.578125 , 3531.4453125, 3359.1796875,
-        3359.1796875,          nan,          nan,          nan,
-                 nan, 3962.109375 , 3962.109375 ,          nan,
-                 nan,          nan,          nan, 5512.5      ,
-        3789.84375  , 3962.109375 , 3962.109375 , 3875.9765625,
-        3703.7109375,          nan, 3617.578125 , 3531.4453125,
-        3531.4453125, 3531.4453125, 3445.3125   , 3445.3125   ,
-        3359.1796875, 3273.046875 , 4306.640625 , 2928.515625 ,
-                 nan,          nan,          nan,          nan,
-                 nan,          nan,          nan, 3962.109375 ,
-        3014.6484375, 3186.9140625,          nan, 3875.9765625,
-        3789.84375  , 3617.578125 , 3531.4453125, 3531.4453125,
-        3445.3125   , 3359.1796875, 3359.1796875, 3359.1796875,
-        3273.046875 , 3273.046875 , 3273.046875 , 3186.9140625,
-        3100.78125  , 3014.6484375, 2842.3828125,          nan,
                  nan,          nan,          nan,          nan,
                  nan,          nan,          nan,          nan,
-                 nan,          nan, 3531.4453125, 3617.578125 ,
-        3875.9765625,          nan, 3703.7109375, 3617.578125 ,
-        3531.4453125, 3531.4453125, 3445.3125   , 3359.1796875,
-        3359.1796875, 3273.046875 , 3273.046875 , 3273.046875 ,
-        3273.046875 ,          nan, 3186.9140625, 3186.9140625,
-        3186.9140625, 3186.9140625, 3100.78125  , 3014.6484375,
-        3962.109375 , 3186.9140625,          nan,          nan,
                  nan,          nan,          nan,          nan,
                  nan,          nan,          nan,          nan,
-        3186.9140625,          nan,          nan, 4134.375    ,
-        3962.109375 , 3789.84375  , 3617.578125 , 3531.4453125,
-        3445.3125   , 3359.1796875, 3273.046875 , 3273.046875 ,
-        3273.046875 ,          nan, 3186.9140625, 3186.9140625,
-        3100.78125  , 3100.78125  , 3100.78125  , 3100.78125  ,
-        3014.6484375, 3875.9765625, 2583.984375 ,          nan,
                  nan,          nan,          nan,          nan,
                  nan,          nan,          nan,          nan,
-                 nan,          nan, 3617.578125 ,          nan,
-        3875.9765625, 3962.109375 , 3875.9765625, 3617.578125 ,
-        3531.4453125, 3531.4453125,          nan, 3445.3125   ,
-        3359.1796875, 3359.1796875, 3273.046875 , 3273.046875 ,
-        3186.9140625,          nan, 3100.78125  , 3100.78125  ,
-        4220.5078125, 4048.2421875,          nan,          nan,
                  nan,          nan,          nan,          nan,
                  nan,          nan,          nan,          nan,
-                 nan,          nan,          nan, 3789.84375  ,
-        5167.96875  , 3789.84375  , 3789.84375  , 3789.84375  ,
-        3703.7109375, 3617.578125 , 3531.4453125, 3445.3125   ,
-        3445.3125   , 3445.3125   , 3445.3125   , 3273.046875 ,
-        3273.046875 , 3273.046875 , 3273.046875 , 3186.9140625,
-        3186.9140625, 3014.6484375, 4134.375    ,          nan,
                  nan,          nan,          nan,          nan,
-                 nan,          nan,          nan,          nan]),
- &#39;mean_dom&#39;: np.float64(4115.797334558823),
- &#39;min_dom&#39;: 2583.984375,
- &#39;max_dom&#39;: 8699.4140625,
- &#39;range_dom&#39;: 6115.4296875,
- &#39;mod_dom&#39;: np.float64(17.901408450704224)}
+                 nan,          nan,          nan,          nan,
+                 nan,          nan,          nan,          nan,
+                 nan,          nan,          nan,          nan,
+                 nan,          nan]),
+ &#39;mean_dom&#39;: np.float64(2401.19140625),
+ &#39;min_dom&#39;: 1033.59375,
+ &#39;max_dom&#39;: 3789.84375,
+ &#39;range_dom&#39;: 2756.25,
+ &#39;mod_dom&#39;: np.float64(14.625)}
 </pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">features</span> <span class="o">=</span> <span class="n">compute</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">extract_all_features</span><span class="p">(</span>
+    <span class="n">x_filtered</span><span class="p">,</span>
+    <span class="n">sr</span><span class="p">,</span>
+    <span class="n">min_prominence</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span> <span class="c1"># for dominant frequencies</span>
+    <span class="n">noise_threshold</span><span class="o">=</span><span class="mf">0.3</span><span class="p">,</span> <span class="c1"># for dominant frequencies</span>
+    <span class="n">plot</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">spec_kwargs</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;dynamic_range&quot;</span><span class="p">:</span> <span class="n">DYNAMIC_RANGE</span><span class="p">},</span>
+    <span class="n">envelope_kwargs</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;silence_threshold&quot;</span><span class="p">:</span> <span class="mf">0.02</span><span class="p">}</span>
+    <span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/example_usage_27_0.png" src="_images/example_usage_27_0.png" />
+</div>
 </div>
 </section>
 <section id="Batch-normalize-files-in-a-folder-and-export-features-as-csv">
 <h2>Batch normalize files in a folder and export features as csv<a class="headerlink" href="#Batch-normalize-files-in-a-folder-and-export-features-as-csv" title="Link to this heading"></a></h2>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[93]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[56]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">handle</span><span class="o">.</span><span class="n">batch_normalize_wav_files</span><span class="p">(</span><span class="n">data_folder</span><span class="p">,</span> <span class="mi">44100</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;float32&quot;</span><span class="p">)</span>
@@ -653,7 +640,7 @@ Normalized: 201.wav -&gt; example_data/normalized/201.wav
 </pre></div></div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[94]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[57]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">features_df</span> <span class="o">=</span> <span class="n">handle</span><span class="o">.</span><span class="n">batch_extract_features</span><span class="p">(</span><span class="n">data_folder</span><span class="o">+</span><span class="s2">&quot;/normalized&quot;</span><span class="p">,</span> <span class="n">save_csv_path</span><span class="o">=</span><span class="s2">&quot;extracted_features.csv&quot;</span><span class="p">)</span>
@@ -673,7 +660,7 @@ Features saved to: example_data/normalized/extracted_features.csv
 </pre></div></div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[95]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[58]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">features_df</span>
@@ -681,7 +668,7 @@ Features saved to: example_data/normalized/extracted_features.csv
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[95]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[58]:
 </pre></div>
 </div>
 <div class="output_area rendered_html docutils container">
@@ -732,17 +719,17 @@ Features saved to: example_data/normalized/extracted_features.csv
       <td>0.599138</td>
       <td>0.817007</td>
       <td>1.027755</td>
-      <td>0.798299</td>
+      <td>0.798286</td>
       <td>0.179693</td>
-      <td>1.242794</td>
-      <td>0.902816</td>
-      <td>[0.06161315, 0.040482312, 0.045260396, 0.03598...</td>
-      <td>1.363923</td>
-      <td>0.834523</td>
+      <td>1.242795</td>
+      <td>0.902818</td>
+      <td>[0.061606277, 0.040474925, 0.045253057, 0.0359...</td>
+      <td>1.370091</td>
+      <td>5.362802</td>
       <td>...</td>
       <td>64.959203</td>
       <td>0.773999</td>
-      <td>0.645920</td>
+      <td>4.150805</td>
       <td>[86.1328125, 86.1328125, nan, nan, nan, 172.26...</td>
       <td>3016.823509</td>
       <td>86.132812</td>
@@ -756,17 +743,17 @@ Features saved to: example_data/normalized/extracted_features.csv
       <td>0.448503</td>
       <td>0.618821</td>
       <td>0.762358</td>
-      <td>0.596150</td>
+      <td>0.596139</td>
       <td>0.088544</td>
-      <td>0.675407</td>
-      <td>-0.359200</td>
-      <td>[1.2039241e-06, 1.013242e-05, 8.4458674e-07, 7...</td>
-      <td>1.229841</td>
-      <td>0.747798</td>
+      <td>0.675405</td>
+      <td>-0.359208</td>
+      <td>[1.8862542e-06, 1.0176342e-05, 1.6869204e-06, ...</td>
+      <td>1.242245</td>
+      <td>4.241841</td>
       <td>...</td>
       <td>1334.680467</td>
       <td>0.457769</td>
-      <td>0.342319</td>
+      <td>1.941783</td>
       <td>[nan, nan, nan, nan, nan, nan, nan, nan, nan, ...</td>
       <td>1496.796875</td>
       <td>947.460938</td>
@@ -780,17 +767,17 @@ Features saved to: example_data/normalized/extracted_features.csv
       <td>0.295850</td>
       <td>0.378707</td>
       <td>0.466259</td>
-      <td>0.391263</td>
+      <td>0.391255</td>
       <td>0.156971</td>
       <td>1.738432</td>
       <td>3.013786</td>
-      <td>[0.00063974044, 0.0004664516, 0.0004338555, 0....</td>
-      <td>1.065283</td>
-      <td>0.599751</td>
+      <td>[0.0006397646, 0.00046644738, 0.00043387563, 0...</td>
+      <td>1.067868</td>
+      <td>3.823437</td>
       <td>...</td>
       <td>1904.728941</td>
       <td>0.684076</td>
-      <td>0.410275</td>
+      <td>2.615520</td>
       <td>[nan, nan, nan, nan, nan, nan, nan, nan, nan, ...</td>
       <td>2371.343994</td>
       <td>775.195312</td>
@@ -804,17 +791,17 @@ Features saved to: example_data/normalized/extracted_features.csv
       <td>1.289433</td>
       <td>1.607664</td>
       <td>1.873061</td>
-      <td>1.533715</td>
-      <td>0.172133</td>
-      <td>1.484266</td>
-      <td>1.465634</td>
-      <td>[0.06590071, 0.046115156, 0.04068432, 0.040628...</td>
-      <td>2.304331</td>
-      <td>0.791094</td>
+      <td>1.533700</td>
+      <td>0.172134</td>
+      <td>1.484269</td>
+      <td>1.465645</td>
+      <td>[0.06589466, 0.046111397, 0.04067738, 0.040626...</td>
+      <td>2.307528</td>
+      <td>5.463995</td>
       <td>...</td>
       <td>45.936597</td>
       <td>0.719736</td>
-      <td>0.569379</td>
+      <td>3.932635</td>
       <td>[2928.515625, 344.53125, nan, nan, 86.1328125,...</td>
       <td>2844.820534</td>
       <td>86.132812</td>
@@ -834,7 +821,7 @@ Features saved to: example_data/normalized/extracted_features.csv
 <p>This relies on the praat-textgrids library written by Tommi Nieminen:</p>
 <p><a class="reference external" href="https://github.com/Legisign/Praat-textgrids">https://github.com/Legisign/Praat-textgrids</a></p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[96]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[59]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">data</span><span class="p">,</span> <span class="n">sr</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">handle</span><span class="o">.</span><span class="n">read_wav</span><span class="p">(</span><span class="n">data_folder</span><span class="o">+</span><span class="s2">&quot;/201.wav&quot;</span><span class="p">,</span> <span class="n">n_channels</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
@@ -842,7 +829,7 @@ Features saved to: example_data/normalized/extracted_features.csv
 </div>
 </div>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[97]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[60]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># get boundaries and plot</span>
@@ -851,7 +838,7 @@ Features saved to: example_data/normalized/extracted_features.csv
 </div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[98]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[61]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">segments</span>
@@ -859,7 +846,7 @@ Features saved to: example_data/normalized/extracted_features.csv
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[98]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[61]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
@@ -881,7 +868,7 @@ Features saved to: example_data/normalized/extracted_features.csv
 </pre></div></div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[99]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[62]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">plot</span><span class="o">.</span><span class="n">plot_boundaries_on_spectrogram</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sr</span><span class="p">,</span> <span class="n">segments</span><span class="p">,</span> <span class="n">dynamic_range</span><span class="o">=</span><span class="n">DYNAMIC_RANGE</span><span class="p">)</span>
@@ -892,11 +879,11 @@ Features saved to: example_data/normalized/extracted_features.csv
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="_images/example_usage_34_0.png" src="_images/example_usage_34_0.png" />
+<img alt="_images/example_usage_36_0.png" src="_images/example_usage_36_0.png" />
 </div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[100]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[63]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># or extract signal segments directly</span>
@@ -908,11 +895,11 @@ Features saved to: example_data/normalized/extracted_features.csv
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="_images/example_usage_35_0.png" src="_images/example_usage_35_0.png" />
+<img alt="_images/example_usage_37_0.png" src="_images/example_usage_37_0.png" />
 </div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[101]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[64]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">audio_segments</span>
@@ -920,7 +907,7 @@ Features saved to: example_data/normalized/extracted_features.csv
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[101]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[64]:
 </pre></div>
 </div>
 <div class="output_area rendered_html docutils container">
@@ -1052,7 +1039,7 @@ Features saved to: example_data/normalized/extracted_features.csv
 </div></div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[102]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[65]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">plot</span><span class="o">.</span><span class="n">plot_spectrogram_catalogue</span><span class="p">(</span><span class="n">audio_segments</span><span class="p">,</span> <span class="s2">&quot;label&quot;</span><span class="p">,</span> <span class="n">ncols</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">dynamic_range</span><span class="o">=</span><span class="n">DYNAMIC_RANGE</span><span class="p">)</span>
@@ -1063,11 +1050,11 @@ Features saved to: example_data/normalized/extracted_features.csv
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="_images/example_usage_37_0.png" src="_images/example_usage_37_0.png" />
+<img alt="_images/example_usage_39_0.png" src="_images/example_usage_39_0.png" />
 </div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[103]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[66]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">audio_segments</span><span class="p">[</span><span class="s1">&#39;spectrogram&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">audio_segments</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span>
@@ -1087,7 +1074,7 @@ Features saved to: example_data/normalized/extracted_features.csv
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[103]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[66]:
 </pre></div>
 </div>
 <div class="output_area rendered_html docutils container">
@@ -1162,7 +1149,7 @@ Features saved to: example_data/normalized/extracted_features.csv
 </div></div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[104]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[67]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">n_cols</span> <span class="o">=</span> <span class="mi">3</span>
@@ -1193,14 +1180,14 @@ Features saved to: example_data/normalized/extracted_features.csv
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="_images/example_usage_39_0.png" src="_images/example_usage_39_0.png" />
+<img alt="_images/example_usage_41_0.png" src="_images/example_usage_41_0.png" />
 </div>
 </div>
 </section>
 <section id="Read-all-files-in-a-folder-into-DataFrame-and-plot-spectrogram-catalogue">
 <h2>Read all files in a folder into DataFrame and plot spectrogram catalogue<a class="headerlink" href="#Read-all-files-in-a-folder-into-DataFrame-and-plot-spectrogram-catalogue" title="Link to this heading"></a></h2>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[105]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[68]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">df</span> <span class="o">=</span> <span class="n">handle</span><span class="o">.</span><span class="n">batch_read_files_to_df</span><span class="p">(</span><span class="n">data_folder</span><span class="o">+</span><span class="s2">&quot;/normalized&quot;</span><span class="p">)</span>
@@ -1220,7 +1207,7 @@ processing 201.wav
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[105]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[68]:
 </pre></div>
 </div>
 <div class="output_area rendered_html docutils container">
@@ -1277,7 +1264,7 @@ processing 201.wav
 </div></div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[106]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[69]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">plot</span><span class="o">.</span><span class="n">plot_spectrogram_catalogue</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="s2">&quot;waveform&quot;</span><span class="p">,</span> <span class="n">ncols</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">per_page</span><span class="o">=</span><span class="mi">25</span><span class="p">,</span> <span class="n">title_columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;filename&quot;</span><span class="p">,</span> <span class="s2">&quot;sr&quot;</span><span class="p">],</span> <span class="n">dynamic_range</span><span class="o">=</span><span class="mi">55</span><span class="p">)</span>
@@ -1288,7 +1275,7 @@ processing 201.wav
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="_images/example_usage_42_0.png" src="_images/example_usage_42_0.png" />
+<img alt="_images/example_usage_44_0.png" src="_images/example_usage_44_0.png" />
 </div>
 </div>
 </section>

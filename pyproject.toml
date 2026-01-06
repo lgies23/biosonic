@@ -5,7 +5,7 @@ build-backend = "poetry, core.masonry.api"
 
 [project]
 name = "biosonic"
-version = "0.1.3"
+version = "0.1.5"
 description = "The biosonic package contains tools for bioacoustic analysis."
 authors = [
   {name = "Lena Gies", email = "lena.gies@univie.ac.at"},
@@ -46,12 +46,11 @@ nbsphinx = "*"
 sphinx-autodoc-typehints = "*"
 ipykernel = "*"
 
-
 [project.urls]
-Homepage = "https://github.com/lenag23/biosonic.git"
+Homepage = "https://github.com/lgies23/biosonic"
 Documentation = "https://biosonic.readthedocs.io"
-Repository = "https://github.com/lenag23/biosonic.git"
-"Bug Tracker" = "https://github.com/lenag23/biosonic/issues"
+Repository = "https://github.com/lgies23/biosonic"
+"Bug Tracker" = "https://github.com/lgies23/biosonic/issues"
 
 
 [tool.poetry]
