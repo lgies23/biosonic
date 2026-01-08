@@ -38,7 +38,7 @@ pip install biosonic[all]
 
 ### Executing
 
-See the jupyter notebook `example_usage.ipynb` for demonstrations of different functionalities.
+Demonstrations of different functionalities can be found in the [documentation](https://biosonic.readthedocs.io/en/stable/example_usage.html).
 
 ## Authors
 
