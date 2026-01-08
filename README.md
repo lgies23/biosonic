@@ -21,13 +21,13 @@ pip install biosonic[plots]
 
 For full functionality, the current dependencies are:
 
-- numpy (>=2.4.0,<3.0.0)
-- pandas (>=2.3.3,<3.0.0)
-- scipy (>=1.16.3,<2.0.0)
+- numpy
+- pandas
+- scipy
 - matplotlib
 - praat-textgrids
 
-Python 3.11 and above are supported.
+Python 3.10 and above are supported.
 
 ### Installing
 

@@ -5,7 +5,7 @@ build-backend = "poetry, core.masonry.api"
 
 [project]
 name = "biosonic"
-version = "0.1.7"
+version = "0.1.8"
 description = "The biosonic package contains tools for bioacoustic analysis."
 authors = [
   {name = "Lena Gies", email = "lena.gies@univie.ac.at"},
