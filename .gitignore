@@ -9,8 +9,6 @@ __pycache__/
 # Distribution / packaging
 .Python
 build/
-!docs/build
-docs/build/doctrees
 develop-eggs/
 dist/
 downloads/
