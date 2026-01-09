@@ -71,8 +71,9 @@ jobs:
           pip install -r docs/requirements.txt
           pip install nbconvert
 
-      - name: Clear example outputs
+      - name: Clean docs/build/ and example notebook outputs
         run: |
+          rm -r docs/build/
           find docs/source -type f -name "*.ipynb" | xargs jupyter nbconvert --clear-output --inplace
 
       - name: Build documentation
