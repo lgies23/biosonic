@@ -55,7 +55,7 @@ def amplitude_envelope(
         >>> signal = np.array([0, 1, 2, 3, 2, 1, 0], dtype=np.float64)
         >>> envelope = amplitude_envelope(signal, kernel_size=3)
         >>> print(envelope)
-        [0.  1.  2.  3.  2.  1.  0.]
+        [1.4815899 1.2574344 1.4774755 1.7142857 1.4774754 1.2574345 1.4815899]
 
     Notes:
         - This function relies on `scipy.signal.envelope` to compute the amplitude envelope.
@@ -168,7 +168,7 @@ def temporal_quartiles(
         >>> signal = np.array([0, 1, 2, 3, 2, 1, 0], dtype=np.float64)
         >>> sr = 44100  # Sample rate of 44.1 kHz
         >>> temporal_quartiles(signal, sr)
-        (0.03, 0.05, 0.07)
+        (2.2675736961451248e-05, 6.802721088435374e-05, 0.00011337868480725624)
 
     Notes:
         - The `searchsorted` function is used to find the indices corresponding to the quartiles

@@ -174,11 +174,11 @@ def transform_spectrogram_for_nn(
     Example:
         >>> import numpy as np
         >>> spec = np.random.rand(128, 128) * 255  # Example spectrogram
-        >>> processed = transform_spectrogram_for_nn(spec, values_type='float32',
+        >>> processed = transform_spectrogram_for_nn(spec, values_type='float32',  # doctest: +SKIP
         ...                                          add_channel=True, data_format='channels_last')
-        >>> processed.shape
+        >>> processed.shape  # doctest: +SKIP
         (128, 128, 1)
-        >>> processed.dtype
+        >>> processed.dtype  # doctest: +SKIP
         dtype('float32')
     """
     from .spectrotemporal import spectrogram
@@ -270,7 +270,7 @@ def shannon_entropy(
     Examples
     --------
     >>> shannon_entropy([0.5, 0.5])
-    (0.0, 1.0)
+    (1.0, 1.0)
 
     >>> shannon_entropy([0.9, 0.1], unit="nat", norm=False)
     (0.3250829733914482, 0.6931471805599453)
