@@ -32,6 +32,8 @@ jobs:
 
       - name: Run check-manifest
         run: |
+          # Poetry doesn't use MANIFEST.in, so the errors might be weird.
+          # But in the end, this tool checks VCS vs. created sdists, so still a useful check!
           python -m check_manifest
 
       - name: Build

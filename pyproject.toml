@@ -57,9 +57,22 @@ Repository = "https://github.com/lgies23/biosonic"
 
 [tool.poetry]
 packages = [
-    { include = "biosonic", from = "src" },
+  { include = "biosonic", from = "src" },
 ]
-exclude = ["tests/", "build/", "dist/", "docs/", "normalized/", "example_data/", "example_usage.ipynb"]
+exclude = [
+  ".pre-commit-config.yaml",
+  "readthedocs.yml",
+  "docs/build/"
+]
+include = [
+  "requirements.txt",
+  "pytest.ini",
+  "docs/make.bat",
+  "docs/Makefile",
+  "docs/requirements.txt",
+  "docs/source/",
+  "tests/"
+]
 
 [tool.mypy]
 python_version = "3.9"
@@ -88,3 +101,12 @@ per-file-ignores = [
 skip = ["docs/source/conf.py"]
 line_length = 100
 multi_line_output = 3
+
+
+[tool.check-manifest]
+ignore = [
+  ".pre-commit-config.yaml",
+  "readthedocs.yaml",
+  "check-types.sh",
+  "poetry.lock"
+]
