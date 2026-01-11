@@ -276,10 +276,11 @@ def centroid(data: ArrayLike, sr: int) -> Union[float, np.floating[Any]]:
 
     Examples
     --------
+        >>> np.random.seed(42)
         >>> signal = np.random.randn(1024)
         >>> sr = 44100
-        >>> centroid(signal, sr)  # doctest: +SKIP
-        7101.56
+        >>> centroid(signal, sr)
+        np.float64(11011.330381305264)
 
     References
     ----------
