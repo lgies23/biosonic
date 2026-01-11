@@ -36,18 +36,6 @@ dependencies = [
 praat = ["praat-textgrids"]
 plot = ["matplotlib"]
 
-[tool.poetry.group.dev.dependencies]
-mypy = "*"
-pytest = "*"
-flake8 = "*"
-isort = "*"
-pre-commit = "*"
-twine = "*"
-praat-parselmouth = "*"
-nbsphinx = "*"
-sphinx-autodoc-typehints = "*"
-ipykernel = "*"
-
 [project.urls]
 Homepage = "https://github.com/lgies23/biosonic"
 Documentation = "https://biosonic.readthedocs.io"
@@ -74,14 +62,26 @@ include = [
   "tests/"
 ]
 
-[tool.mypy]
-python_version = "3.9"
-ignore_missing_imports = true
-strict = true
-show_error_codes = true
-pretty = true
-exclude = ["tests/", "build/", "dist/", "docs/", "normalized/", "example_data/", "example_usage.ipynb"]
+[tool.poetry.group.dev.dependencies]
+mypy = "*"
+pytest = "*"
+flake8 = "*"
+isort = "*"
+pre-commit = "*"
+twine = "*"
+praat-parselmouth = "*"
+nbsphinx = "*"
+sphinx-autodoc-typehints = "*"
+ipykernel = "*"
 
+
+[tool.check-manifest]
+ignore = [
+  ".pre-commit-config.yaml",
+  "readthedocs.yaml",
+  "check-types.sh",
+  "poetry.lock"
+]
 
 [tool.flake8]
 max-line-length = 160
@@ -95,18 +95,15 @@ per-file-ignores = [
   "__init__.py:F401",
   "tests/*:E402,F811",  # Remove after splitting up tests?
 ]
-
-
 [tool.isort]
 skip = ["docs/source/conf.py"]
 line_length = 100
 multi_line_output = 3
 
-
-[tool.check-manifest]
-ignore = [
-  ".pre-commit-config.yaml",
-  "readthedocs.yaml",
-  "check-types.sh",
-  "poetry.lock"
-]
+[tool.mypy]
+python_version = "3.9"
+ignore_missing_imports = true
+strict = true
+show_error_codes = true
+pretty = true
+exclude = ["tests/", "build/", "dist/", "docs/", "normalized/", "example_data/", "example_usage.ipynb"]
