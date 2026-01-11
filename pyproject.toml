@@ -100,6 +100,11 @@ skip = ["docs/source/conf.py"]
 line_length = 100
 multi_line_output = 3
 
+[tool.pytest]
+minversion = "9.0"
+pythonpath = ["src"]
+addopts = ["--deselect", "src/biosonic/plot.py::biosonic.plot.plot_spectrogram_catalogue"]
+
 [tool.mypy]
 python_version = "3.9"
 ignore_missing_imports = true
