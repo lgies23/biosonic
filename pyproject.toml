@@ -54,7 +54,6 @@ exclude = [
 ]
 include = [
   "requirements.txt",
-  "pytest.ini",
   "docs/make.bat",
   "docs/Makefile",
   "docs/requirements.txt",
@@ -95,6 +94,7 @@ per-file-ignores = [
   "__init__.py:F401",
   "tests/*:E402,F811",  # Remove after splitting up tests?
 ]
+
 [tool.isort]
 skip = ["docs/source/conf.py"]
 line_length = 100
