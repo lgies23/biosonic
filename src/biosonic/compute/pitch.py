@@ -6,7 +6,7 @@ from numpy.typing import ArrayLike, NDArray
 from scipy.fft import irfft, rfft
 from scipy.signal import windows
 
-from biosonic.compute.utils import frame_signal
+from biosonic.compute.utils import AudioSignal, frame_signal
 
 
 def _difference_function(x: ArrayLike, max_lag: int) -> ArrayLike:
@@ -357,8 +357,7 @@ def _autocorr(
 
 
 def boersma(
-        data: ArrayLike,
-        sr: int,
+        signal: AudioSignal,
         min_pitch: int = 75,
         max_pitch: int = 600,
         timestep: float = 0.01,
@@ -422,12 +421,9 @@ def boersma(
     2. Anikin A. 2019. Soundgen: an open-source tool for synthesizing
        nonverbal vocalizations. Behavior Research Methods, 51(2), 778-792.
     """
+    assert isinstance(signal, AudioSignal), "'signal' must be an instance of AudioSignal."
 
-    # make sure, the signal is inside the bounds [-1, 1]
-    if np.max(np.abs(data)) > 1:
-        raise ValueError("the signal needs to be within the bounds [-1, 1]")
-
-    if min_pitch >= max_pitch or max_pitch >= sr / 2:
+    if min_pitch >= max_pitch or max_pitch >= signal.srate / 2:
         raise ValueError("max_pitch should be greater than min_pitch and below the nyquist frequency.")
 
     # not enough resolution above half the niquist frequency
@@ -435,12 +431,11 @@ def boersma(
     # max_pitch = min(max_pitch, sr / 4)
 
     window_length = 3 * (1 / min_pitch)  # three periods of minimum frequency
-    data_preprocessed = data  # _preprocess_for_pitch_(data, sr)
+    data_preprocessed = signal.data  # _preprocess_for_pitch_(data, sr)
     global_peak: float = np.max(np.abs(data_preprocessed - np.mean(data_preprocessed)))
 
     # global_peak: float = np.max(np.abs(data_preprocessed))
-    window_length_samples = int(window_length * sr)
-
+    window_length_samples = int(window_length * signal.srate)
     # precalculate for padding to power of two (step 3.6)
     # - I do this here to save computation time despite it being a bit less readable
     n = window_length_samples + np.floor(window_length_samples/2)
@@ -448,7 +443,7 @@ def boersma(
     pad_width_for_pow2 = next_pow2 - window_length_samples  # full pad length needed including half a window size
 
     # 1. windowing
-    framed_signal = frame_signal(data_preprocessed, sr, window_length_samples, timestep, normalize=False)
+    framed_signal = frame_signal(AudioSignal(data_preprocessed, signal.srate), window_length_samples, timestep, normalize=False)
     window = windows.get_window("hann", window_length_samples)
     autocorr_hann = _autocorr(window, pad_width_for_pow2)
     autocorr_hann /= np.max(autocorr_hann)
@@ -480,7 +475,7 @@ def boersma(
 
         voiced_candidates = _find_pitch_candidates_(
                 sampled_autocorr,
-                sr,
+                signal.srate,
                 min_pitch,
                 max_pitch,
                 max_candidates,
@@ -493,7 +488,7 @@ def boersma(
 
     # frame timing: match Yannicks code (centered on window)
     n_frames = len(framed_signal)
-    t0 = 0.5 * (len(data) / sr - n_frames * timestep + timestep)
+    t0 = 0.5 * (len(signal.data) / signal.srate - n_frames * timestep + timestep)
     time_points = t0 + np.arange(n_frames) * timestep
 
     # Praat-style: scale transition costs by time step as in Yannicks code
@@ -511,8 +506,7 @@ def boersma(
     if plot:
         from biosonic.plot import plot_pitch_on_spectrogram
         plot_pitch_on_spectrogram(
-            data,
-            sr,
+            signal,
             time_points,
             pitch_track,
             **kwargs)

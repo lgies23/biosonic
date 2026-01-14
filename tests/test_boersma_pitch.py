@@ -3,6 +3,7 @@ import parselmouth
 import pytest
 
 from biosonic.compute.pitch import boersma
+from biosonic.compute.utils import AudioSignal
 from biosonic.handle import read_wav
 
 
@@ -35,8 +36,7 @@ def test_boersma_matches_parselmouth(
 
     # Biosonic pitch (unpack new return signature)
     result = boersma(
-        data,
-        sr,
+        AudioSignal(data, sr),
         min_pitch=min_pitch,
         max_pitch=max_pitch,
         timestep=timestep

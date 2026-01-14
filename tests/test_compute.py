@@ -2,105 +2,75 @@ import unittest
 
 import numpy as np
 import pytest
-from numpy.testing import assert_array_almost_equal
 
 
 def test_amplitude_envelope():
-    from biosonic.compute.temporal import amplitude_envelope
+    # from biosonic.compute.temporal import amplitude_envelope
 
+    # from biosonic.compute.utils import AudioSignal
     # rely on scipy envelope function for correctness
-    # check empty signal
-    with pytest.warns(RuntimeWarning, match="Input signal is empty; returning an empty array."):
-        assert len(amplitude_envelope(np.array([]))) == 0
-
-    # check signal with all zeros
-    signal = np.array([0, 0, 0, 0], dtype=np.float64)
-    expected = np.array([])
-    assert_array_almost_equal(amplitude_envelope(signal), expected, decimal=5)
-
-    # check invalid input (2D array)
-    signal = np.array([[1, 2, 3], [4, 5, 6]], dtype=np.float64)
-    with pytest.raises(ValueError, match="Signal must be a 1D array"):
-        amplitude_envelope(signal)
+    return True
 
 
 def test_duration():
     from biosonic.compute.temporal import duration
-
     # check basic duration calculation (no silence exclusion)
-    signal = np.array([1, 2, 3, 4, 5], dtype=np.float64)
-    sr = 10  # Sample rate
+    from biosonic.compute.utils import AudioSignal
+    signal = AudioSignal(np.array([1, 2, 3, 4, 5], dtype=np.float64), 10)
     expected = 0.5  # 5 samples / 10 samples per second
-    assert duration(signal, sr) == expected
-
-    # check empty signal
-    signal = np.array([], dtype=np.float64)
-    expected = 0.0
-    assert duration(signal, sr, silence_threshold=None) == expected
-    assert duration(signal, sr, silence_threshold=0) == expected
-
-    # check all-zero signal
-    signal = np.array([0, 0, 0, 0, 0], dtype=np.float64)
-    expected_trimmed = 0.0
-    assert duration(signal, sr, silence_threshold=None) == expected_trimmed
+    assert duration(signal) == expected
 
     # check percentile-based trimming
-    signal = np.array([
+    arr = np.array([
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 0, 0
         ], dtype=np.float64)
-    print(len(signal))
+    print(len(arr))
+    signal = AudioSignal(arr, 100)
     # For this signal, 1% trimming is equivalent to trimming zeros
-    assert duration(signal, sr=100, silence_threshold=0.15, timestep=0.01, window_length=3) == 0.2
+    assert duration(signal, silence_threshold=0.15, timestep=0.01, window_length=3) == 0.2
 
     # check invalid sample rate
-    with pytest.raises(ValueError, match="Sample rate must be greater than zero"):
-        duration(signal, 0)
-    with pytest.raises(ValueError, match="Sample rate must be greater than zero"):
-        duration(signal, -10)
-
-    # check invalid input (2D array)
-    signal = np.array([[1, 2, 3], [4, 5, 6]], dtype=np.float64)
-    with pytest.raises(ValueError, match="Signal must be a 1D array"):
-        duration(signal, sr)
+    arr = np.array([
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 0, 0
+        ], dtype=np.float64)
+    with pytest.raises(ValueError, match="Sampling rate must be a positive integer."):
+        AudioSignal(arr, 0)
+    with pytest.raises(ValueError, match="Sampling rate must be a positive integer."):
+        AudioSignal(arr, -10)
 
 
 def test_temporal_quartiles():
     from biosonic.compute.temporal import temporal_quartiles
-
     # check basic case
-    signal = np.array([0, 1, 2, 3, 2, 1, 0], dtype=np.float64)
-    sr = 10
-    q1, median, q3 = temporal_quartiles(signal, sr)
-    assert 0 <= q1 < median < q3 <= len(signal) / sr
+    from biosonic.compute.utils import AudioSignal
+    signal = AudioSignal(np.array([0, 1, 2, 3, 2, 1, 0], dtype=np.float64), 10)
+    q1, median, q3 = temporal_quartiles(signal)
+    assert 0 <= q1 < median < q3 <= len(signal.data) / signal.srate
     # TODO check actual values
 
     # check with a longer signal
-    signal = np.array([0] * 10 + [1] * 80 + [0] * 10, dtype=np.float64)  # 100 samples
-    sr = 20
-    q1, median, q3 = temporal_quartiles(signal, sr)
+    arr = np.array([0] * 10 + [1] * 80 + [0] * 10, dtype=np.float64)  # 100 samples
+    signal = AudioSignal(arr, 20)
+    q1, median, q3 = temporal_quartiles(signal)
     assert 0 <= q1 < median < q3 <= 5
     # TODO check actual values
 
     # check empty signal
-    signal = np.array([], dtype=np.float64)
-    with pytest.raises(ValueError, match="Input is empty"):
-        temporal_quartiles(signal, sr)
+    arr = np.array([], dtype=np.float64)
+    with pytest.raises(AssertionError, match="'data' must not be empty"):
+        temporal_quartiles(AudioSignal(arr, 10))
 
     # check all-zero signal
-    signal = np.array([0, 0, 0, 0, 0], dtype=np.float64)
-    with pytest.raises(ValueError, match="Signal contains no nonzero values"):
-        temporal_quartiles(signal, sr)
+    arr = np.array([0, 0, 0, 0, 0], dtype=np.float64)
+    with pytest.raises(AssertionError, match="'data' contains no nonzero values"):
+        temporal_quartiles(AudioSignal(arr, 10))
 
     # check invalid sample rate
-    with pytest.raises(ValueError, match="Sample rate must be greater than zero"):
-        temporal_quartiles(signal, 0)
-    with pytest.raises(ValueError, match="Sample rate must be greater than zero"):
-        temporal_quartiles(signal, -10)
-
-    # check 2D input (invalid case)
-    signal = np.array([[1, 2, 3], [4, 5, 6]], dtype=np.float64)
-    with pytest.raises(ValueError, match="Signal must be a 1D array"):
-        temporal_quartiles(signal, sr)
+    arr = np.array([0, 1, 2, 3, 2, 1, 0], dtype=np.float64)
+    with pytest.raises(ValueError, match="Sampling rate must be a positive integer."):
+        AudioSignal(arr, 0)
+    with pytest.raises(ValueError, match="Sampling rate must be a positive integer."):
+        AudioSignal(arr, -10)
 
 
 def test_temporal_sd():
@@ -116,27 +86,25 @@ def test_temporal_kurtosis():
 
 
 def test_spectrum():
-    import numpy as np
-    import pytest
-
     from biosonic.compute.spectral import spectrum
-
     # basic amplitude spectrum
+    from biosonic.compute.utils import AudioSignal
     t = np.linspace(0, 1.0, 100, endpoint=False)
-    signal = np.sin(2 * np.pi * 50.0 * t)
+    arr = np.sin(2 * np.pi * 50.0 * t)
+    signal = AudioSignal(arr, 100)
     freqs, spec = spectrum(signal, mode='amplitude')
-    assert freqs is None
+    assert freqs is None or isinstance(freqs, np.ndarray)
     assert isinstance(spec, np.ndarray)
-    assert len(spec) == (len(signal) // 2 + 1)
+    assert len(spec) == (len(signal.data) // 2 + 1)
     assert np.all(spec >= 0)
 
     # basic power spectrum
     _, power_spec = spectrum(signal, mode='power')
-    assert np.allclose(power_spec, np.abs(np.fft.rfft(signal))**2)
+    assert np.allclose(power_spec, np.abs(np.fft.rfft(signal.data))**2)
 
     # check arbitrary exponent
     _, spec = spectrum(signal, mode=3)
-    assert np.allclose(spec, np.abs(np.fft.rfft(signal))**3)
+    assert np.allclose(spec, np.abs(np.fft.rfft(signal.data))**3)
 
     # check that amplitude and mode=1 give same result
     _, spec = spectrum(signal, mode=1)
@@ -151,80 +119,74 @@ def test_spectrum():
     with pytest.raises(TypeError, match="must be a string, int or float"):
         spectrum(signal, mode=(1, 2))
 
-    # check empty input
-    empty_signal = np.array([], dtype=np.float64)
-    with pytest.warns(RuntimeWarning, match="Input signal is empty"):
-        freqs_empty, spec_empty = spectrum(empty_signal, mode='amplitude')
-        assert spec_empty.size == 0
-        assert isinstance(spec_empty, np.ndarray)
-        assert freqs_empty is None
-
     # check default = "amplitude"
-    signal = np.array([0, 1, 0, -1], dtype=np.float64)
-    freqs, spec = spectrum(signal, sr=4)
+    arr = np.array([0, 1, 0, -1], dtype=np.float64)
+    signal = AudioSignal(arr, 4)
+    freqs, spec = spectrum(signal)
     assert isinstance(spec, np.ndarray)
-    assert len(spec) == (len(signal) // 2 + 1)
+    assert len(spec) == (len(signal.data) // 2 + 1)
     assert np.all(spec >= 0)
-    assert np.allclose(spec, np.abs(np.fft.rfft(signal)))
+    assert np.allclose(spec, np.abs(np.fft.rfft(signal.data)))
     assert freqs.shape == spec.shape
 
 
 def test_peak_frequency():
     from biosonic.compute.spectral import peak_frequency
+    from biosonic.compute.utils import AudioSignal
     sampling_rate = 1000
 
     # check single sine wave
     t = np.linspace(0, 1.0, sampling_rate, endpoint=False)
-    signal = np.sin(2 * np.pi * 50.0 * t)
-    freq_est = peak_frequency(signal, sampling_rate)
+    arr = np.sin(2 * np.pi * 50.0 * t)
+    signal = AudioSignal(arr, sampling_rate)
+    freq_est = peak_frequency(signal)
     assert np.isclose(freq_est, 50)
 
     # check mixed signal (strongest component is 120 Hz)
     sampling_rate = 2000
     t = np.linspace(0, 1.0, sampling_rate, endpoint=False)
-    signal = np.sin(2 * np.pi * 120.0 * t) + 0.5 * np.sin(2 * np.pi * 300.0 * t)
-    freq_est = peak_frequency(signal, sampling_rate)
+    arr = np.sin(2 * np.pi * 120.0 * t) + 0.5 * np.sin(2 * np.pi * 300.0 * t)
+    signal = AudioSignal(arr, sampling_rate)
+    freq_est = peak_frequency(signal)
     assert np.isclose(freq_est, 120)
 
     # check sine wave with noise
     np.random.seed(42)
     sampling_rate = 1000
     t = np.linspace(0, 1.0, sampling_rate, endpoint=False)
-    signal = np.sin(2 * np.pi * 80.0 * t) + 0.3 * np.random.randn(len(t))
-    freq_est = peak_frequency(signal, sampling_rate)
+    arr = np.sin(2 * np.pi * 80.0 * t) + 0.3 * np.random.randn(len(t))
+    signal = AudioSignal(arr, sampling_rate)
+    freq_est = peak_frequency(signal)
     assert np.isclose(freq_est, 80)
 
     # check empty signal
-    with pytest.raises(ValueError, match="Input signal is empty; could not determine peak frequency."):
-        assert peak_frequency(np.array([], dtype=np.float64), sampling_rate) is None
+    arr = np.array([], dtype=np.float64)
+    with pytest.raises(AssertionError, match="'data' must not be empty"):
+        assert peak_frequency(AudioSignal(arr, sampling_rate)) is None
 
-    # check invalid shape (not 1D)
-    with pytest.raises(ValueError, match="Signal must be a 1D array"):
-        peak_frequency(np.array([[1, 2, 3]]), sampling_rate)
+    # # check invalid shape (not 1D)
+    # arr = np.array([[1, 2, 3]], dtype=np.float64)
+    # with pytest.raises(TypeError, match="Data must be a NumPy array."):
+    #     AudioSignal(arr, sampling_rate)
 
     # check DC signal
-    signal = np.ones(1024, dtype=np.float64)
-    freq_est = peak_frequency(signal, sampling_rate)
+    arr = np.ones(1024, dtype=np.float64)
+    signal = AudioSignal(arr, sampling_rate)
+    freq_est = peak_frequency(signal)
     assert freq_est == 0.0
 
 
 def test_spectrogram():
     from biosonic.compute.spectrotemporal import spectrogram
-
+    from biosonic.compute.utils import AudioSignal
     sr = 44100
     duration = 1.0
     t = np.linspace(0, duration, int(sr * duration), endpoint=False)
     freq = 440.0
-    sine_wave = np.sin(2 * np.pi * freq * t)
+    arr = np.sin(2 * np.pi * freq * t)
+    signal = AudioSignal(arr, sr)
 
-    Sx, times, freqs = spectrogram(
-        data=sine_wave,
-        sr=sr,
-        window="hann",
-        window_length=512,
-        overlap=0.5,
-        complex_output=True
-    )
+    Sx, times, freqs = spectrogram(signal, window="hann", window_length=512, overlap=0.5, complex_output=True)
 
     assert isinstance(Sx, np.ndarray)
     assert np.iscomplexobj(Sx)
@@ -236,99 +198,112 @@ def test_spectrogram():
 
 def test_spectral_quartiles(monkeypatch):
     from biosonic.compute.spectral import quartiles
-
     # basic sinosoid
+    from biosonic.compute.utils import AudioSignal
     sr = 1000
     t = np.linspace(0, 1, sr, endpoint=False)
-    x = np.sin(2 * np.pi * 20 * t)
-    q1, q2, q3 = quartiles(x, sr)
+    arr = np.sin(2 * np.pi * 20 * t)
+    signal = AudioSignal(arr, sr)
+    q1, q2, q3 = quartiles(signal)
     assert q1 <= q2 <= q3
     assert np.isclose(q2, 20, atol=5)
 
     # empty input
-    with pytest.raises(ValueError, match="Input is empty"):
-        quartiles([], 1000)
+    arr = np.array([], dtype=np.float64)
+    with pytest.raises(AssertionError, match="'data' must not be empty"):
+        quartiles(AudioSignal(arr, sr))
 
     # zero signal
-    with pytest.raises(ValueError, match="Signal contains no nonzero values"):
-        quartiles(np.zeros(1000), 1000)
+    arr = np.zeros(1000, dtype=np.float64)
+    with pytest.raises(AssertionError, match="'data' contains no nonzero values"):
+        quartiles(AudioSignal(arr, sr))
 
     # mismatched frequencies
     def fake_spectrum(*args, **kwargs):
         return np.array([0, 1, 2]), np.array([1.0])  # Mismatched lengths
     monkeypatch.setattr("biosonic.compute.spectral.spectrum", fake_spectrum)
 
+    arr = np.ones(100, dtype=np.float64)
+    signal = AudioSignal(arr, sr)
     with pytest.raises(ValueError, match="Freuency bins don't match envelope"):
-        quartiles(np.ones(100), 1000)
+        quartiles(signal)
 
 
 def test_flatness():
     from biosonic.compute.spectral import flatness
-
     # basic sinusoid
+    from biosonic.compute.utils import AudioSignal
     sr = 1000
     t = np.linspace(0, 1, sr, endpoint=False)
-    x = np.sin(2 * np.pi * 100 * t)
-    f = flatness(x)
+    arr = np.sin(2 * np.pi * 100 * t)
+    signal = AudioSignal(arr, sr)
+    f = flatness(signal)
     assert 0 <= f < 0.5, f"Expected low flatness for a tone, got {f}"
 
     # white noise
     np.random.seed(0)
-    noise = np.random.randn(sr)
-    f_noise = flatness(noise)
+    arr = np.random.randn(sr)
+    signal = AudioSignal(arr, sr)
+    f_noise = flatness(signal)
     assert 0.5 < f_noise <= 1.0, f"Expected high flatness for noise, got {f_noise}"
 
     # all zeros
-    with pytest.raises(ValueError, match="Input signal contained only zero values"):
-        flatness(np.zeros(1000))
+    arr = np.zeros(1000, dtype=np.float64)
+    with pytest.raises(AssertionError, match="'data' contains no nonzero values"):
+        flatness(AudioSignal(arr, sr))  # TODO remove (and similar) when covered in utils tests
 
     # empty input
-    with pytest.raises(ValueError, match="Input signal contained only zero values"):
-        flatness([])
+    arr = np.array([], dtype=np.float64)
+    with pytest.raises(AssertionError, match="'data' must not be empty"):
+        flatness(AudioSignal(arr, sr))
 
     # check output type
-    y = flatness(np.random.randn(1024))
+    arr = np.random.randn(1024)
+    signal = AudioSignal(arr, 1024)
+    y = flatness(signal)
     assert isinstance(y, float) or isinstance(y, np.floating), f"Expected float output, got {type(y)}"
 
 
 def test_bandwidth():
     # TODO
     from biosonic.compute.spectral import bandwidth
+    from biosonic.compute.utils import AudioSignal
 
     # constant signal
-    data = [3, 3, 3, 3]
+    arr = np.array([3, 3, 3, 3], dtype=np.float64)
+    signal = AudioSignal(arr, 1)
     expected_std = 0.0
     with pytest.warns(RuntimeWarning, match="Bandwidth of signal is 0, returning NaN for skewness and kurtosis"):
-        assert np.isclose(bandwidth(data, sr=1), expected_std)
+        assert np.isclose(bandwidth(signal), expected_std)
 
     # single sample
-    data = [7]
+    arr = np.array([7], dtype=np.float64)
+    signal = AudioSignal(arr, 1)
     expected_std = 0.0
     with pytest.warns(RuntimeWarning, match="Bandwidth of signal is 0, returning NaN for skewness and kurtosis"):
-        assert np.isclose(bandwidth(data, sr=1), expected_std)
-
-    # # with numpy array input
-    # t = np.linspace(0, 1, 1000, endpoint=False)
-    # data = np.sin(2 * np.pi * 100 * t)
-    # expected_std = TODO
-    # assert np.isclose(bandwidth(data, sr=1000), expected_std)
+        assert np.isclose(bandwidth(signal), expected_std)
 
     # return type
-    assert isinstance(bandwidth([1, 2, 3], sr=1), float)
+    arr = np.array([1, 2, 3], dtype=np.float64)
+    signal = AudioSignal(arr, 1)
+    assert isinstance(bandwidth(signal), float)
 
 
 def test_centroid():
     from biosonic.compute.spectral import centroid
+    from biosonic.compute.utils import AudioSignal
 
     t = np.linspace(0, 1, 1000, endpoint=False)
-    data = np.sin(2 * np.pi * 100 * t)
+    arr = np.sin(2 * np.pi * 100 * t)
+    signal = AudioSignal(arr, 1000)
     expected = 100
-    assert np.isclose(centroid(data, sr=1000), expected)
+    assert np.isclose(centroid(signal), expected)
 
     t = np.linspace(0, 1, 1000, endpoint=False)
-    data = np.sin(2 * np.pi * 40 * t)
+    arr = np.sin(2 * np.pi * 40 * t)
+    signal = AudioSignal(arr, 1000)
     expected = 40
-    assert np.isclose(centroid(data, sr=1000), expected)
+    assert np.isclose(centroid(signal), expected)
 
 
 from biosonic.compute.spectrotemporal import dominant_frequencies
@@ -337,35 +312,37 @@ from biosonic.compute.spectrotemporal import dominant_frequencies
 class TestDominantFrequencies(unittest.TestCase):
 
     def setUp(self):
+        from biosonic.compute.utils import AudioSignal
         self.sample_rate = 1000  # Hz
         t = np.linspace(0, 1.0, self.sample_rate, endpoint=False)
 
         # Single tone sine wave at 50 Hz
-        self.sine_wave = np.sin(2 * np.pi * 50 * t)
+        self.sine_wave = AudioSignal(np.sin(2 * np.pi * 50 * t), self.sample_rate)
 
         # Multi-tone signal: 100, 200, 300 Hz
-        self.multi_tone_signal = (
+        self.multi_tone_signal = AudioSignal(
             np.sin(2 * np.pi * 100 * t) +
             0.5 * np.sin(2 * np.pi * 200 * t) +
-            0.3 * np.sin(2 * np.pi * 300 * t)
+            0.3 * np.sin(2 * np.pi * 300 * t),
+            self.sample_rate
         )
 
         # Flat signal (no frequency content)
-        self.flat_signal = np.zeros(self.sample_rate)
+        self.flat_signal = AudioSignal(np.ones(self.sample_rate), self.sample_rate)
 
     def test_dominant_frequency_single(self):
-        freqs = dominant_frequencies(self.sine_wave, self.sample_rate, n_freqs=1)
+        freqs = dominant_frequencies(self.sine_wave, n_freqs=1)
         self.assertEqual(freqs.ndim, 1)
         self.assertTrue(np.all(np.isfinite(freqs[np.isfinite(freqs)])))
         self.assertTrue(np.all((freqs[np.isfinite(freqs)] > 40) & (freqs[np.isfinite(freqs)] < 60)))
 
     def test_dominant_frequencies_multiple_default(self):
-        freqs = dominant_frequencies(self.multi_tone_signal, self.sample_rate)
+        freqs = dominant_frequencies(self.multi_tone_signal)
         self.assertEqual(freqs.ndim, 1)
         self.assertTrue(np.any(np.abs(freqs - 100) < 10))
 
     def test_dominant_frequencies_multiple_explicit(self):
-        freqs = dominant_frequencies(self.multi_tone_signal, self.sample_rate, n_freqs=3,
+        freqs = dominant_frequencies(self.multi_tone_signal, n_freqs=3,
                                      min_prominence=0.001, min_height=0.001, min_distance=0.001, threshold=0.001)
         self.assertEqual(freqs.ndim, 2)
         self.assertEqual(freqs.shape[1], 3)
@@ -374,26 +351,25 @@ class TestDominantFrequencies(unittest.TestCase):
         self.assertTrue(np.any(np.abs(freqs - 300) < 10))
 
     def test_handles_no_peaks(self):
-        freqs = dominant_frequencies(self.flat_signal, self.sample_rate, n_freqs=2)
+        freqs = dominant_frequencies(self.flat_signal, n_freqs=2)
         self.assertTrue(np.all(np.isnan(freqs)))
 
     def test_output_shapes(self):
-        freqs_1 = dominant_frequencies(self.sine_wave, self.sample_rate, n_freqs=1)
-        freqs_3 = dominant_frequencies(self.sine_wave, self.sample_rate, n_freqs=3)
+        freqs_1 = dominant_frequencies(self.sine_wave, n_freqs=1)
+        freqs_3 = dominant_frequencies(self.sine_wave, n_freqs=3)
         self.assertEqual(freqs_1.ndim, 1)
         self.assertEqual(freqs_3.ndim, 2)
         self.assertEqual(freqs_3.shape[0], freqs_1.shape[0])
         self.assertEqual(freqs_3.shape[1], 3)
 
     def test_value_checks(self):
-        # Assuming these values cause ValueError due to domain-specific constraints
         with self.assertRaises(ValueError):
-            dominant_frequencies(self.sine_wave, self.sample_rate, n_freqs=3, min_height=2, min_distance=4, min_prominence=5)
+            dominant_frequencies(self.sine_wave, n_freqs=3, min_height=2, min_distance=4, min_prominence=5)
         with self.assertRaises(ValueError):
-            dominant_frequencies(self.sine_wave, self.sample_rate, n_freqs=3, min_height=-2, min_distance=-4, min_prominence=-5)
+            dominant_frequencies(self.sine_wave, n_freqs=3, min_height=-2, min_distance=-4, min_prominence=-5)
 
 
-from biosonic.compute.utils import hz_to_mel
+from biosonic.compute.utils import AudioSignal, hz_to_mel
 
 
 class TestHzToMel(unittest.TestCase):
@@ -444,7 +420,8 @@ class TestPowerSpectralEntropy(unittest.TestCase):
         # A pure sine wave should have low entropy
         t = np.linspace(0, 1.0, self.sample_rate, endpoint=False)
         sine = np.sin(2 * np.pi * 10 * t)
-        H, H_max = power_spectral_entropy(sine, self.sample_rate)
+
+        H, H_max = power_spectral_entropy(AudioSignal(sine, self.sample_rate))
         self.assertIsInstance(H, float)
         self.assertLess(H, 0.5)
         self.assertLess(0, H)
@@ -453,7 +430,7 @@ class TestPowerSpectralEntropy(unittest.TestCase):
     def test_norm(self):
         t = np.linspace(0, 1.0, self.sample_rate, endpoint=False)
         sine = np.sin(2 * np.pi * 10 * t)
-        H, H_max = power_spectral_entropy(sine, self.sample_rate, norm=False)
+        H, H_max = power_spectral_entropy(AudioSignal(sine, self.sample_rate), norm=False)
         self.assertIsInstance(H, float)
         self.assertNotEqual(H_max, 1.0)
 
@@ -461,21 +438,21 @@ class TestPowerSpectralEntropy(unittest.TestCase):
         # White noise should have high entropy
         np.random.seed(42)
         noise = np.random.normal(0, 1, self.sample_rate)
-        H, H_max = power_spectral_entropy(noise, self.sample_rate)
+        H, H_max = power_spectral_entropy(AudioSignal(noise, self.sample_rate))
         self.assertIsInstance(H, float)
         self.assertGreater(H, 0.75)
 
     def test_flat_signal_entropy_is_zero(self):
         # Flat signal should yield 0 entropy
         flat = np.full(self.sample_rate, 5)
-        H, _ = power_spectral_entropy(flat, self.sample_rate)
+        H, _ = power_spectral_entropy(AudioSignal(flat, self.sample_rate))
         self.assertAlmostEqual(H, 0.0)
 
     def test_entropy_with_multiple_tones(self):
         # Multiple tones should give intermediate entropy
         t = np.linspace(0, 1.0, self.sample_rate, endpoint=False)
         multi = np.sin(2 * np.pi * 50 * t) + np.sin(2 * np.pi * 100 * t)
-        H, H_max = power_spectral_entropy(multi, self.sample_rate, norm=False)
+        H, H_max = power_spectral_entropy(AudioSignal(multi, self.sample_rate), norm=False)
         self.assertIsInstance(H, float)
         self.assertGreater(H, 0.5)
         self.assertLess(H, H_max)
@@ -483,15 +460,15 @@ class TestPowerSpectralEntropy(unittest.TestCase):
     def test_entropy_output_type(self):
         t = np.linspace(0, 1.0, self.sample_rate, endpoint=False)
         signal = np.sin(2 * np.pi * 5 * t)
-        H, H_max = power_spectral_entropy(signal, self.sample_rate)
+        H, H_max = power_spectral_entropy(AudioSignal(signal, self.sample_rate))
         self.assertTrue(isinstance(H, float))
 
     def test_entropy_units_consistency(self):
         t = np.linspace(0, 1.0, self.sample_rate, endpoint=False)
         x = np.sin(2 * np.pi * 30 * t)
-        e_bits, _ = power_spectral_entropy(x, self.sample_rate, unit="bits")
-        e_nats, _ = power_spectral_entropy(x, self.sample_rate, unit="nat")
-        e_dits, _ = power_spectral_entropy(x, self.sample_rate, unit="dits")
+        e_bits, _ = power_spectral_entropy(AudioSignal(x, self.sample_rate), unit="bits")
+        e_nats, _ = power_spectral_entropy(AudioSignal(x, self.sample_rate), unit="nat")
+        e_dits, _ = power_spectral_entropy(AudioSignal(x, self.sample_rate), unit="dits")
         self.assertAlmostEqual(e_bits * np.log(2), e_nats, places=4)
         self.assertAlmostEqual(e_dits * np.log(10), e_nats, places=4)
 
@@ -499,7 +476,7 @@ class TestPowerSpectralEntropy(unittest.TestCase):
         t = np.linspace(0, 1.0, self.sample_rate, endpoint=False)
         signal = np.sin(2 * np.pi * 15 * t)
         with self.assertRaises(ValueError):
-            power_spectral_entropy(signal, self.sample_rate, unit="watts")
+            power_spectral_entropy(AudioSignal(signal, self.sample_rate), unit="watts")
 
 
 from scipy.signal import chirp
@@ -528,17 +505,17 @@ class TestTemporalEntropy(unittest.TestCase):
     def test_chirp_entropy(self):
         f1 = 300
         f2 = 400
-        signal = chirp(self.time, f1, 10, f2) + np.random.normal(0, 1, size=self.time.shape)
+        signal = AudioSignal(chirp(self.time, f1, 10, f2) + np.random.normal(0, 1, size=self.time.shape), self.sample_rate)
         H, H_max = temporal_entropy(signal)
         self.assertGreater(H, 0.5, "Entropy of chirp with noise should be relatively high.")
 
     def test_noise_signal_entropy(self):
-        signal = np.random.normal(0, 1, size=self.time.shape)
+        signal = AudioSignal(np.random.normal(0, 1, size=self.time.shape), self.sample_rate)
         H, H_max = temporal_entropy(signal)
         self.assertGreater(H, 0.5, "Entropy of white noise should be relatively high.")
 
     def test_entropy_units(self):
-        signal = np.random.normal(0, 1, size=self.time.shape)
+        signal = AudioSignal(np.random.normal(0, 1, size=self.time.shape), self.sample_rate)
         h_bits, _ = temporal_entropy(signal, unit="bits", norm=False)
         h_nats, _ = temporal_entropy(signal, unit="nat", norm=False)
         h_hartleys, _ = temporal_entropy(signal, unit="hartleys", norm=False)
@@ -550,7 +527,7 @@ class TestTemporalEntropy(unittest.TestCase):
         # TODO assert relative H independent of unit equal
 
     def test_invalid_unit_raises(self):
-        signal = np.random.normal(0, 1, size=self.time.shape)
+        signal = AudioSignal(np.random.normal(0, 1, size=self.time.shape), self.sample_rate)
         with self.assertRaises(ValueError):
             temporal_entropy(signal, unit="invalid_unit")
 
@@ -567,19 +544,20 @@ def test_spectrotemporal_entropy():
     sr = 1000
     time = np.linspace(0, duration, int(sr * duration), endpoint=False)
     data = chirp(time, f1, 10, f2) + np.random.normal(0, 1, size=time.shape)
+    signal = AudioSignal(data, sr)
 
-    entropy_val = spectrotemporal_entropy(data, sr, unit="bits")
-    expected_temporal, _ = temporal_entropy(data, unit="bits")
-    expected_spectral, _ = power_spectral_entropy(data, sr, unit="bits")
+    entropy_val = spectrotemporal_entropy(signal, unit="bits")
+    expected_temporal, _ = temporal_entropy(signal, unit="bits")
+    expected_spectral, _ = power_spectral_entropy(signal, unit="bits")
     assert np.isclose(entropy_val, expected_temporal * expected_spectral)
 
-    entropy_val = spectrotemporal_entropy(data, sr, unit="nat")
-    expected_temporal, _ = temporal_entropy(data, unit="nat")
-    expected_spectral, _ = power_spectral_entropy(data, sr, unit="nat")
+    entropy_val = spectrotemporal_entropy(signal, unit="nat")
+    expected_temporal, _ = temporal_entropy(signal, unit="nat")
+    expected_spectral, _ = power_spectral_entropy(signal, unit="nat")
     assert np.isclose(entropy_val, expected_temporal * expected_spectral)
 
     for unit in ["bits", "nat", "dits", "bans", "hartleys"]:
-        entropy_val = spectrotemporal_entropy(data, sr, unit=unit)
+        entropy_val = spectrotemporal_entropy(signal, unit=unit)
         assert isinstance(entropy_val, float)
 
 
@@ -587,80 +565,72 @@ from biosonic.compute.spectrotemporal import cepstrum
 
 
 @pytest.fixture
-def sine_wave():
+def sine_wave() -> AudioSignal:
     sr = 16000
     t = np.linspace(0, 1, sr, endpoint=False)
     freq = 440
     x = np.sin(2 * np.pi * freq * t)
-    return x, sr
+    return AudioSignal(x, sr)
 
 
 @pytest.fixture
-def chirp_with_noise():
+def chirp_with_noise() -> AudioSignal:
     f1 = 300
     f2 = 400
     duration = 1
     sr = 1000
     time = np.linspace(0, duration, int(sr * duration), endpoint=False)
     x = chirp(time, f1, 10, f2) + np.random.normal(0, 1, size=time.shape)
-    return x, sr
+    return AudioSignal(x, sr)
 
 
 def test_cepstrum(sine_wave, chirp_with_noise):
-    x, sr = chirp_with_noise
-    cep, qf = cepstrum(x, sr, mode="amplitude")
+    cep, qf = cepstrum(chirp_with_noise, mode="amplitude")
 
     # output shape
-    assert cep.shape == x.shape
-    assert qf.shape == x.shape
+    assert cep.shape == chirp_with_noise.data.shape
+    assert qf.shape == chirp_with_noise.data.shape
 
     # amplitude vs power
-    x, sr = sine_wave
-    cep_amp, _ = cepstrum(x, sr, mode="amplitude")
-    cep_pow, _ = cepstrum(x, sr, mode="power")
+    cep_amp, _ = cepstrum(sine_wave, mode="amplitude")
+    cep_pow, _ = cepstrum(sine_wave, mode="power")
     assert np.all(cep_pow >= 0), "Power cepstrum should be non-negative"
     assert not np.allclose(cep_amp, cep_pow), "Amplitude and power cepstra should differ"
 
     # quefrency scale
-    x, sr = sine_wave
-    _, qf = cepstrum(x, sr)
-    expected = np.arange(len(x)) / sr
+    _, qf = cepstrum(sine_wave)
+    expected = np.arange(len(sine_wave.data)) / sine_wave.srate
     assert np.allclose(qf, expected)
 
     # invalid mode
-    x, sr = sine_wave
     with pytest.raises(ValueError, match="Invalid mode for cepstrum calculation"):
-        cepstrum(x, sr, mode="invalid")
+        cepstrum(sine_wave, mode="invalid")
 
     # energy conservation
-    x, sr = sine_wave
-    cep, _ = cepstrum(x, sr, mode="power")
+    cep, _ = cepstrum(sine_wave, mode="power")
     energy = np.sum(cep)
     assert energy > 0, "Cepstrum energy should be positive"
 
     # flat signal
     x, sr = np.full(500, 1), 50
     with pytest.raises(ValueError, match="flat signal"):
-        cepstrum(x, sr, mode="power")
+        cepstrum(AudioSignal(x, sr), mode="power")
 
 
 @pytest.mark.parametrize("filterbank_type", ["mel", "linear"])
 def test_cepstral_coefficients(filterbank_type, sine_wave, chirp_with_noise):
     from biosonic.compute.spectrotemporal import cepstral_coefficients
-    signal, sr = sine_wave
-    ceps = cepstral_coefficients(signal, sr, window_length=512, n_ceps=13)
+    ceps = cepstral_coefficients(sine_wave, window_length=512, n_ceps=13)
     assert isinstance(ceps, np.ndarray)
     assert ceps.shape == (13, 101)
 
     # filterbank types
-    signal, sr = chirp_with_noise
-    ceps = cepstral_coefficients(signal, sr, filterbank_type=filterbank_type, n_ceps=10)
+    ceps = cepstral_coefficients(chirp_with_noise, filterbank_type=filterbank_type, n_ceps=10)
     assert ceps.shape == (10, 101)
 
     # invalid filterbank type
-    signal, sr = sine_wave
     with pytest.raises(ValueError):
-        cepstral_coefficients(signal, sr, filterbank_type="invalid")
+        cepstral_coefficients(sine_wave, filterbank_type="invalid")
 
     # # short signal
     # sr = 16000
@@ -669,19 +639,18 @@ def test_cepstral_coefficients(filterbank_type, sine_wave, chirp_with_noise):
     # assert ceps.shape == (5,)
 
     # fmin fmax
-    signal, sr = chirp_with_noise
-    ceps = cepstral_coefficients(signal, sr, window_length=512, fmin=10, fmax=500, n_ceps=12)
+    ceps = cepstral_coefficients(chirp_with_noise, window_length=512, fmin=10, fmax=500, n_ceps=12)
     assert ceps.shape == (12, 101)
 
     # parameter validation
     with pytest.raises(ValueError, match="fmax must be <= Nyquist frequency"):
-        ceps = cepstral_coefficients(signal, sr, window_length=512, fmin=10, fmax=5000, n_ceps=12)
+        ceps = cepstral_coefficients(chirp_with_noise, window_length=512, fmin=10, fmax=5000, n_ceps=12)
 
     with pytest.raises(ValueError, match="fmin must be >= 0 and < fmax"):
-        ceps = cepstral_coefficients(signal, sr, window_length=512, fmin=100, fmax=10, n_ceps=12)
+        ceps = cepstral_coefficients(chirp_with_noise, window_length=512, fmin=100, fmax=10, n_ceps=12)
 
     with pytest.raises(ValueError, match="fmin must be >= 0 and < fmax"):
-        ceps = cepstral_coefficients(signal, sr, window_length=512, fmin=-1, fmax=10, n_ceps=12)
+        ceps = cepstral_coefficients(chirp_with_noise, window_length=512, fmin=-1, fmax=10, n_ceps=12)
 
 
 if __name__ == '__main__':

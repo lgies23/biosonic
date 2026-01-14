@@ -16,13 +16,12 @@ from pandas import DataFrame
 
 from biosonic.compute.spectral import spectrum
 from biosonic.compute.spectrotemporal import cepstral_coefficients, cepstrum, spectrogram
-from biosonic.compute.utils import check_signal_format, check_sr_format, extract_all_features
+from biosonic.compute.utils import AudioSignal, extract_all_features
 from biosonic.filter import mel_filterbank
 
 
 def plot_spectrogram(
-        data: ArrayLike,
-        sr: Optional[int] = None,
+        signal: Union[AudioSignal, Tuple[np.ndarray, np.ndarray, np.ndarray]],
         db_scale: bool = True,
         cmap: str = 'binary',
         title: Optional[str] = None,
@@ -47,10 +46,8 @@ def plot_spectrogram(
 
     Parameters
     ----------
-    data : Union[np.ndarray, Tuple[np.ndarray, np.ndarray, np.ndarray]],
-        Input signal. Either as precomputed spectrogram (S, t, f) or 1D signal array.
-    sr : int
-        Sampling rate in Hz.
+    signal : Union[Signal, Tuple[np.ndarray, np.ndarray, np.ndarray]]
+        Input signal object containing data and sampling rate, or precomputed spectrogram tuple (S, t, f).
     db_scale : bool, optional
         Whether to convert the spectrogram to decibel scale. Default is True.
     cmap : str, optional
@@ -96,16 +93,15 @@ def plot_spectrogram(
         raise ImportError("matplotlib is required for plotting. Install it with: pip install biosonic[plot]")
 
     # Precomputed spectrogram
-    if isinstance(data, tuple) and len(data) == 3:
-        Sx, t, f = data
+    if isinstance(signal, tuple) and len(signal) == 3:
+        Sx, t, f = signal
 
     # Raw signal + sr
-    elif isinstance(data, np.ndarray):
-        if sr is None:
+    elif isinstance(signal, AudioSignal):
+        if signal.srate is None:
             raise ValueError("sr must be provided when passing a signal array.")
         Sx, t, f = spectrogram(
-            data=data,
-            sr=sr,
+            signal,
             window_length=window_length,
             window=window,
             overlap=overlap,
@@ -117,13 +113,13 @@ def plot_spectrogram(
         raise TypeError("data must be either a (S, t, f) tuple or a 1D np.ndarray signal")
 
     if freq_scale == "mel":
-        if sr is None:
+        if signal.srate is None:
             raise ValueError("Sample rate must be provided for mel frequency scale.")
 
         fmin = flim[0] if flim else 0.0
-        fmax = flim[1] if flim and flim[1] else sr / 2
+        fmax = flim[1] if flim and flim[1] else signal.srate / 2
 
-        fb, f_centers = mel_filterbank(n_bands, window_length, sr, fmin=fmin, fmax=fmax, corner_frequency=corner_frequency, after=after)
+        fb, f_centers = mel_filterbank(n_bands, window_length, signal.srate, fmin=fmin, fmax=fmax, corner_frequency=corner_frequency, after=after)
         f = f_centers
         # Sx : np.ndarray = np.einsum("...ft,mf->...mt", Sx, fb, optimize=True)
         Sx = fb @ Sx
@@ -308,8 +304,7 @@ def plot_cepstral_coefficients(
 
 
 def plot_features(
-        data: ArrayLike,
-        sr: int,
+        signal: AudioSignal,
         features: Optional[dict[str, Any]] = None,
         spec_kwargs: Optional[dict[str, Any]] = None,
         **kwargs: Any,
@@ -319,28 +314,23 @@ def plot_features(
 
     Parameters
     ----------
-    data : ArrayLike
-        Audio time series data.
-    sr : int
-        Sampling rate of the audio data in Hz.
+    signal : Signal
+        Audio signal object containing data and sampling rate.
      **kwargs : dict[str, Any]
             Optional parameters for dominant frequency estimation.
     """
     if plt is None:
         raise ImportError("matplotlib is required for plotting. Install it with: pip install biosonic[plot]")
 
-    data = check_signal_format(data)
-    sr = check_sr_format(sr)
-
     if not features:
-        features = extract_all_features(data, sr, **kwargs)
+        features = extract_all_features(signal, **kwargs)
 
     if "trim_indices" not in features:
-        features["trim_indices"] = (0, len(data))
-        features["trim_times"] = (0, len(data) / sr)
+        features["trim_indices"] = (0, len(signal.data))
+        features["trim_times"] = (0, len(signal.data) / signal.srate)
 
-    _, times, _ = spectrogram(data, sr)
-    freq_ms, ms = spectrum(data, sr)
+    _, times, _ = spectrogram(signal)
+    freq_ms, ms = spectrum(signal)
 
     dom_freqs = features["dominant_freqs"]
     all_candidates = [[(float(f), 1.0) if f > 0 else (0.0, 0.0)] for f in dom_freqs]
@@ -353,8 +343,7 @@ def plot_features(
         spec_kwargs = {}
 
     plot_pitch_on_spectrogram(
-        data=data,
-        sr=sr,
+        signal=signal,
         time_points=times,
         all_candidates=all_candidates,
         show_strongest=True,
@@ -395,11 +384,11 @@ def plot_features(
     # Waveform
     ax3 = fig.add_subplot(3, 1, 3)
     ax3.set_title("Waveform with Amplitude Envelope and Time-domain Features")
-    times_waveform = np.linspace(0, len(data) / sr, num=len(data))
-    ax3.plot(times_waveform, data, label="Waveform", color="grey", alpha=0.3)
+    times_waveform = np.linspace(0, len(signal.data) / signal.srate, num=len(signal.data))
+    ax3.plot(times_waveform, signal.data, label="Waveform", color="grey", alpha=0.3)
     ax3.plot(times_waveform[features["trim_indices"][0]:features["trim_indices"][1]], features["amplitude_envelope"],
              label="Amplitude Envelope", color="#A2A2A2")
-    if features["trim_times"][0] >= 0 or features["trim_times"][1] <= len(data) / sr:
+    if features["trim_times"][0] >= 0 or features["trim_times"][1] <= len(signal.data) / signal.srate:
         ax3.axvspan(features["trim_times"][0], features["trim_times"][1], color="#696969C5", label="Processed Region", alpha=0.1)
     ax3.axvline(features["t_median"]+features["trim_times"][0], color="#48ad46b5", linestyle="-", label="Median")
     ax3.axvline(features["t_q1"]+features["trim_times"][0], color="#88d253aa", linestyle="-", label="Q1")
@@ -487,8 +476,7 @@ def plot_pitch_candidates(
 
 
 def plot_pitch_on_spectrogram(
-    data: ArrayLike,
-    sr: int,
+    signal: AudioSignal,
     time_points: ArrayLike,
     all_candidates: ArrayLike,
     window_length: int = 512,
@@ -511,8 +499,8 @@ def plot_pitch_on_spectrogram(
 
     Parameters
     ----------
-    data : ArrayLike
-        Audio time series data.
+    signal : Signal
+        Audio signal object containing data and sampling rate.
     sr : int
         Sampling rate of the audio data in Hz.
     time_points : ArrayLike
@@ -547,8 +535,7 @@ def plot_pitch_on_spectrogram(
         fig, ax = plot
 
     plot_spectrogram(
-        data,
-        sr,
+        signal,
         overlap=overlap,
         db_scale=db_scale,
         cmap=cmap,
@@ -573,8 +560,7 @@ def plot_pitch_on_spectrogram(
 
 
 def plot_boundaries_on_spectrogram(
-    data: ArrayLike,
-    sr: int,
+    signal: AudioSignal,
     segments: List[Dict[str, float]],
     **kwargs: Any
     ) -> None:
@@ -583,10 +569,8 @@ def plot_boundaries_on_spectrogram(
 
     Parameters
     ----------
-    data : ArrayLike
-        Audio time series data.
-    sr : int
-        Sampling rate of the audio data.
+    signal : Signal
+        Audio signal object containing data and sampling rate.
     segments : List[Dict[str, float]]
         A list of segment boundary dictionaries. Each dictionary should
         contain keys "begin" and "end", representing the start and end
@@ -599,7 +583,7 @@ def plot_boundaries_on_spectrogram(
 
     fig, ax = plt.subplots()
 
-    plot_spectrogram(data, sr, plot=(fig, ax), **kwargs)
+    plot_spectrogram(signal, plot=(fig, ax), **kwargs)
 
     tlim = kwargs.get("tlim", None)
 

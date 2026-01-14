@@ -1,5 +1,6 @@
 import logging
 import warnings
+from dataclasses import dataclass
 from typing import Any, Literal, Optional, Tuple, Union
 
 import numpy as np
@@ -8,26 +9,46 @@ from scipy.ndimage import zoom
 from scipy.signal import windows
 
 
-def check_sr_format(sr: Union[int, float]) -> int:
-    try:
-        sr = int(sr)
-    except Exception as e:
-        raise TypeError(f"Sample rate not transformable to integer: {e}")
-    if sr <= 0:
-        raise ValueError("Sample rate must be greater than zero.")
-    return sr
+@dataclass
+class AudioSignal:  # to avoid name conflict with scipy signal module
+    data: NDArray[np.float32]
+    srate: int
 
+    @property
+    def duration(self) -> float:
+        return len(self.data) / self.srate
 
-def check_signal_format(data: ArrayLike) -> NDArray[np.float32]:
-    data = np.asarray(data, dtype=np.float32)
-    if data.ndim != 1:
-        raise ValueError("Signal must be a 1D array.")
-    if not np.issubdtype(data.dtype, np.floating):
-        raise TypeError("Signal must be an array of type float.")
-    # if np.max(data) > 1:
-        # scale to -1 to 1
-        # TODO
-    return data
+    @property
+    def numchannels(self) -> int:
+        return self.data.shape[0] if self.data.ndim > 1 else 1
+
+    def _normalize_data(self, data: ArrayLike) -> NDArray[np.float32]:
+        assert isinstance(data, (np.ndarray, list, tuple)), "'data' must be array-like"
+        assert len(data) > 0, "'data' must not be empty"
+        assert not np.all(np.array(data) == 0), "'data' contains no nonzero values"
+
+        max_abs = np.max(np.abs(data))
+        if max_abs > 1.0:
+            data = data / max_abs
+        return np.asarray(data, dtype=np.float32)
+
+    def _format_srate(self, sr: Union[int, float]) -> int:
+        try:
+            sr = int(sr)
+        except Exception as e:
+            raise TypeError(f"Sampling rate not transformable to integer: {e}")
+        return sr
+
+    def _validate(self) -> None:
+        if not isinstance(self.srate, int) or self.srate <= 0:
+            raise ValueError("Sampling rate must be a positive integer.")
+        if self.data.max() > 1.0 or self.data.min() < -1.0:
+            raise ValueError("Data values must be in the range [-1.0, 1.0].")
+
+    def __init__(self, data: ArrayLike, srate: int) -> None:
+        self.data = self._normalize_data(data)
+        self.srate = self._format_srate(srate)
+        self._validate()
 
 
 def exclude_trailing_and_leading_zeros(envelope: ArrayLike) -> NDArray[np.float32]:
@@ -92,8 +113,7 @@ def cumulative_distribution_function(envelope: NDArray[np.float32]) -> NDArray[n
 
 
 def extract_all_features(
-    data: ArrayLike,
-    sr: int,
+    signal: AudioSignal,
     n_dominant_freqs: int = 1,
     plot: bool = False,
     plot_kwargs: dict[str, Any] = {},
@@ -117,22 +137,18 @@ def extract_all_features(
     from .spectrotemporal import spectrotemporal_features
     from .temporal import temporal_features
 
-    data = check_signal_format(data)
-    sr = check_sr_format(sr)
-
-    temporal_feats = temporal_features(data, sr, return_trim_indices=plot, **envelope_kwargs)
-    spectral_feats = spectral_features(data, sr)
-    spectrotemporal_feats = spectrotemporal_features(data, sr, n_dominant_freqs, **kwargs)
+    temporal_feats = temporal_features(signal, return_trim_indices=plot, **envelope_kwargs)
+    spectral_feats = spectral_features(signal)
+    spectrotemporal_feats = spectrotemporal_features(signal, n_dominant_freqs, **kwargs)
 
     if plot:
         from biosonic.plot import plot_features
-        plot_features(data, sr, {**temporal_feats, **spectral_feats, **spectrotemporal_feats}, spec_kwargs, **plot_kwargs)
+        plot_features(signal, {**temporal_feats, **spectral_feats, **spectrotemporal_feats}, spec_kwargs, **plot_kwargs)
     return {**temporal_feats, **spectral_feats, **spectrotemporal_feats}
 
 
 def transform_spectrogram_for_nn(
-        data: ArrayLike,
-        sr: Optional[int] = None,
+        signal: Union[AudioSignal, Tuple[np.ndarray, np.ndarray, np.ndarray]],
         values_type: str = 'float32',
         add_channel: bool = True,
         data_format: Literal['channels_last', 'channels_first'] = 'channels_first',
@@ -146,10 +162,8 @@ def transform_spectrogram_for_nn(
     and optionally adding a channel dimension.
 
     Parameters:
-        data : Union[np.ndarray, Tuple[np.ndarray, np.ndarray, np.ndarray]],
-            Input signal. Either as precomputed spectrogram (S, t, f) or 1D signal array.
-        sr : Optional[int]
-            Sampling rate in Hz. Needed when passing signal as 1D array.
+        signal : Union[Signal, Tuple[np.ndarray, np.ndarray, np.ndarray]],
+            Either as precomputed spectrogram (S, t, f) or Signal.
         values_type : str
             Data type to cast the spectrogram to (e.g., 'float32', 'float64'). Defaults to 'float32'
         add_channel : bool
@@ -184,16 +198,15 @@ def transform_spectrogram_for_nn(
     from .spectrotemporal import spectrogram
 
     # precomputed spectrogram
-    if isinstance(data, tuple) and len(data) == 3:
-        spec, t, f = data
+    if not isinstance(signal, AudioSignal):
+        spec, t, f = signal
 
     # raw signal + sr
-    elif isinstance(data, np.ndarray):
-        if sr is None:
+    elif isinstance(signal, AudioSignal):
+        if signal.srate is None:
             raise ValueError("sr must be provided when passing a signal array.")
         spec, t, f = spectrogram(
-            data=data,
-            sr=sr,
+            signal,
             complex_output=False,
             **kwargs
         )
@@ -432,16 +445,15 @@ def mel_to_hz(
 
 
 def frame_signal(
-        data: ArrayLike,
-        sr: int,
+        signal: AudioSignal,
         window_length: int = 512,
         timestep: float = 0.01,
         normalize: bool = False
     ) -> ArrayLike:
+    assert type(signal) is AudioSignal, "'signal' must be an instance of AudioSignal."
 
-    samples_step = int(timestep * sr)
-
-    data = np.pad(data, int(window_length / 2), mode='edge')
+    samples_step = int(timestep * signal.srate)
+    data = np.pad(signal.data, int(window_length / 2), mode='edge')
 
     frame_num = int((len(data) - window_length) / samples_step) + 1
     frames = np.zeros((frame_num, window_length))
@@ -457,14 +469,13 @@ def frame_signal(
 
 
 def window_signal(
-        data: ArrayLike,
-        sr: int,
+        signal: AudioSignal,
         window_length: int = 512,
         window: Union[str, ArrayLike] = "hann",
         timestep: float = 0.01,
         normalize: bool = False
 ) -> ArrayLike:
-
+    assert type(signal) is AudioSignal, "'signal' must be an instance of AudioSignal."
     if isinstance(window, str):
         try:
             window = windows.get_window(window, window_length)
@@ -475,14 +486,13 @@ def window_signal(
         if not isinstance(window, np.ndarray):
             raise TypeError("'window' must be either a string or a 1D NumPy array.")
 
-    frames = frame_signal(data, sr, window_length, timestep, normalize)
+    frames = frame_signal(signal, window_length, timestep, normalize)
 
     return frames * window
 
 
 def rms(
-        data: ArrayLike,
-        sr: int,
+        signal: AudioSignal,
         window_length: int = 512,
         timestep: float = 0.01
     ) -> Tuple[NDArray[np.float32], NDArray[np.float32]]:
@@ -506,7 +516,7 @@ def rms(
         RMS values per frame.
     """
 
-    frames = frame_signal(data, sr, window_length=window_length, timestep=timestep, normalize=False)
+    frames = frame_signal(signal, window_length=window_length, timestep=timestep, normalize=False)
     rms_vals = np.sqrt(np.mean(np.square(frames), axis=1))
     times_s = np.arange(len(rms_vals)) * timestep
     return rms_vals, times_s
