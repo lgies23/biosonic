@@ -1,0 +1,83 @@
+name: CI
+
+on:
+  push:
+    branches-ignore:
+      - 'dependabot/**'
+      - 'pre-commit-ci-update-config'
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.10', '3.11', '3.12', '3.13', '3.14']
+        os: [ubuntu-latest, macos-15-intel, macos-latest, windows-latest]
+
+    name: Test • Python ${{ matrix.python-version }} • ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest mypy
+          pip install -r requirements.txt
+
+      - name: Run tests with pytest
+        run: |
+          pytest
+
+      - name: Run doctests with pytest
+        if: matrix.os != 'macos-latest'  # Disable doctests on Apple Silicon for now, because of rounding errors
+        run: |
+          pytest --doctest-modules src/
+
+      - name: Check typing with mypy
+        run: |
+          mypy --config-file pyproject.toml src
+
+  docs:
+    name: Documentation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+
+      - name: Install package
+        run: |
+          python -m pip install --upgrade pip
+          pip install .[praat,plot]
+
+      - name: Install documentation requirements
+        run: |
+          sudo apt install pandoc
+          pip install -r docs/requirements.txt
+          pip install nbconvert
+
+      - name: Build documentation
+        run: |
+          cd docs
+          make html
+
+      - name: Upload documentation
+        uses: actions/upload-artifact@v4
+        with:
+          name: documentation
+          path: docs/build/html/

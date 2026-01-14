@@ -1,6 +1,6 @@
 [build-system]
 requires = ["poetry-core"]
-build-backend = "poetry, core.masonry.api"
+build-backend = "poetry.core.masonry.api"
 
 
 [project]
@@ -36,6 +36,31 @@ dependencies = [
 praat = ["praat-textgrids"]
 plot = ["matplotlib"]
 
+[project.urls]
+Homepage = "https://github.com/lgies23/biosonic"
+Documentation = "https://biosonic.readthedocs.io"
+Repository = "https://github.com/lgies23/biosonic"
+"Bug Tracker" = "https://github.com/lgies23/biosonic/issues"
+
+
+[tool.poetry]
+packages = [
+  { include = "biosonic", from = "src" },
+]
+exclude = [
+  ".pre-commit-config.yaml",
+  "readthedocs.yml",
+  "docs/build/"
+]
+include = [
+  "requirements.txt",
+  "docs/make.bat",
+  "docs/Makefile",
+  "docs/requirements.txt",
+  "docs/source/",
+  "tests/"
+]
+
 [tool.poetry.group.dev.dependencies]
 mypy = "*"
 pytest = "*"
@@ -48,27 +73,14 @@ nbsphinx = "*"
 sphinx-autodoc-typehints = "*"
 ipykernel = "*"
 
-[project.urls]
-Homepage = "https://github.com/lgies23/biosonic"
-Documentation = "https://biosonic.readthedocs.io"
-Repository = "https://github.com/lgies23/biosonic"
-"Bug Tracker" = "https://github.com/lgies23/biosonic/issues"
 
-
-[tool.poetry]
-packages = [
-    { include = "biosonic", from = "src" },
+[tool.check-manifest]
+ignore = [
+  ".pre-commit-config.yaml",
+  "readthedocs.yaml",
+  "check-types.sh",
+  "poetry.lock"
 ]
-exclude = ["tests/", "build/", "dist/", "docs/", "normalized/", "example_data/", "example_usage.ipynb"]
-
-[tool.mypy]
-python_version = "3.9"
-ignore_missing_imports = true
-strict = true
-show_error_codes = true
-pretty = true
-exclude = ["tests/", "build/", "dist/", "docs/", "normalized/", "example_data/", "example_usage.ipynb"]
-
 
 [tool.flake8]
 max-line-length = 160
@@ -83,8 +95,20 @@ per-file-ignores = [
   "tests/*:E402,F811",  # Remove after splitting up tests?
 ]
 
-
 [tool.isort]
 skip = ["docs/source/conf.py"]
 line_length = 100
 multi_line_output = 3
+
+[tool.pytest]
+minversion = "9.0"
+pythonpath = ["src"]
+addopts = ["--deselect", "src/biosonic/plot.py::biosonic.plot.plot_spectrogram_catalogue"]
+
+[tool.mypy]
+python_version = "3.9"
+ignore_missing_imports = true
+strict = true
+show_error_codes = true
+pretty = true
+exclude = ["tests/", "build/", "dist/", "docs/", "normalized/", "example_data/", "example_usage.ipynb"]

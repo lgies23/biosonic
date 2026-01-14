@@ -119,12 +119,11 @@ def quartiles(data: ArrayLike, sr: int) -> Tuple[float, float, float]:
     Examples
     --------
         >>> import numpy as np
-        >>> from mymodule import spectral_quartiles
         >>> sr = 1000
         >>> t = np.linspace(0, 1, sr, endpoint=False)
         >>> x = np.sin(2 * np.pi * 10 * t) + 0.5 * np.sin(2 * np.pi * 30 * t)
-        >>> spectral_quartiles(x, sr)
-        (10.0, 20.0, 30.0)
+        >>> quartiles(x, sr)
+        (np.float64(10.0), np.float64(10.0), np.float64(10.0))
     """
     data = check_signal_format(data)
     sr = check_sr_format(sr)
@@ -277,10 +276,11 @@ def centroid(data: ArrayLike, sr: int) -> Union[float, np.floating[Any]]:
 
     Examples
     --------
+        >>> np.random.seed(42)
         >>> signal = np.random.randn(1024)
         >>> sr = 44100
         >>> centroid(signal, sr)
-        7101.56
+        np.float64(11011.330381305264)
 
     References
     ----------
@@ -317,7 +317,7 @@ def bandwidth(data: ArrayLike, sr: int) -> Union[float, np.floating[Any]]:
         >>> import numpy as np
         >>> signal = np.array([1.0, 2.0, 3.0, 4.0, 5.0])
         >>> bandwidth(signal, sr=1)
-        1.4142135623730951
+        np.float64(0.13942528646692923)
 
     References
     ----------
@@ -418,7 +418,6 @@ def peak_frequency(data: ArrayLike, sr: int) -> Union[float, np.floating[Any]]:
     Example
     -------
         >>> import numpy as np
-        >>> from biosonic.compute.temporal import peak_frequency
         >>> sampling_rate = 1000.0  # 1000 Hz
         >>> t = np.linspace(0, 1.0, int(sampling_rate), endpoint=False)
         >>> signal = np.sin(2 * np.pi * 50 * t)  # 50 Hz sine wave

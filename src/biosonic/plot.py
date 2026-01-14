@@ -666,7 +666,7 @@ def plot_spectrogram_catalogue(
 
     Examples
     --------
-    >>> import pandas as pd
+    >>> import pandas as pd  # doctest: +SKIP
     >>> data = {
     ...     "ID": [1, 2],
     ...     "waveform": [wave1, wave2],
