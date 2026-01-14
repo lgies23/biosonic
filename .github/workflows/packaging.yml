@@ -19,6 +19,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          filter: tree:0
 
       - name: Set up Python 3.13
         uses: actions/setup-python@v6
@@ -34,7 +37,7 @@ jobs:
         run: |
           # Poetry doesn't use MANIFEST.in, so the errors might be weird.
           # But in the end, this tool checks VCS vs. created sdists, so still a useful check!
-          python -m check_manifest
+          POETRY_DYNAMIC_VERSIONING_BYPASS=0.0.0 python -m check_manifest
 
       - name: Build
         run: |
