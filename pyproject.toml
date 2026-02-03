@@ -1,11 +1,10 @@
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["poetry-core>=1.0.0", "poetry-dynamic-versioning>=1.0.0,<2.0.0"]
+build-backend = "poetry_dynamic_versioning.backend"
 
 
 [project]
 name = "biosonic"
-version = "0.1.8"
 description = "The biosonic package contains tools for bioacoustic analysis."
 authors = [
   {name = "Lena Gies", email = "lena.gies@univie.ac.at"},
@@ -31,6 +30,7 @@ dependencies = [
   "numpy (>=2.4.0, <3.0); python_version >= '3.11'",
   "numpy (<2.4.0); python_version < '3.11'",
 ]
+dynamic = ["version"]
 
 [project.optional-dependencies]
 praat = ["praat-textgrids"]
@@ -53,6 +53,7 @@ exclude = [
   "docs/build/"
 ]
 include = [
+  { path = "src/biosonic/_version.py", format = ["sdist", "wheel"] },
   "requirements.txt",
   "docs/make.bat",
   "docs/Makefile",
@@ -60,6 +61,10 @@ include = [
   "docs/source/",
   "tests/"
 ]
+version = "0.0.0"
+
+[tool.poetry.requires-plugins]
+poetry-dynamic-versioning = { version = ">=1.0.0,<2.0.0", extras = ["plugin"] }
 
 [tool.poetry.group.dev.dependencies]
 mypy = "*"
@@ -73,13 +78,30 @@ nbsphinx = "*"
 sphinx-autodoc-typehints = "*"
 ipykernel = "*"
 
+[tool.poetry-dynamic-versioning]
+enable = true
+pattern = "default"
+bump = true
+strict = true
+
+[tool.poetry-dynamic-versioning.substitution]
+files = ["src/biosonic/_version.py"]
+
+[tool.poetry-dynamic-versioning.files."src/biosonic/_version.py"]
+persistent-substitution = true
+initial-content = """
+  __version__ = "0.0.0"
+  __version_tuple__ = (0, 0, 0)
+"""
+
 
 [tool.check-manifest]
 ignore = [
   ".pre-commit-config.yaml",
   "readthedocs.yaml",
   "check-types.sh",
-  "poetry.lock"
+  "poetry.lock",
+  "src/biosonic/_version.py"
 ]
 
 [tool.flake8]
