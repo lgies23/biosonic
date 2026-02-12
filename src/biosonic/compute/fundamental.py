@@ -223,13 +223,13 @@ def _find_f0_candidates_(
     """
     Find f0 candidates based on autocorrelation peaks.
     """
-    min_lag = int(sr / max_f0)
+    # min_lag = int(sr / max_f0)  # Described by Boersma (1993) but not used in Praat implementation
     max_lag = int(sr / min_f0)
 
     candidates: list[Tuple[float, float]] = []
 
     max_depth = 8  # window for sinc interpolation, can be tuned
-    for lag in range(min_lag + 1, max_lag - 1):
+    for lag in range(2, max_lag - 1):
         if ac[lag] > ac[lag - 1] and ac[lag] > ac[lag + 1]:
             # Use sinc interpolation for sub-sample lag refinement
             refined_lag, _ = _improve_sinc_maximum(ac, float(lag), max_depth)
