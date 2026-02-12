@@ -1,5 +1,6 @@
 # from dataclasses import dataclass
 import traceback
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Literal, Optional, Tuple, Union, get_args
 
@@ -11,25 +12,52 @@ from scipy.signal import resample
 
 QuantizationStr = Literal["int8", "int16", "int32", "float32", "float64"]
 
-# @dataclass
-# class Signal:
-#     """
-#     A dataclass representing an audio signal.
 
-#     Attributes:
-#         data : NDArray
-#             Audio samples as a NumPy array. 1D for mono, otherwise a 2D array with shape (n_samples, n_channels)
-#         n_channels : int
-#             Number of audio channels (1 for mono, 2 for stereo, etc.).
-#         sr : int
-#             Sample rate in Hz.
-#         quantization : QuantizationStr
-#             Data format (bit depth) of the signal.
-#     """
-#     data: NDArray
-#     n_channels: int
-#     sr: int
-#     quantization: QuantizationStr
+@dataclass
+class AudioSignal:  # to avoid name conflict with scipy signal module
+    data: NDArray[np.float32]
+    srate: int
+
+    @property
+    def duration(self) -> float:
+        return len(self.data) / self.srate
+
+    @property
+    def numchannels(self) -> int:
+        return self.data.shape[0] if self.data.ndim > 1 else 1
+
+    @property
+    def dtype(self) -> type[Any]:
+        # TODO find better way
+        return type(self.data[0])
+
+    def _normalize_data(self, data: ArrayLike) -> NDArray[np.float32]:
+        assert isinstance(data, (np.ndarray, list, tuple)), "'data' must be array-like"
+        assert len(data) > 0, "'data' must not be empty"
+        assert not np.all(np.array(data) == 0), "'data' contains no nonzero values"
+
+        max_abs = np.max(np.abs(data))
+        if max_abs > 1.0:
+            data = data / max_abs
+        return np.asarray(data, dtype=np.float32)
+
+    def _format_srate(self, sr: Union[int, float]) -> int:
+        try:
+            sr = int(sr)
+        except Exception as e:
+            raise TypeError(f"Sampling rate not transformable to integer: {e}")
+        return sr
+
+    def _validate(self) -> None:
+        if not isinstance(self.srate, int) or self.srate <= 0:
+            raise ValueError("Sampling rate must be a positive integer.")
+        if self.data.max() > 1.0 or self.data.min() < -1.0:
+            raise ValueError("Data values must be in the range [-1.0, 1.0].")
+
+    def __init__(self, data: ArrayLike, srate: int) -> None:
+        self.data = self._normalize_data(data)
+        self.srate = self._format_srate(srate)
+        self._validate()
 
 
 def convert_dtype(data: NDArray, target_dtype: QuantizationStr) -> NDArray:
@@ -84,7 +112,8 @@ def convert_dtype(data: NDArray, target_dtype: QuantizationStr) -> NDArray:
 
     # special handling for uint8 (unsigned), to float32
     if current_dtype == np.uint8 and np.issubdtype(target_np_dtype, np.floating):
-        return ((data.astype(target_np_dtype) - 128) / 128).astype(target_np_dtype)
+        data = data.astype(target_np_dtype)
+        return ((data - 128) / 128).astype(target_np_dtype)
 
     if np.issubdtype(current_dtype, np.floating) and target_np_dtype == np.uint8:
         return ((data * 128) + 128).clip(0, 255).astype(np.uint8)
@@ -189,10 +218,10 @@ def convert_channels(data: NDArray, target_channels: int) -> NDArray:
 
 def read_wav(
         filepath: Union[str, Path],
-        sampling_rate: Optional[int] = None,
+        srate: Optional[int] = None,
         quantization: QuantizationStr = "float32",
         n_channels: Optional[int] = None,
-    ) -> Tuple[NDArray, int, int, QuantizationStr]:
+    ) -> AudioSignal:
     """
     Reads a WAV file and returns a Signal object, optionally converting sample rate, number of channels,
     and quantization format.
@@ -237,10 +266,10 @@ def read_wav(
     """
     sr, data = wavfile.read(filepath)
 
-    if sampling_rate is not None:
-        if sr != sampling_rate:
-            data = resample_audio(data, sr, sampling_rate)
-            sr = sampling_rate
+    if srate is not None:
+        if sr != srate:
+            data = resample_audio(data, sr, srate)
+            sr: int = srate
 
     n_ch = 1 if data.ndim == 1 else data.shape[1]
     if n_channels is not None:
@@ -251,7 +280,7 @@ def read_wav(
     if quantization != data.dtype.name:
         data = convert_dtype(data, quantization)
 
-    return data, sr, n_ch, quantization
+    return AudioSignal(data, sr)
 
 
 def batch_normalize_wav_files(
@@ -296,9 +325,9 @@ def batch_normalize_wav_files(
 
     wav_files = list(folder_path.glob("*.wav")) + list(folder_path.glob("*.WAV"))
     for wav_file in wav_files:
-        data, _, _, _ = read_wav(wav_file, target_sr, target_quantization, target_channels)
+        audioSignal = read_wav(wav_file, target_sr, target_quantization, target_channels)
         out_path = output_dir / wav_file.name
-        wavfile.write(out_path, target_sr, data.astype(np.dtype(target_quantization)))
+        wavfile.write(out_path, target_sr, audioSignal.data.astype(np.dtype(target_quantization)))
         print(f"Normalized: {wav_file.name} -> {out_path}")
 
 
@@ -349,8 +378,8 @@ def batch_extract_features(
     for wav_file in wav_files:
         print(f"processing {wav_file.name}")
         try:
-            data, sr, _, _ = read_wav(wav_file)
-            features = extract_all_features(data, sr)
+            audioSignal: AudioSignal = read_wav(wav_file)
+            features = extract_all_features(audioSignal)
             features['filename'] = wav_file.name
             feature_rows.append(features)
         except Exception as e:
@@ -411,11 +440,11 @@ def batch_read_files_to_df(
     for wav_file in wav_files:
         print(f"processing {wav_file.name}")
         try:
-            data, sr, _, _ = read_wav(wav_file)
+            audioSignal: AudioSignal = read_wav(wav_file)
             columns: dict[str, Any] = {}
             columns['filename'] = wav_file.name
-            columns['sr'] = sr
-            columns['waveform'] = data
+            columns['sr'] = audioSignal.srate
+            columns['waveform'] = audioSignal.data
             rows.append(columns)
         except Exception as e:
             print(f"Failed to process {wav_file.name}: {e}")
@@ -434,8 +463,7 @@ def batch_read_files_to_df(
 
 
 def segments_from_signal(
-        data: NDArray,
-        sr: int,
+        signal: AudioSignal,
         boundaries: Union[Dict[str, float], ArrayLike, Tuple[float, float], List[Dict[str, float]]]
     ) -> List[NDArray]:
     """
@@ -459,6 +487,7 @@ def segments_from_signal(
     List[NDArray]
         A list of segmented portions of the audio signal.
     """
+    assert isinstance(signal, AudioSignal), "signal must be of type 'Audiosignal'"
     # TODO handle multiple channels
     segments = []
 
@@ -475,9 +504,9 @@ def segments_from_signal(
         raise ValueError("Unsupported boundary format")
 
     for begin, end in boundaries:
-        start_idx = int(np.floor(begin * sr))
-        end_idx = int(np.ceil(end * sr))
-        segments.append(data[start_idx:end_idx])
+        start_idx = int(np.floor(begin * signal.srate))
+        end_idx = int(np.ceil(end * signal.srate))
+        segments.append(signal.data[start_idx:end_idx])
 
     return segments
 
@@ -557,10 +586,10 @@ def boundaries_from_raven(
 
 
 def audio_segments_from_textgrid(
-        data: NDArray,
-        sr: int,
+        signal: AudioSignal,
         filepath_textgrid: Union[str, Path],
         tier_name: str,
+        *,
         as_df: bool = True,
         **kwargs: Any
     ) -> Union[pd.DataFrame, list[dict[str, Any]]]:
@@ -589,29 +618,29 @@ def audio_segments_from_textgrid(
         - The corresponding label (str).
         Or a homologue dataframe, additionally holding sr and filepath.
     """
+    assert isinstance(signal, AudioSignal), "signal must be of type 'Audiosignal'"
     from biosonic.plot import plot_boundaries_on_spectrogram
 
     filepath_textgrid = Path(filepath_textgrid)
 
     boundaries = boundaries_from_textgrid(filepath_textgrid, tier_name)
 
-    plot_boundaries_on_spectrogram(data, sr, boundaries, **kwargs)
-    segments = segments_from_signal(data, sr, boundaries)
+    plot_boundaries_on_spectrogram(signal, boundaries, **kwargs)
+    segments = segments_from_signal(signal, boundaries)
     if as_df:
         return pd.DataFrame([{
                 "waveform": seg,
                 "label": str(b["label"]),
-                "sr": sr,
+                "sr": signal.srate,
                 "filename": str(filepath_textgrid.name)
             } for seg, b in zip(segments, boundaries)])
     return [{"waveform": seg, "label": str(b["label"])} for seg, b in zip(segments, boundaries)]
 
 
 def audio_segments_from_raven(
-        data: NDArray,
-        sr: int,
+        signal: AudioSignal,
         filepath_raven: Union[str, Path]
-    ) -> List[Dict[NDArray, str]]:
+    ) -> List[dict[str, NDArray | str]]:
     """
     Extracts and visualizes audio segments corresponding to intervals
     in a Raven selection table.
@@ -632,10 +661,11 @@ def audio_segments_from_raven(
         - The audio segment (NDArray) for each labeled interval.
         - The corresponding label (str).
     """
+    assert isinstance(signal, AudioSignal), "signal must be of type 'Audiosignal'"
     from biosonic.plot import plot_boundaries_on_spectrogram
 
     boundaries = boundaries_from_raven(filepath_raven)
 
-    plot_boundaries_on_spectrogram(data, sr, boundaries)
-    segments = segments_from_signal(data, sr, boundaries)
+    plot_boundaries_on_spectrogram(signal, boundaries)
+    segments = segments_from_signal(signal, boundaries)
     return [{"data": seg, "label": str(b["label"])} for seg, b in zip(segments, boundaries)]

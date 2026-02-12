@@ -16,6 +16,7 @@ from .utils import AudioSignal, window_signal
 
 def spectrogram(
     signal: AudioSignal,
+    *,
     window_length: int = 512,
     window: Union[str, ArrayLike] = "hann",
     overlap: float = 50,
@@ -163,6 +164,7 @@ def cepstrum(
 
 def cepstral_coefficients(
     signal: AudioSignal,
+    *,
     window_length: int = 512,
     n_filters: int = 32,
     n_ceps: int = 16,
@@ -307,13 +309,13 @@ def spectrotemporal_entropy(
 
 def dominant_frequencies(
         signal: AudioSignal,
+        *args: Any,
         n_freqs: int = 1,
         min_height: float = 0.05,
         threshold: float = 0.05,
         min_distance: float = 0.05,
         min_prominence: float = 0.05,
         noise_threshold: float = 0.1,
-        *args: Any,
         **kwargs: Any
     ) -> NDArray[np.float32]:
     """
