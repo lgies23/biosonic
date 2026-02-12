@@ -222,13 +222,13 @@ def _find_pitch_candidates_(
     """
     Find pitch candidates based on autocorrelation peaks.
     """
-    min_lag = int(sr / max_pitch)
+    # min_lag = int(sr / max_pitch)  # Described by Boersma (1993) but not used in Praat implementation
     max_lag = int(sr / min_pitch)
 
     candidates: list[Tuple[float, float]] = []
 
     max_depth = 8  # window for sinc interpolation, can be tuned
-    for lag in range(min_lag + 1, max_lag - 1):
+    for lag in range(2, max_lag - 1):
         if ac[lag] > ac[lag - 1] and ac[lag] > ac[lag + 1]:
             # Use sinc interpolation for sub-sample lag refinement
             refined_lag, _ = _improve_sinc_maximum(ac, float(lag), max_depth)
