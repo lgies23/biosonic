@@ -56,6 +56,7 @@ def test_boersma_matches_parselmouth(
 
     # Frame alignment
     assert pm_pitch.get_number_of_frames() == len(py_times)
+    assert pm_pitch.xs() == pytest.approx(py_times)
 
     pm_f0 = pm_pitch.selected_array["frequency"]
 
