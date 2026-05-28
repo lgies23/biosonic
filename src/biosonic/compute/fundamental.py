@@ -231,8 +231,10 @@ def _find_f0_candidates_(
     max_depth = 8  # window for sinc interpolation, can be tuned
     for lag in range(2, max_lag - 1):
         if ac[lag] > ac[lag - 1] and ac[lag] > ac[lag + 1]:
-            # Use sinc interpolation for sub-sample lag refinement
-            refined_lag, _ = _improve_sinc_maximum(ac, float(lag), max_depth)
+            # TODO Reenable?
+            # # Use sinc interpolation for sub-sample lag refinement
+            # refined_lag, _ = _improve_sinc_maximum(ac, float(lag), max_depth)
+            refined_lag = lag
 
             # cost function (Boersma 1993, eq 26)
             r_tau = _sinc_interpolation(ac, refined_lag, max_depth)
@@ -357,6 +359,22 @@ def _autocorr(
     return lag_domain[: len(frame) // 2]
 
 
+def _frame_signal_praat(samples, sr, window_duration, time_step):
+    assert window_duration > 0
+    assert time_step > 0
+    duration = len(samples) / sr
+
+    if window_duration > duration:
+        raise ValueError("Duration shorter than window length")
+
+    n_frames = int(np.floor((duration - window_duration) / time_step)) + 1
+    assert n_frames >= 1
+
+    first_time = 0.5 * (duration - (n_frames - 1) * time_step)
+
+    return n_frames, first_time
+
+
 def boersma(
         signal: AudioSignal,
         *,
@@ -369,6 +387,8 @@ def boersma(
         octave_cost: float = 0.01,
         octave_jump_cost: float = 0.35,
         voiced_unvoiced_cost: float = 0.14,
+        match_praat: bool = True,     # TODO Document
+        very_accurate: bool = False,  # TODO Document
         plot: bool = False,
         **kwargs: Any
     ) -> Tuple[ArrayLike, ArrayLike, List[List[Tuple[float, float]]], ArrayLike]:
@@ -377,10 +397,8 @@ def boersma(
 
     Parameters
     ----------
-    data : ArrayLike
+    signal : AudioSignal
         Input audio signal (mono, normalized to [-1, 1]).
-    sr : int
-        Sampling rate (Hz).
     min_f0 : int, optional
         Minimum f0 to search for (Hz). Default is 75.
     max_f0 : int, optional
@@ -424,20 +442,51 @@ def boersma(
        nonverbal vocalizations. Behavior Research Methods, 51(2), 778-792.
     """
     assert isinstance(signal, AudioSignal), "'signal' must be of type AudioSignal."
+    assert not very_accurate, "very_accurate not yet implemented"  # TODO ?
 
-    if min_f0 >= max_f0 or max_f0 >= signal.srate / 2:
-        raise ValueError("max_f0 should be greater than min_f0 and below the nyquist frequency.")
+    # Constants for AC (not "very exact") method:
+    periods_per_window = 3  # three periods of minimum frequency
+    brent_depth = 70  # 70 samples of sinc interpolation  # TODO: Use  # noqa: F841
+    interpolation_depth = 0.5  # TODO: Forgot what this is  # noqa: F841
+
+    assert signal.data.ndim == 1
+
+    if min_f0 >= max_f0 or max_f0 > signal.srate / 2:
+        raise ValueError("max_f0 should be greater than min_f0 and not greater than the nyquist frequency.")
+
+    if max_candidates <= 1:
+        raise ValueError("max_candidates should be greater than 1.")
+
+    assert timestep > 0
+    # TODO Auto time-step, as in Praat?
+
+    duration = (1 / signal.srate) * len(signal.data)
+    if min_f0 < periods_per_window / duration:
+        raise ValueError(f"min_f0 must not be less than {periods_per_window / duration} Hz.")
 
     # not enough resolution above half the niquist frequency
     # -> amend f0 ceiling if applicable. From Soundgen (see references)
-    # max_f0 = min(max_f0, sr / 4)
+    # max_f0 = min(max_f0, signal.srate / 4)
+    # Praat actually just enforces Nyquist frequency, but that's already hard enforced above
 
-    window_length = 3 * (1 / min_f0)  # three periods of minimum frequency
-    data_preprocessed = signal.data  # _preprocess_for_f0_(data, sr)
+    data_preprocessed = signal.data  # _preprocess_for_f0_(signal.data, signal.srate)
     global_peak: float = np.max(np.abs(data_preprocessed - np.mean(data_preprocessed)))
+    assert global_peak > 0  # TODO: What to do for a constant signal? Praat returns early.
 
-    # global_peak: float = np.max(np.abs(data_preprocessed))
-    window_length_samples = int(window_length * signal.srate)
+    window_length = periods_per_window * (1 / min_f0)
+    window_length_samples = int(window_length * signal.srate)  # dt_window * signal.srate is positive, so `int()` floors
+    if match_praat:
+        # TODO Used? Yes to
+        # - "Compute the local mean; look one longest period to both side"
+        # - "Compute the local peak; look half a longest period to both sides"
+        # nsamp_period = signal.srate / min_f0
+        # halfnsamp_period = nsamp_period / 2 + 1
+
+        halfnsamp_window = window_length_samples // 2 - 1
+        if halfnsamp_window < 2:
+            raise ValueError("Analysis window too short")  # TODO: Can this happen?
+        window_length_samples = halfnsamp_window * 2
+
     # precalculate for padding to power of two (step 3.6)
     # - I do this here to save computation time despite it being a bit less readable
     n = window_length_samples + np.floor(window_length_samples/2)
@@ -445,7 +494,14 @@ def boersma(
     pad_width_for_pow2 = next_pow2 - window_length_samples  # full pad length needed including half a window size
 
     # 1. windowing
-    framed_signal = frame_signal(AudioSignal(data_preprocessed, signal.srate), window_length_samples, timestep, normalize=False)
+    if match_praat:
+        n_frames, t1 = _frame_signal_praat(data_preprocessed, signal.srate, window_length, timestep)
+        times = t1 + np.arange(n_frames) * timestep
+        left_idx = np.floor((times - 0.5 / signal.srate) * signal.srate).astype(int)
+        framed_signal = [data_preprocessed[i + 1 - halfnsamp_window:i + halfnsamp_window + 1] for i in left_idx]
+    else:
+        framed_signal = frame_signal(AudioSignal(data_preprocessed, signal.srate), window_length_samples, timestep, normalize=False)
+        times = 0.5 * (window_length_samples / signal.srate) + np.arange(len(framed_signal)) * timestep
     window = windows.get_window("hann", window_length_samples)
     autocorr_hann = _autocorr(window, pad_width_for_pow2)
     autocorr_hann /= np.max(autocorr_hann)
@@ -488,11 +544,6 @@ def boersma(
         all_candidates.append(candidates)
         intensities.append(local_peak / global_peak if global_peak > 0 else 0.0)
 
-    # frame timing: match Yannicks code (centered on window)
-    n_frames = len(framed_signal)
-    t0 = 0.5 * (len(signal.data) / signal.srate - n_frames * timestep + timestep)
-    time_points = t0 + np.arange(n_frames) * timestep
-
     # Praat-style: scale transition costs by time step as in Yannicks code
     dt = timestep
     time_step_correction = 0.01 / dt if dt else 1.0
@@ -509,8 +560,8 @@ def boersma(
         from biosonic.plot import plot_f0_on_spectrogram
         plot_f0_on_spectrogram(
             signal,
-            time_points,
+            times,
             f0_track,
             **kwargs)
 
-    return np.asarray(time_points), np.asarray(f0_track), all_candidates, np.asarray(intensities)
+    return times, np.asarray(f0_track), all_candidates, np.asarray(intensities)
