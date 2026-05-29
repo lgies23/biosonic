@@ -39,16 +39,16 @@ jobs:
 
       - name: Run tests with pytest
         run: |
-          pytest
+          poetry run pytest
 
       - name: Run doctests with pytest
         if: matrix.os != 'macos-latest'  # Disable doctests on Apple Silicon for now, because of rounding errors
         run: |
-          pytest --doctest-modules src/
+          poetry run pytest --doctest-modules src/
 
       - name: Check typing with mypy
         run: |
-          mypy --config-file pyproject.toml src
+          poetry run mypy --config-file pyproject.toml src
 
   docs:
     name: Documentation
