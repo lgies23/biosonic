@@ -54,7 +54,7 @@ exclude = [
 ]
 include = [
   { path = "src/biosonic/_version.py", format = ["sdist", "wheel"] },
-  "requirements.txt",
+  "poetry.lock",
   "docs/make.bat",
   "docs/Makefile",
   "docs/requirements.txt",
