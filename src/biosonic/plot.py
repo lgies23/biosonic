@@ -6,9 +6,9 @@ try:
     from matplotlib.axes import Axes
     from matplotlib.figure import Figure
 except ModuleNotFoundError:
-    plt = None  # type: ignore
-    Axes = None  # type: ignore
-    Figure = None  # type: ignore
+    plt = None
+    Axes = None
+    Figure = None
 
 import numpy as np
 from numpy.typing import ArrayLike

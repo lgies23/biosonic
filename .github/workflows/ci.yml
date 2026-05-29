@@ -33,23 +33,22 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip poetry poetry-dynamic-versioning
-          pip install pytest mypy
-          pip install -r requirements.txt
-          poetry dynamic-versioning  # To create src/biosonic/_version.py
+          python -m pip install --upgrade pip
+          pip install poetry
+          poetry install --with dev
 
       - name: Run tests with pytest
         run: |
-          pytest
+          poetry run pytest
 
       - name: Run doctests with pytest
         if: matrix.os != 'macos-latest'  # Disable doctests on Apple Silicon for now, because of rounding errors
         run: |
-          pytest --doctest-modules src/
+          poetry run pytest --doctest-modules src/
 
       - name: Check typing with mypy
         run: |
-          mypy --config-file pyproject.toml src
+          poetry run mypy --config-file pyproject.toml src
 
   docs:
     name: Documentation

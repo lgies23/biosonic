@@ -2540,10 +2540,9 @@ numpy = ">=1.7.0"
 name = "praat-textgrids"
 version = "1.4.0"
 description = "Manipulation of Praat TextGrids"
-optional = true
+optional = false
 python-versions = "*"
 groups = ["main"]
-markers = "extra == \"praat\""
 files = [
     {file = "praat-textgrids-1.4.0.tar.gz", hash = "sha256:57d86adcbb01722e732a898e37c85833a6326731e2c97802b18793ef1a64602c"},
     {file = "praat_textgrids-1.4.0-py3-none-any.whl", hash = "sha256:288ebf4061f2994adc0a6110df28eebd3b7fb0c68e3196e1f222d6b4f33fa823"},
@@ -3829,4 +3828,4 @@ praat = ["praat-textgrids"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10"
-content-hash = "f412ad49e8756c4905417d7a2c3cf6686a12411ebf4af814a86e125ecac948e0"
+content-hash = "09798fc8f2c093042b9d6201a6e949400a72350e67308bc8fc0a0103440c1fd7"
