@@ -41,7 +41,7 @@ def test_boersma_matches_parselmouth(
         max_pitch=max_pitch,
         timestep=timestep
     )
-    py_times, py_f0, all_candidates, intensities = result
+    py_times, py_f0, all_candidates, py_intensities = result
     print("Biosonic times:", py_times)
     print("Parselmouth times:", pm_pitch.xs())
     print("Biosonic f0:", py_f0)
@@ -58,6 +58,8 @@ def test_boersma_matches_parselmouth(
     assert pm_pitch.get_number_of_frames() == len(py_times)
     assert pm_pitch.xs() == pytest.approx(py_times)
 
+    assert [frame.intensity for frame in pm_pitch] == pytest.approx(py_intensities)
+
     pm_f0 = pm_pitch.selected_array["frequency"]
 
     # Compare only voiced frames
@@ -72,7 +74,7 @@ def test_boersma_matches_parselmouth(
         for idx in top5_idx:
             print(f"Praat: {pm_f0[mask][idx]:.2f} Hz, Biosonic: {py_f0[mask][idx]:.2f} Hz, Diff: {diffs[idx]:.2f} Hz")
             print("  Candidates (freq, strength):", all_candidates[idx])
-            print("  Intensity:", intensities[idx])
+            print("  Intensity:", py_intensities[idx])
 
     # All frequencies close?
     assert np.allclose(

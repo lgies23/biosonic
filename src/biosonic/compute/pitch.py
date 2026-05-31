@@ -344,10 +344,10 @@ def _autocorr(
     ) -> NDArray:
     # 3.5 and 3.6 append half a window length of zeroes
     # plus enough until the length is a power of two
-    frame = np.pad(frame, (0, pad_width_for_pow2), mode='constant', constant_values=0)
+    padded_frame = np.pad(frame, (0, pad_width_for_pow2), mode='constant', constant_values=0)
 
     # 3.7 perform fft
-    spec = rfft(frame)
+    spec = rfft(padded_frame)
 
     # 3.8 square samples in frequency domain
     power_spec = spec * np.conj(spec)
@@ -355,7 +355,7 @@ def _autocorr(
     # 3.9 ifft of power spectrum
     lag_domain = irfft(power_spec)
 
-    return lag_domain[: len(frame) // 2]
+    return lag_domain[:len(frame)]
 
 
 def _frame_signal_praat(samples, sr, window_duration, time_step):
@@ -480,22 +480,21 @@ def boersma(
     assert global_peak > 0  # TODO: What to do for a constant signal? Praat returns early.
 
     window_length = periods_per_window * (1 / min_pitch)
-    window_length_samples = int(window_length * sr)  # dt_window * sr is positive, so `int()` floors
+    window_length_samples = int(window_length * sr)  # window_length * sr is positive, so `int()` floors
     if match_praat:
-        # TODO Used? Yes to
-        # - "Compute the local mean; look one longest period to both side"
-        # - "Compute the local peak; look half a longest period to both sides"
-        # nsamp_period = sr / min_pitch
-        # halfnsamp_period = nsamp_period / 2 + 1
+        nsamp_period = int(sr / min_pitch)  # Positive, so truncting is flooring
+        halfnsamp_period = nsamp_period // 2 + 1
 
         halfnsamp_window = window_length_samples // 2 - 1
         if halfnsamp_window < 2:
             raise ValueError("Analysis window too short")  # TODO: Can this happen?
         window_length_samples = halfnsamp_window * 2
 
+    # TODO: min_lag and max_lag?
+
     # precalculate for padding to power of two (step 3.6)
     # - I do this here to save computation time despite it being a bit less readable
-    n = window_length_samples + np.floor(window_length_samples/2)
+    n = (1 + interpolation_depth) * window_length_samples
     next_pow2 = 2 ** np.ceil(np.log2(n)).astype(int)
     pad_width_for_pow2 = next_pow2 - window_length_samples  # full pad length needed including half a window size
 
@@ -504,21 +503,43 @@ def boersma(
     if match_praat:
         n_frames, t1 = _frame_signal_praat(data_preprocessed, sr, window_length, timestep)
         times = t1 + np.arange(n_frames) * timestep
-        left_idx = np.floor((times - 0.5 / sr) * sr).astype(int)
+        left_idx = np.floor((times - 0.5 / sr) * sr).astype(int)  # TODO Check again. Some off by one?
         framed_signal = [data_preprocessed[i + 1 - halfnsamp_window:i + halfnsamp_window + 1] for i in left_idx]
     else:
         framed_signal = frame_signal_function(data_preprocessed, sr, window_length_samples, timestep, normalize=False)
         times = 0.5 * (window_length_samples / sr) + np.arange(len(framed_signal)) * timestep
-    window = windows.get_window("hann", window_length_samples)
+    if match_praat:
+        # To match Praat, we need to:
+        # - Have a symmetric window (probably good to have anyway)
+        # - Exclude the first and last sample of the window, which are 0 in SciPy
+        #   (0.5 - 0.5 * cos(2 pi n / (M - 1)), for 0 <= n <= M-1)
+        # This probably also explains the `halfnsamp_window = window_length_samples // 2 - 1` line above,
+        # which has - instead of +, and seems to lose 2 samples.
+        window = windows.get_window("hann", window_length_samples + 2, fftbins=False)[1:-1]
+    else:
+        window = windows.get_window("hann", window_length_samples, fftbins=False)
     autocorr_hann = _autocorr(window, pad_width_for_pow2)
-    autocorr_hann /= np.max(autocorr_hann)
+    autocorr_hann /= autocorr_hann[0]  # Or np.max(autocorr_hann), but that's should be the same
+    # TODO: brent_imax?
+
     all_candidates = []
     intensities = []
 
     for frame in framed_signal:
         # 3.2 subtract local average
-        frame = frame - np.mean(frame)
-        local_peak: float = np.max(np.abs(frame))
+        if match_praat:
+            assert halfnsamp_window >= nsamp_period  # Only AC: periods_per_window == 3
+            local_mean = np.mean(frame[halfnsamp_window - nsamp_period:halfnsamp_window + nsamp_period])
+        else:
+            local_mean = np.mean(frame)
+
+        frame = (frame - local_mean) * window  # Frame are views of the array! Don't modify in-place!
+
+        if match_praat:
+            assert halfnsamp_window >= halfnsamp_period  # Only AC: periods_per_window == 3
+            local_peak = np.max(np.abs(frame[halfnsamp_window - halfnsamp_period:halfnsamp_window + halfnsamp_period]))
+        else:
+            local_peak = np.max(np.abs(frame))
 
         # 3.3 see 3.11
 
@@ -549,7 +570,7 @@ def boersma(
 
         candidates = [(0.0, unvoiced_strength)] + voiced_candidates
         all_candidates.append(candidates)
-        intensities.append(local_peak / global_peak if global_peak > 0 else 0.0)
+        intensities.append(min(1.0, local_peak / global_peak))  # global_peak can't be 0; see above
 
     # Praat-style: scale transition costs by time step as in Yannicks code
     dt = timestep
