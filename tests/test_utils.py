@@ -46,11 +46,6 @@ class TestAudioSignal(unittest.TestCase):
         with pytest.raises(AssertionError, match="'data' must not be empty"):
             AudioSignal(data, 44100)
 
-        # all zeros data
-        data = np.array([0.0, 0.0, 0.0])
-        with pytest.raises(AssertionError, match="'data' contains no nonzero values"):
-            AudioSignal(data, 44100)
-
         # data is not array-like
         data = "not an array"
         with pytest.raises(AssertionError, match="'data' must be array-like"):

@@ -15,7 +15,7 @@ QuantizationStr = Literal["int8", "int16", "int32", "float32", "float64"]
 
 @dataclass
 class AudioSignal:  # to avoid name conflict with scipy signal module
-    data: NDArray[np.float32]
+    data: NDArray[np.float64]
     srate: int
 
     @property
@@ -27,19 +27,18 @@ class AudioSignal:  # to avoid name conflict with scipy signal module
         return self.data.shape[0] if self.data.ndim > 1 else 1
 
     @property
-    def dtype(self) -> type[Any]:
-        # TODO find better way
+    def quantization(self) -> type[Any]:
         return type(self.data[0])
 
-    def _normalize_data(self, data: ArrayLike) -> NDArray[np.float32]:
+    def _normalize_data(self, data: ArrayLike) -> NDArray[np.float64]:
         assert isinstance(data, (np.ndarray, list, tuple)), "'data' must be array-like"
         assert len(data) > 0, "'data' must not be empty"
-        assert not np.all(np.array(data) == 0), "'data' contains no nonzero values"
 
+        #
         max_abs = np.max(np.abs(data))
         if max_abs > 1.0:
             data = data / max_abs
-        return np.asarray(data, dtype=np.float32)
+        return np.asarray(data, dtype=np.float64)
 
     def _format_srate(self, sr: Union[int, float]) -> int:
         try:
@@ -219,7 +218,7 @@ def convert_channels(data: NDArray, target_channels: int) -> NDArray:
 def read_wav(
         filepath: Union[str, Path],
         srate: Optional[int] = None,
-        quantization: QuantizationStr = "float32",
+        quantization: QuantizationStr = "float64",
         n_channels: Optional[int] = None,
     ) -> AudioSignal:
     """
