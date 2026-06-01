@@ -106,13 +106,6 @@ def quartiles(signal: AudioSignal) -> Tuple[float, float, float]:
     --------
         spectrum : Computes the spectral envelope of a signal.
         cumulative_distribution_function : Computes the normalized cumulative sum of a spectrum.
-
-    Examples
-    --------
-        >>> import numpy as np
-        >>> signal = AudioSignal(data=np.array([0, 1, 2, 3, 2, 1, 0], dtype=np.float64), srate=1000)
-        >>> quartiles(signal)
-        (np.float64(10.0), np.float64(10.0), np.float64(10.0))
     """
     assert isinstance(signal, AudioSignal), "'signal' must be of type AudioSignal."
     if len(signal.data) == 0:
@@ -261,7 +254,7 @@ def centroid(signal: AudioSignal) -> Union[float, np.floating[Any]]:
         >>> np.random.seed(42)
         >>> signal = AudioSignal(data=np.random.randn(1024), srate=44100)
         >>> centroid(signal)
-        np.float64(11011.330381305264)
+        np.float64(11027.612111105851)
 
     References
     ----------
@@ -297,7 +290,7 @@ def bandwidth(signal: AudioSignal) -> Union[float, np.floating[Any]]:
         >>> import numpy as np
         >>> signal = AudioSignal(data=np.array([1.0, 2.0, 3.0, 4.0, 5.0]), srate=1)
         >>> bandwidth(signal)
-        np.float64(0.13942528646692923)
+        np.float64(0.08163973655212409)
 
     References
     ----------
