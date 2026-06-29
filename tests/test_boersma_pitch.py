@@ -77,8 +77,4 @@ def test_boersma_matches_parselmouth(
             print("  Intensity:", py_intensities[idx])
 
     # All frequencies close?
-    assert np.allclose(
-        pm_f0[mask],
-        py_f0[mask],
-        rtol=.11
-    )
+    assert np.allclose(pm_f0[mask], py_f0[mask])

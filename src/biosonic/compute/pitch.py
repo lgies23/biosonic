@@ -230,14 +230,18 @@ def _find_pitch_candidates_(
     max_depth = 8  # window for sinc interpolation, can be tuned
     for lag in range(2, max_lag - 1):
         if ac[lag] > ac[lag - 1] and ac[lag] > ac[lag + 1]:
+            dr = 0.5 * (ac[lag + 1] - ac[lag - 1])
+            d2r = 2 * ac[lag] - ac[lag - 1] - ac[lag + 1]
+            refined_lag = lag + dr / d2r
             # TODO Reenable?
             # # Use sinc interpolation for sub-sample lag refinement
             # refined_lag, _ = _improve_sinc_maximum(ac, float(lag), max_depth)
-            refined_lag = lag
 
             # cost function (Boersma 1993, eq 26)
             r_tau = _sinc_interpolation(ac, refined_lag, max_depth)
-            strength = r_tau - octave_cost * 2 * np.log(min_pitch * refined_lag)
+            if r_tau > 1:  # TODO Not sure if this ever happens, but Praat does it?
+                r_tau = 1 / r_tau
+            strength = r_tau - octave_cost * np.log2(min_pitch * refined_lag)
 
             # convert to pitch
             pitch = sr / refined_lag if refined_lag != 0 else 0
@@ -544,13 +548,14 @@ def boersma(
         # 3.3 see 3.11
 
         # 3.4 multiply by window function
-        windowed_frame = frame * window
+        # windowed_frame = frame * window  # TODO Window before or after local_peak??
+        windowed_frame = frame
 
         # 3.5-3.9
         lag_domain = _autocorr(windowed_frame, pad_width_for_pow2)
 
         # 3.10 divide by autocorrelation of window
-        sampled_autocorr = lag_domain / autocorr_hann
+        sampled_autocorr = lag_domain / (lag_domain[0] * autocorr_hann)
 
         # only include up to half the window length because unreliable above (p. 100, fig)
         sampled_autocorr = sampled_autocorr[:(window_length_samples//2)]
