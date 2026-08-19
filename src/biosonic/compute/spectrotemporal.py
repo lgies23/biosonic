@@ -2,7 +2,7 @@ from typing import Any, Dict, List, Literal, Optional, Tuple, Union
 
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
-from scipy import signal
+from scipy import signal as sp_signal
 from scipy.fft import fft, ifft, rfft
 from scipy.fftpack import dct
 from scipy.linalg import solve
@@ -11,12 +11,11 @@ from scipy.spatial.distance import cdist
 from ..filter import linear_filterbank, log_filterbank, mel_filterbank
 from .spectral import power_spectral_entropy
 from .temporal import temporal_entropy
-from .utils import check_signal_format, check_sr_format, window_signal
+from .utils import AudioSignal, window_signal
 
 
 def spectrogram(
-    data: ArrayLike,
-    sr: int,
+    signal: AudioSignal,
     window_length: int = 512,
     window: Union[str, ArrayLike] = "hann",
     overlap: float = 50,
@@ -28,10 +27,8 @@ def spectrogram(
 
     Parameters
     ----------
-    data : ArrayLike
-        Input signal as a 1D array.
-    sr : int
-        Sampling rate in Hz.
+    signal : AudioSignal
+        Input signal object containing data and sampling rate.
     window_length : int, optional
         Length of the window in samples. Must be even. Default is 512.
     window : str or tuple, optional
@@ -73,6 +70,8 @@ def spectrogram(
     [2] J. Sueur, T. Aubin, C. Simonis (2008). “Seewave: a free modular tool for sound analysis and
     synthesis.” Bioacoustics, 18, 213-226.
     """
+    assert type(signal) is AudioSignal, "'signal' must be an instance of AudioSignal."
+
     if window_length % 2 != 0:
         raise ValueError("'window_length' must be even")
 
@@ -80,7 +79,7 @@ def spectrogram(
 
     if isinstance(window, str):
         try:
-            window = signal.windows.get_window(window, window_length)
+            window = sp_signal.windows.get_window(window, window_length)
         except ValueError as e:
             raise ValueError(f"Invalid window type: {window}") from e
     else:
@@ -88,9 +87,9 @@ def spectrogram(
         if not isinstance(window, np.ndarray):
             raise TypeError("'window' must be either a string or a 1D NumPy array.")
 
-    f, t, Sx = signal.stft(
-        data,
-        fs=sr,
+    f, t, Sx = sp_signal.stft(
+        signal.data,
+        fs=signal.srate,
         window=window,
         nperseg=window_length,
         noverlap=noverlap,
@@ -112,8 +111,7 @@ def spectrogram(
 
 
 def cepstrum(
-        data: ArrayLike,
-        sr: int,
+        signal: AudioSignal,
         mode: Literal["amplitude", "power"] = "amplitude",
     ) -> Tuple[ArrayLike, ArrayLike]:
     """
@@ -125,10 +123,8 @@ def cepstrum(
 
     Parameters
     ----------
-    data : ArrayLike
-        Input real-valued time-domain signal (1D array).
-    sr : int
-        Sampling rate of the signal in Hz.
+    signal : AudioSignal
+        Input signal object containing data and sampling rate.
     mode : {"amplitude", "power"}, optional
         Type of cepstrum to compute:
         - "amplitude" : Returns the absolute value of the inverse FFT of the log-magnitude spectrum.
@@ -148,27 +144,25 @@ def cepstrum(
     The cepstrum: A guide to processing. Proc. IEEE 65, 1428–1443.
     (doi:10.1109/PROC.1977.10747)
     """
-    data = check_signal_format(data)
-    sr = check_sr_format(sr)
+    assert type(signal) is AudioSignal, "'signal' must be an instance of AudioSignal."
 
-    if np.all(data == data[0]):
+    if np.all(signal.data == signal.data[0]):
         raise ValueError("Cannot compute cepstrum of flat signal.")
 
-    quefrencies = np.array(range(len(data))) / sr
+    quefrencies = np.array(range(len(signal.data))) / signal.srate
 
     if mode == "power":
-        return np.abs(ifft(np.log(np.abs(fft(data))**2)))**2, quefrencies
+        return np.abs(ifft(np.log(np.abs(fft(signal.data))**2)))**2, quefrencies
 
     elif mode == "amplitude":
-        return np.abs(ifft(np.log(np.abs(fft(data))))), quefrencies
+        return np.abs(ifft(np.log(np.abs(fft(signal.data))))), quefrencies
 
     else:
         raise ValueError(f"Invalid mode for cepstrum calculation: {mode}")
 
 
 def cepstral_coefficients(
-    data: ArrayLike,
-    sr: int,
+    signal: AudioSignal,
     window_length: int = 512,
     n_filters: int = 32,
     n_ceps: int = 16,
@@ -185,10 +179,8 @@ def cepstral_coefficients(
 
     Parameters
     ----------
-    signal : ArrayLike
-        Input time-domain signal.
-    sr : int
-        Sampling rate in Hz.
+    signal : AudioSignal
+        Input signal object containing data and sampling rate.
     window_length : int
         FFT size in samples.
     n_filters : int
@@ -215,6 +207,8 @@ def cepstral_coefficients(
     np.ndarray
         Cepstral coefficient array of shape (n_ceps,).
     """
+    assert type(signal) is AudioSignal, "'signal' must be an instance of AudioSignal."
+
     def liftering(cc: ArrayLike, D: int = 22) -> ArrayLike:
         """
         Apply sinusoidal liftering to cepstral coefficients.
@@ -235,25 +229,24 @@ def cepstral_coefficients(
         return cc * w
 
     # pre-emphasis - from https://www.geeksforgeeks.org/nlp/mel-frequency-cepstral-coefficients-mfcc-for-speech-recognition/
-    data_preemphasized = np.append(data[0], data[1:] - pre_emphasis * data[:-1])
+    data_preemphasized = np.append(signal.data[0], signal.data[1:] - pre_emphasis * signal.data[:-1])
 
     # window and fft
-    data_windowed = window_signal(data_preemphasized, sr, window_length, timestep=timestep)
+    data_windowed = window_signal(AudioSignal(data_preemphasized, signal.srate), window_length, timestep=timestep)
     mag_frames = np.abs(rfft(data_windowed, window_length))
     pow_frames = (1/window_length) * mag_frames ** 2
 
     # filter bank selection
     if fmax is None:
-        fmax = sr / 2
-
+        fmax = signal.srate / 2
     if filterbank_type == "mel":
-        fbanks, _ = mel_filterbank(n_filters, window_length, sr, fmin, fmax, **kwargs)
+        fbanks, _ = mel_filterbank(n_filters, window_length, signal.srate, fmin, fmax, **kwargs)
     elif filterbank_type == "linear":
-        fbanks, _ = linear_filterbank(n_filters, window_length, sr, fmin, fmax)
+        fbanks, _ = linear_filterbank(n_filters, window_length, signal.srate, fmin, fmax)
     elif filterbank_type == "log":
         # raise NotImplementedError("Log frequency scale is not yet implemented for cepstral coefficients in Version 0.")
         fmin_corrected = 1e-6 if fmin == 0 else fmin
-        fbanks, _ = log_filterbank(n_filters, window_length, sr, fmin_corrected, fmax, **kwargs)
+        fbanks, _ = log_filterbank(n_filters, window_length, signal.srate, fmin_corrected, fmax, **kwargs)
     else:
         raise ValueError(f"Unknown filterbank_type: {filterbank_type}")
 
@@ -273,8 +266,7 @@ def cepstral_coefficients(
 
 
 def spectrotemporal_entropy(
-        data: ArrayLike,
-        sr: int,
+        signal: AudioSignal,
         *args: Any,
         **kwargs: Any
     ) -> float:
@@ -287,10 +279,8 @@ def spectrotemporal_entropy(
 
     Parameters
     ----------
-    data : ArrayLike
-        Input signal as a 1D ArrayLike.
-    sr : int
-        Sampling rate in Hz.
+    signal : AudioSignal
+        Input signal object containing data and sampling rate.
     unit : {"bits", "nat", "dits", "bans", "hartleys"}, optional
         The logarithmic base to use for temporal_entropy calculations.
         Default is "bits".
@@ -309,14 +299,14 @@ def spectrotemporal_entropy(
     temporal_entropy : Computes the temporal entropy of the data.
     power_spectral_entropy : Computes the spectral entropy of the data.
     """
-    H_t, _ = temporal_entropy(data, *args, **kwargs)
-    H_f, _ = power_spectral_entropy(data, sr, *args, **kwargs)
+    assert type(signal) is AudioSignal, "'signal' must be an instance of AudioSignal."
+    H_t, _ = temporal_entropy(signal, *args, **kwargs)
+    H_f, _ = power_spectral_entropy(signal, *args, **kwargs)
     return H_t * H_f
 
 
 def dominant_frequencies(
-        data: ArrayLike,
-        sr: int,
+        signal: AudioSignal,
         n_freqs: int = 1,
         min_height: float = 0.05,
         threshold: float = 0.05,
@@ -332,10 +322,8 @@ def dominant_frequencies(
 
     Parameters
     ----------
-    data : ArrayLike
-        Input 1D audio signal.
-    sr : int
-        Sample rate of the input signal in Hz.
+    signal : AudioSignal
+        Input signal object containing data and sampling rate.
     n_freqs : Optional[int], default=3
         Number of dominant frequencies to extract per time frame.
         If 1, a 1D array is returned. If >1, a 2D array of shape (time_frames, n_freqs) is returned.
@@ -363,6 +351,8 @@ def dominant_frequencies(
             2D array of shape (time_frames, n_freqs) containing the top `n_freqs` dominant
             frequencies per frame. NaNs are used to pad frames with fewer than `n_freqs` detected peaks.
     """
+    assert type(signal) is AudioSignal, "'signal' must be an instance of AudioSignal."
+
     if not (0.0 <= min_height <= 1.0):
         raise ValueError("min_height must be between 0 and 1")
 
@@ -378,7 +368,7 @@ def dominant_frequencies(
     if not (0.0 <= noise_threshold <= 1.0):
         raise ValueError("noise_threshold must be between 0 and 1")
 
-    spec, times, freqs = spectrogram(data, sr, *args, **kwargs)
+    spec, times, freqs = spectrogram(signal, *args, **kwargs)
     spec_real = np.abs(spec)
 
     if n_freqs == 1:
@@ -402,7 +392,7 @@ def dominant_frequencies(
             "prominence": magnitude_range*min_prominence
         }
 
-        peaks, _ = signal.find_peaks(spectrum, **default_peak_params)
+        peaks, _ = sp_signal.find_peaks(spectrum, **default_peak_params)
 
         if len(peaks) > 0:
             sorted_peaks = peaks[np.argsort(spectrum[peaks])[::-1]]
@@ -598,14 +588,14 @@ def tokuda_nlm(
 
 
 def calculate_dominant_frequency_features(
-        data: ArrayLike,
-        sr: int,
+        signal: AudioSignal,
         **kwargs: Any
     ) -> Dict[str, Union[float, NDArray[np.float32]]]:
     """
     Calculate dominant frequency features.
     """
-    dominant_freqs = dominant_frequencies(data, sr, n_freqs=1, **kwargs)
+    assert type(signal) is AudioSignal, "'signal' must be an instance of AudioSignal."
+    dominant_freqs = dominant_frequencies(signal, n_freqs=1, **kwargs)
 
     # exclude 0 values (no peak detected) from calculations
     dom_freqs_detected = dominant_freqs[dominant_freqs > 0]
@@ -626,8 +616,7 @@ def calculate_dominant_frequency_features(
 
 
 def spectrotemporal_features(
-        data: ArrayLike,
-        sr: int,
+        signal: AudioSignal,
         n_dominant_freqs: int = 1,
         **kwargs: Any
     ) -> dict[str, Union[float, np.floating, NDArray[np.float32]]]:
@@ -635,10 +624,8 @@ def spectrotemporal_features(
     Extracts a set of spectrotemporal features from a signal.
 
     Args:
-        data : ArrayLike
-            The input signal as a 1D ArrayLike.
-        sr : int
-            Sampling rate of the signal in Hz.
+        signal : AudioSignal
+            The input signal as an AudioSignal object.
         n_dominant_frequencies : int
             Number of dominant frequencies to extract. Default is 1.
         **kwargs : dict[str, Any]
@@ -649,13 +636,11 @@ def spectrotemporal_features(
         {"spectrotemporal_entropy": float,
         "dominant_frequencies": ArrayLike}
     """
-    data = check_signal_format(data)
-    check_sr_format(sr)
+    assert type(signal) is AudioSignal, "'signal' must be an instance of AudioSignal."
     features = {
-        "spectrotemporal_entropy": spectrotemporal_entropy(data, sr),
-        "dominant_freqs": dominant_frequencies(data, sr, n_freqs=n_dominant_freqs, **kwargs),
+        "spectrotemporal_entropy": spectrotemporal_entropy(signal),
+        "dominant_freqs": dominant_frequencies(signal, n_freqs=n_dominant_freqs, **kwargs),
     }
 
-    dom_freq_feats = calculate_dominant_frequency_features(data, sr, **kwargs)
-
+    dom_freq_feats = calculate_dominant_frequency_features(signal, **kwargs)
     return {**features, **dom_freq_feats}

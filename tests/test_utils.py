@@ -1,56 +1,60 @@
+import unittest
+
 import numpy as np
 import pytest
 from numpy.testing import assert_array_equal
 
 
-def test_check_sr_format():
-    from biosonic.compute.utils import check_sr_format
+class TestAudioSignal(unittest.TestCase):
+    def test_init(self):
+        from biosonic.compute.utils import AudioSignal
 
-    # check valid case
-    sr = check_sr_format(44100)
-    assert np.isclose(sr, 44100) and isinstance(sr, int)
-    sr = check_sr_format(44100.0)
-    assert np.isclose(sr, 44100) and isinstance(sr, int)
-    sr = check_sr_format("44100")
-    assert np.isclose(sr, 44100) and isinstance(sr, int)
+        # valid initialization
+        data = np.array([0.0, 1.0, -1.0, 0.5])
+        sampling_rate = 44100
+        signal = AudioSignal(data, sampling_rate)
+        assert_array_equal(signal.data, data)
+        assert signal.srate == sampling_rate
+        assert signal.numchannels == 1
 
-    with pytest.raises(TypeError, match="Sample rate not transformable to integer."):
-        check_sr_format("string")
+        # non-positive sampling rate
+        with pytest.raises(ValueError, match="Sampling rate must be a positive integer."):
+            AudioSignal(data, 0)
 
-    # check greater zero cases
-    with pytest.raises(ValueError, match="Sample rate must be greater than zero."):
-        check_sr_format(0)
+        # sampling rate not transformable to int
+        with pytest.raises(TypeError, match="Sampling rate not transformable to integer"):
+            AudioSignal(data, "not_an_int")
 
-    with pytest.raises(ValueError, match="Sample rate must be greater than zero."):
-        check_sr_format(-16000)
+        # normalization check
+        data = np.array([0, 2, -2, 1])
+        signal = AudioSignal(data, 44100)
+        expected_data = data / 2.0
+        assert_array_equal(signal.data, expected_data)
 
+        # 2 channel data
+        data = np.array([[0.0, 1.0], [-1.0, 0.5]])
+        signal = AudioSignal(data, 44100)
+        assert signal.numchannels == 2
 
-def test_check_signal_format():
-    from biosonic.compute.utils import check_signal_format
+        # 3 channel data
+        data = np.array([[0.0, 1.0], [-1.0, 0.5], [0.3, -0.3]])
+        signal = AudioSignal(data, 44100)
+        assert signal.numchannels == 3
 
-    # check valid case
-    signal = np.array([0.1, 0.2, 0.3], dtype=np.float64)
-    returned_signal = check_signal_format(signal)
-    assert len(returned_signal) == len(signal)
+        # empty data
+        data = np.array([])
+        with pytest.raises(AssertionError, match="'data' must not be empty"):
+            AudioSignal(data, 44100)
 
-    # check integer array
-    signal = np.array([1, 2, 3], dtype=np.int32)
-    returned_signal = check_signal_format(signal)
-    assert len(returned_signal) == len(signal)
+        # all zeros data
+        data = np.array([0.0, 0.0, 0.0])
+        with pytest.raises(AssertionError, match="'data' contains no nonzero values"):
+            AudioSignal(data, 44100)
 
-    # check non-numpy array
-    signal = [0.1, 0.2, 0.3]
-    returned_signal = check_signal_format(signal)
-    assert len(returned_signal) == len(signal)
-
-    # check string array
-    signal = np.array(["1", "2", "3"])
-    returned_signal = check_signal_format(signal)
-    assert len(returned_signal) == len(signal)
-
-    # check wrong dimensions
-    with pytest.raises(ValueError, match="Signal must be a 1D array."):
-        check_signal_format(np.array([[0.1, 0.2], [0.3, 0.4]], dtype=np.float64))
+        # data is not array-like
+        data = "not an array"
+        with pytest.raises(AssertionError, match="'data' must be array-like"):
+            AudioSignal(data, 44100)
 
 
 def test_exclude_trailing_and_leading_zeros():
