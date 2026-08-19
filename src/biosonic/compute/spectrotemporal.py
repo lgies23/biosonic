@@ -9,9 +9,10 @@ from scipy.linalg import solve
 from scipy.spatial.distance import cdist
 
 from ..filter import linear_filterbank, log_filterbank, mel_filterbank
+from ..handle import AudioSignal
 from .spectral import power_spectral_entropy
 from .temporal import temporal_entropy
-from .utils import AudioSignal, window_signal
+from .utils import window_signal
 
 
 def spectrogram(
@@ -114,7 +115,7 @@ def spectrogram(
 def cepstrum(
         signal: AudioSignal,
         mode: Literal["amplitude", "power"] = "amplitude",
-    ) -> Tuple[ArrayLike, ArrayLike]:
+    ) -> Tuple[NDArray[np.float32], NDArray[np.float32]]:
     """
     Compute the cepstrum of a real-valued time-domain signal.
 
@@ -150,13 +151,13 @@ def cepstrum(
     if np.all(signal.data == signal.data[0]):
         raise ValueError("Cannot compute cepstrum of flat signal.")
 
-    quefrencies = np.array(range(len(signal.data))) / signal.srate
+    quefrencies = np.asarray(range(len(signal.data)), dtype=np.float32) / signal.srate
 
     if mode == "power":
-        return np.abs(ifft(np.log(np.abs(fft(signal.data))**2)))**2, quefrencies
+        return np.asarray(np.abs(ifft(np.log(np.abs(fft(signal.data))**2)))**2, dtype=np.float32), quefrencies
 
     elif mode == "amplitude":
-        return np.abs(ifft(np.log(np.abs(fft(signal.data))))), quefrencies
+        return np.asarray(np.abs(ifft(np.log(np.abs(fft(signal.data))))), dtype=np.float32), quefrencies
 
     else:
         raise ValueError(f"Invalid mode for cepstrum calculation: {mode}")
@@ -164,7 +165,6 @@ def cepstrum(
 
 def cepstral_coefficients(
     signal: AudioSignal,
-    *,
     window_length: int = 512,
     n_filters: int = 32,
     n_ceps: int = 16,
@@ -175,7 +175,7 @@ def cepstral_coefficients(
     skip_first: bool = True,
     timestep: float = 0.01,
     **kwargs: Any
-) -> ArrayLike:
+) -> NDArray[np.float32]:
     """
     Compute cepstral coefficients from a signal using the specified filter bank.
 
@@ -211,7 +211,7 @@ def cepstral_coefficients(
     """
     assert type(signal) is AudioSignal, "'signal' must be an instance of AudioSignal."
 
-    def liftering(cc: ArrayLike, D: int = 22) -> ArrayLike:
+    def liftering(cc: ArrayLike, D: int = 22) -> NDArray[np.float32]:
         """
         Apply sinusoidal liftering to cepstral coefficients.
 
@@ -222,13 +222,14 @@ def cepstral_coefficients(
         Returns:
         - Lifted cepstral coefficients
         """
+        cc = np.asarray(cc, dtype=np.float32)
         cc_lift = np.zeros(cc.shape)
 
         n = np.arange(1, cc_lift.shape[1] + 1)
         D = 22
         w = 1 + (D / 2) * np.sin(np.pi * n / D)
 
-        return cc * w
+        return np.asarray(cc * w, dtype=np.float32)
 
     # pre-emphasis - from https://www.geeksforgeeks.org/nlp/mel-frequency-cepstral-coefficients-mfcc-for-speech-recognition/
     data_preemphasized = np.append(signal.data[0], signal.data[1:] - pre_emphasis * signal.data[:-1])
@@ -264,7 +265,7 @@ def cepstral_coefficients(
     else:
         ceps = liftering(ceps)[:, :n_ceps]
 
-    return np.asarray(ceps.T)
+    return np.asarray(ceps.T, dtype=np.float32)
 
 
 def spectrotemporal_entropy(
@@ -409,48 +410,48 @@ def dominant_frequencies(
     return dominant_freqs
 
 
-def zero_crossings(data: ArrayLike) -> NDArray[np.int64]:
-    # TODO
-    """
-    Calculate the indices of zero crossings in a 1D signal.
+# def zero_crossings(data: ArrayLike) -> NDArray[np.int64]:
+#     # TODO
+#     """
+#     Calculate the indices of zero crossings in a 1D signal.
 
-    Parameters
-    ----------
-    data : ArrayLike
-        Input 1D audio signal.
+#     Parameters
+#     ----------
+#     data : ArrayLike
+#         Input 1D audio signal.
 
-    Returns
-    -------
-    NDArray[np.int64]
-        Indices where zero crossings occur.
-    """
-    pass
+#     Returns
+#     -------
+#     NDArray[np.int64]
+#         Indices where zero crossings occur.
+#     """
+#     pass
 
 
-def zero_crossing_rate(
-        data: ArrayLike,
-        frame_length: int = 2048,
-        hop_length: int = 512
-        ) -> np.float32:
-    # TODO
-    """
-    Calculate the zero crossing rate of a 1D signal.
+# def zero_crossing_rate(
+#         data: ArrayLike,
+#         frame_length: int = 2048,
+#         hop_length: int = 512
+#         ) -> np.float32:
+#     # TODO
+#     """
+#     Calculate the zero crossing rate of a 1D signal.
 
-    Parameters
-    ----------
-    data : ArrayLike
-        Input 1D audio signal.
-    frame_length : int, optional
-        Length of each frame in samples. Default is 2048.
-    hop_length : int, optional
-        Number of samples to advance between frames. Default is 512.
+#     Parameters
+#     ----------
+#     data : ArrayLike
+#         Input 1D audio signal.
+#     frame_length : int, optional
+#         Length of each frame in samples. Default is 2048.
+#     hop_length : int, optional
+#         Number of samples to advance between frames. Default is 512.
 
-    Returns
-    -------
-    np.float32
-        Zero crossing rate of the signal.
-    """
-    pass
+#     Returns
+#     -------
+#     np.float32
+#         Zero crossing rate of the signal.
+#     """
+#     pass
 
 
 # --------- Tokuda ----------
@@ -471,8 +472,7 @@ def _nearest_neighbors(
     """Find nearest neighbors for index c based on embedding distance."""
     # Build embedding windows
     target = ss[c - dim + 1:c + 1][None, :]  # shape (1, dim)
-    windows = [ss[l - dim + 1:l + 1] for l in range(dim - 1, length - 1) if abs(l - c) > exclusion]
-    windows = np.array(windows)
+    windows = np.asarray([ss[l - dim + 1:l + 1] for l in range(dim - 1, length - 1) if abs(l - c) > exclusion], dtype=np.float32)
 
     # Compute distances and sort
     distances = cdist(target, windows, metric="euclidean").ravel()
@@ -480,7 +480,7 @@ def _nearest_neighbors(
 
     # Return indices aligned to original l values
     valid_indices = [l for l in range(dim - 1, length - 1) if abs(l - c) > exclusion]
-    return np.array(valid_indices)[sorted_idx]
+    return np.asarray(valid_indices)[sorted_idx]
 
 
 def lpc_estimate(

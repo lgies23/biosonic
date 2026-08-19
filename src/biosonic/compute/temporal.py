@@ -6,7 +6,8 @@ from numpy.typing import NDArray
 from scipy import signal as sp_signal
 from scipy.stats import kurtosis, skew
 
-from .utils import AudioSignal, cumulative_distribution_function, rms, shannon_entropy
+from ..handle import AudioSignal
+from .utils import cumulative_distribution_function, rms, shannon_entropy
 
 
 def amplitude_envelope(
@@ -17,7 +18,7 @@ def amplitude_envelope(
         silence_threshold: Optional[float] = None,
         return_indices: bool = False,
         **rms_kwargs: Any
-    ) -> Union[NDArray[np.float64], Tuple[NDArray[np.float64], Tuple[int, int]]]:
+    ) -> Union[NDArray[np.float32], Tuple[NDArray[np.float32], Tuple[int, int]]]:
     """
     Computes the amplitude envelope of a signal using scipy.signal.envelope.
     Optionally, silences can be removed based on percentile thresholds.
@@ -57,8 +58,8 @@ def amplitude_envelope(
     if len(signal.data) == 0:
         warnings.warn("Input signal is empty; returning an empty array.", RuntimeWarning)
         if return_indices:
-            return np.array([], dtype=np.float64), (0, 0)
-        return np.array([], dtype=np.float64)
+            return np.array([], dtype=np.float32), (0, 0)
+        return np.array([], dtype=np.float32)
 
     start_sample, end_sample = 0, len(signal.data)
 
@@ -75,14 +76,14 @@ def amplitude_envelope(
                 "No signal above silence threshold; returning empty array.",
                 RuntimeWarning
             )
-            data = np.array([], dtype=np.float64)
+            data = np.array([], dtype=np.float32)
             start_sample, end_sample = 0, 0
         else:
             start_sample = int(times_s[above[0]] * signal.srate)
             end_sample = int(times_s[above[-1]] * signal.srate)
             data = signal.data[start_sample:end_sample]
 
-    envelope = sp_signal.envelope(data, n_out=n_out)[0]
+    envelope: np.ndarray = sp_signal.envelope(data, n_out=n_out)[0]
 
     if avoid_zero_values:
         envelope = np.where(envelope < 1e-10, 1e-10, envelope)
@@ -149,6 +150,7 @@ def temporal_quartiles(
         raise ValueError("Signal contains no nonzero values")
 
     envelope = amplitude_envelope(signal, **envelope_kwargs)
+    assert not isinstance(envelope, tuple)
 
     cdf = cumulative_distribution_function(envelope)
 
@@ -174,7 +176,9 @@ def temporal_sd(signal: AudioSignal, **envelope_kwargs: Any) -> float:
             The standard deviation of the amplitude envelope
     """
     assert type(signal) is AudioSignal, "'signal' must be an instance of AudioSignal."
-    return float(np.std(amplitude_envelope(signal, **envelope_kwargs)))
+    envelope = amplitude_envelope(signal, **envelope_kwargs)
+    assert not isinstance(envelope, tuple)
+    return float(np.std(envelope))
 
 
 def skewness(
@@ -271,7 +275,7 @@ def temporal_entropy(
     assert isinstance(envelope, np.ndarray)
     hist, _ = np.histogram(envelope, bins="auto", density=False)
     hist = hist[hist > 0]
-    norm_counts = hist / np.sum(hist)
+    norm_counts = np.asarray(hist / np.sum(hist), dtype=np.float32)
 
     return shannon_entropy(norm_counts, unit, norm=norm)
 

@@ -14,10 +14,11 @@ import numpy as np
 from numpy.typing import ArrayLike
 from pandas import DataFrame
 
-from biosonic.compute.spectral import spectrum
-from biosonic.compute.spectrotemporal import cepstral_coefficients, cepstrum, spectrogram
-from biosonic.compute.utils import AudioSignal, extract_all_features
-from biosonic.filter import mel_filterbank
+from .handle import AudioSignal
+from .compute.spectral import spectrum
+from .compute.spectrotemporal import cepstral_coefficients, cepstrum, spectrogram
+from .compute.utils import extract_all_features
+from .filter import mel_filterbank
 
 
 def plot_spectrogram(
@@ -113,6 +114,7 @@ def plot_spectrogram(
         raise TypeError("data must be either a (S, t, f) tuple or a 1D np.ndarray signal")
 
     if freq_scale == "mel":
+        assert isinstance(signal, AudioSignal)
         if signal.srate is None:
             raise ValueError("Sample rate must be provided for mel frequency scale.")
 
@@ -120,6 +122,7 @@ def plot_spectrogram(
         fmax = flim[1] if flim and flim[1] else signal.srate / 2
 
         fb, f_centers = mel_filterbank(n_bands, window_length, signal.srate, fmin=fmin, fmax=fmax, corner_frequency=corner_frequency, after=after)
+        
         f = f_centers
         # Sx : np.ndarray = np.einsum("...ft,mf->...mt", Sx, fb, optimize=True)
         Sx = fb @ Sx
@@ -183,8 +186,7 @@ def plot_spectrogram(
 
 
 def plot_cepstrum(
-        data: ArrayLike,
-        sr: int,
+        signal: AudioSignal,
         min_quefrency: Optional[float] = None,
         max_quefrency: Optional[float] = None,
         log_scale: bool = False,
@@ -197,10 +199,7 @@ def plot_cepstrum(
 
     Parameters
     ----------
-    data : ArrayLike
-        Signal to use for cepstrum calculation.
-    sr : int
-        Sampling rate of the original signal.
+    signal: AudioSignal
     max_quefrency : float, optional
         Maximum quefrency (in seconds) to plot. Defaults to 0.05s.
     log_scale : bool, optional
@@ -213,10 +212,11 @@ def plot_cepstrum(
     if plt is None:
         raise ImportError("matplotlib is required for plotting. Install it with: pip install biosonic[plot]")
 
-    ceps, quefs = cepstrum(data, sr, **kwargs)
+    ceps, quefs = cepstrum(signal, **kwargs)
+    assert isinstance(quefs, ArrayLike)
 
     if max_quefrency is None:
-        max_quefrency = len(data) / sr
+        max_quefrency = len(signal.data) / signal.srate
 
     if min_quefrency is None:
         min_quefrency = 0
@@ -230,15 +230,14 @@ def plot_cepstrum(
     if ylim:
         plt.ylim(ylim)
     plt.ylabel("Amplitude")
-    plt.title(title or f"Cepstrum (Sampling rate: {sr} Hz)")
+    plt.title(title or f"Cepstrum (Sampling rate: {signal.srate} Hz)")
     plt.grid(True)
     plt.tight_layout()
     plt.show()
 
 
 def plot_cepstral_coefficients(
-        data: ArrayLike,
-        sr: int,
+        signal: AudioSignal,
         window_length: int,
         n_filters: int = 32,
         n_ceps: int = 40,
@@ -258,10 +257,7 @@ def plot_cepstral_coefficients(
 
     Parameters
     ----------
-    data : ArrayLike
-        Input audio signal (1D array-like).
-    sr : int
-        Sampling rate of the audio signal in Hz.
+    signal: AudioSignal
     window_length : int
         Length of the analysis window in samples.
     n_filters : int, optional
@@ -286,8 +282,7 @@ def plot_cepstral_coefficients(
         raise ImportError("matplotlib is required for plotting. Install it with: pip install biosonic[plot]")
 
     ceps = cepstral_coefficients(
-        data,
-        sr,
+        signal,
         window_length,
         n_filters,
         n_ceps,
@@ -297,7 +292,7 @@ def plot_cepstral_coefficients(
         filterbank_type=filterbank_type,
         **kwargs)
 
-    times = np.linspace(0, len(data) / sr, ceps.shape[0])
+    times = np.linspace(0, len(signal.data) / signal.srate, ceps.shape[0])
     plt.xlabel("Time [s]")
     plt.ylabel("Cepstral Coefficient Index")
     plt.imshow(ceps, origin="lower", aspect="auto", extent=(times[0], times[-1], 0, n_ceps), cmap=cmap)
@@ -342,7 +337,7 @@ def plot_features(
     if spec_kwargs is None:
         spec_kwargs = {}
 
-    plot_pitch_on_spectrogram(
+    plot_f0_on_spectrogram(
         signal=signal,
         time_points=times,
         all_candidates=all_candidates,
@@ -409,7 +404,7 @@ def plot_features(
     plt.show()
 
 
-def plot_pitch_candidates(
+def plot_f0_candidates(
         time_points: ArrayLike,
         all_candidates: ArrayLike,
         show_strongest: bool = True,
@@ -433,6 +428,8 @@ def plot_pitch_candidates(
 
     if ax is None:
         fig, ax = plt.subplots(figsize=(10, 5))
+
+    assert isinstance(all_candidates, ArrayLike)
 
     if all(isinstance(p, (int, float, np.number)) for p in all_candidates):
         all_candidates = [[(p, 1.0)] for p in all_candidates]
@@ -475,7 +472,7 @@ def plot_pitch_candidates(
     return ax
 
 
-def plot_pitch_on_spectrogram(
+def plot_f0_on_spectrogram(
     signal: AudioSignal,
     time_points: ArrayLike,
     all_candidates: ArrayLike,
@@ -547,7 +544,7 @@ def plot_pitch_on_spectrogram(
         **kwargs
     )
 
-    plot_pitch_candidates(
+    plot_f0_candidates(
         time_points=time_points,
         all_candidates=all_candidates,
         show_strongest=show_strongest,

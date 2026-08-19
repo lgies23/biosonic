@@ -339,7 +339,7 @@ def _viterbi_f0_path(
 def _autocorr(
         frame: ArrayLike,
         pad_width_for_pow2: int
-    ) -> NDArray:
+    ) -> NDArray[Any]:
     # 3.5 and 3.6 append half a window length of zeroes
     # plus enough until the length is a power of two
     frame = np.pad(frame, (0, pad_width_for_pow2), mode='constant', constant_values=0)

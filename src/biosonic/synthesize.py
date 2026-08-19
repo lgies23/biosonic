@@ -25,7 +25,7 @@ def amplitude_modulated(
         carrier_freq: float,
         modulator_freq: float,
         depth: float = .3
-) -> ArrayLike:
+) -> np.ndarray:
     """
     Generate an amplitude-modulated (AM) signal.
 
@@ -48,6 +48,7 @@ def amplitude_modulated(
     ArrayLike
         Amplitude-modulated signal values at times `t`.
     """
-    modulator = (1 - depth) + depth * np.sin(2 * np.pi * modulator_freq * t)
-    carrier = np.sin(2 * np.pi * carrier_freq * t)
-    return modulator * carrier
+    t = np.asarray(t, dtype=np.float32)
+    modulator: np.ndarray = (1 - depth) + depth * np.sin(2 * np.pi * modulator_freq * t)
+    carrier: np.ndarray = np.sin(2 * np.pi * carrier_freq * t)
+    return np.asarray(modulator * carrier, dtype=np.float32)

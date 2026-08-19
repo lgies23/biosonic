@@ -59,7 +59,7 @@ class AudioSignal:  # to avoid name conflict with scipy signal module
         self._validate()
 
 
-def convert_dtype(data: NDArray, target_dtype: QuantizationStr) -> NDArray:
+def convert_dtype(data: NDArray[Any], target_dtype: QuantizationStr) -> NDArray[Any]:
     """
     Converts audio data to the specified quantization format.
 
@@ -131,7 +131,7 @@ def convert_dtype(data: NDArray, target_dtype: QuantizationStr) -> NDArray:
     return data.astype(target_np_dtype)
 
 
-def resample_audio(data: NDArray, orig_sr: int, target_sr: int) -> NDArray:
+def resample_audio(data: NDArray[Any], orig_sr: int, target_sr: int) -> NDArray[Any]:
     """
     Resample audio data from an original sampling rate to a target sampling rate.
 
@@ -164,12 +164,13 @@ def resample_audio(data: NDArray, orig_sr: int, target_sr: int) -> NDArray:
         return data
     n_samples = round(data.shape[0] * target_sr / orig_sr)
     if data.ndim == 1:
-        return resample(data, n_samples)
+        data_resampled: np.ndarray = resample(data, n_samples)
+        return data_resampled
     else:
         return np.stack([resample(data[:, ch], n_samples) for ch in range(data.shape[1])], axis=1)
 
 
-def convert_channels(data: NDArray, target_channels: int) -> NDArray:
+def convert_channels(data: NDArray[Any], target_channels: int) -> NDArray[Any]:
     """
     Convert audio data to a target number of channels (mono or stereo).
 
@@ -268,7 +269,7 @@ def read_wav(
     if srate is not None:
         if sr != srate:
             data = resample_audio(data, sr, srate)
-            sr: int = srate
+            sr = srate
 
     n_ch = 1 if data.ndim == 1 else data.shape[1]
     if n_channels is not None:
@@ -464,7 +465,7 @@ def batch_read_files_to_df(
 def segments_from_signal(
         signal: AudioSignal,
         boundaries: Union[Dict[str, float], ArrayLike, Tuple[float, float], List[Dict[str, float]]]
-    ) -> List[NDArray]:
+    ) -> List[NDArray[Any]]:
     """
     Extract segments from an audio signal based on time boundaries.
 
@@ -639,7 +640,7 @@ def audio_segments_from_textgrid(
 def audio_segments_from_raven(
         signal: AudioSignal,
         filepath_raven: Union[str, Path]
-    ) -> List[dict[str, NDArray | str]]:
+    ) -> List[dict[str, NDArray[Any] | str]]:
     """
     Extracts and visualizes audio segments corresponding to intervals
     in a Raven selection table.

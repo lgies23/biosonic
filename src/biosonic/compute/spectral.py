@@ -6,8 +6,9 @@ from numpy.typing import NDArray
 from scipy import fft
 from scipy.stats import gmean
 
+from ..handle import AudioSignal
+
 from .utils import (
-    AudioSignal,
     cumulative_distribution_function,
     exclude_trailing_and_leading_zeros,
     shannon_entropy
@@ -205,6 +206,7 @@ def spectral_moments(
     """
     assert isinstance(signal, AudioSignal), "'signal' must be of type AudioSignal."
     freqs, ms = spectrum(signal, mode="power")
+    assert freqs
     # normalize spectrum
     ms = ms / np.sum(ms)
     centroid_ = np.average(freqs, weights=ms)

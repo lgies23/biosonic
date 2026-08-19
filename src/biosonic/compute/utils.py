@@ -117,7 +117,7 @@ def transform_spectrogram_for_nn(
         f_max: Optional[float] = None,
         resize: Optional[Tuple[int, int]] = None,
         **kwargs: Any,
-    ) -> NDArray:
+    ) -> NDArray[Any]:
     """
     Prepares a spectrogram for input into a neural network by normalizing, casting type,
     and optionally adding a channel dimension.
@@ -190,7 +190,7 @@ def transform_spectrogram_for_nn(
     if resize is not None:
         target_height, target_width = resize
         zoom_factors = (target_height / spec.shape[0], target_width / spec.shape[1])
-        spec: NDArray = np.asarray(zoom(spec, zoom_factors, order=1), dtype=np.float32)  # bilinear interpolation
+        spec = np.asarray(zoom(spec, zoom_factors, order=1), dtype=np.float32)  # bilinear interpolation
 
     # add channel dimension
     if add_channel:

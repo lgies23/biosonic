@@ -1,7 +1,7 @@
 from typing import Any, Literal, Optional, Tuple, Union
 
 import numpy as np
-from numpy.typing import ArrayLike
+from numpy.typing import ArrayLike, NDArray
 from scipy.signal import butter, filtfilt
 
 from biosonic.compute.utils import hz_to_mel, mel_to_hz
@@ -36,7 +36,7 @@ def _filterbank(
         n_fft: int,
         center_freqs: ArrayLike,
         fft_freqs: ArrayLike
-    ) -> ArrayLike:
+    ) -> NDArray[np.float32]:
     """
     Construct a triangular filter bank for spectral analysis.
 
@@ -77,6 +77,9 @@ def _filterbank(
     and Oriol Nieto. “librosa: Audio and music signal analysis in python.” In Proceedings
     of the 14th python in science conference, pp. 18-25. 2015.
     """
+    assert isinstance(n_filters, int)
+    assert isinstance(center_freqs, np.ndarray)
+
     filterbank = np.zeros((n_filters, int(n_fft // 2 + 1)), dtype=np.float32)
 
     fdiff = np.diff(center_freqs)
@@ -101,7 +104,7 @@ def _filterbank(
             "Consider reducing number of bands or increasing n_fft."
         )
 
-    return filterbank
+    return np.asarray(filterbank, dtype=np.float32)
 
 
 def mel_filterbank(
@@ -111,7 +114,7 @@ def mel_filterbank(
         fmin: float = 0.0,
         fmax: Optional[float] = None,
         **kwargs: Any
-    ) -> ArrayLike:
+    ) -> Tuple[NDArray[np.float32], NDArray[np.float32]]:
     """
     Create a mel spaced triangular filterbank.
 
@@ -145,6 +148,9 @@ def mel_filterbank(
     mel_min = hz_to_mel(fmin, **kwargs)
     mel_max = hz_to_mel(fmax, **kwargs)
 
+    assert isinstance(mel_min, float)
+    assert isinstance(mel_max, float)
+
     # mel filter center frequencies
     mel_points = np.linspace(mel_min, mel_max, n_filters + 2, dtype=np.float32)
     hz_points = mel_to_hz(mel_points, **kwargs)
@@ -157,7 +163,7 @@ def linear_filterbank(
         sr: int,
         fmin: float = 0.0,
         fmax: Optional[float] = None
-    ) -> ArrayLike:
+    ) -> Tuple[NDArray[np.float32], NDArray[np.float32]]:
     """
     Create a linearly spaced triangular filterbank.
 
@@ -187,7 +193,7 @@ def linear_filterbank(
     # fft bin center frequencies
     fft_freqs = np.fft.rfftfreq(n=n_fft, d=1.0 / sr)
 
-    hz_points = np.linspace(fmin, fmax, n_filters + 2)
+    hz_points = np.linspace(fmin, fmax, n_filters + 2, dtype=np.float32)
 
     return _filterbank(n_filters, n_fft, hz_points, fft_freqs), hz_points
 
@@ -199,7 +205,7 @@ def log_filterbank(
     fmin: float = 0.0,
     fmax: Optional[float] = None,
     base: float = 2.0,
-) -> ArrayLike:
+) -> Tuple[NDArray[np.float32], NDArray[np.float32]]:
     """
     Create a logarithmically spaced triangular filterbank.
 
@@ -254,7 +260,7 @@ def filter(
         f_cutoff: Union[int, Tuple[int, int]],
         type: Literal["lowpass", "highpass", "bandpass", "bandstop"] = "lowpass",
         order: int = 2,
-) -> ArrayLike:
+) -> NDArray[np.float32]:
     """
     Apply a zero-phase Butterworth filter to a 1D signal using SciPy.
 
@@ -304,5 +310,5 @@ def filter(
             raise ValueError("f_cutoff must be a scalar for lowpass/highpass filters.")
 
     b, a = butter(order, f_cutoff, btype=type, analog=False, fs=sr)
-    filtered_signal = filtfilt(b, a, data)
+    filtered_signal = np.asarray(filtfilt(b, a, data), dtype=np.float32)
     return filtered_signal
