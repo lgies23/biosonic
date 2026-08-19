@@ -110,10 +110,8 @@ def quartiles(signal: AudioSignal) -> Tuple[float, float, float]:
     Examples
     --------
         >>> import numpy as np
-        >>> sr = 1000
-        >>> t = np.linspace(0, 1, sr, endpoint=False)
-        >>> x = np.sin(2 * np.pi * 10 * t) + 0.5 * np.sin(2 * np.pi * 30 * t)
-        >>> quartiles(x, sr)
+        >>> signal = AudioSignal(data=np.array([0, 1, 2, 3, 2, 1, 0], dtype=np.float64), srate=1000)
+        >>> quartiles(signal)
         (np.float64(10.0), np.float64(10.0), np.float64(10.0))
     """
     assert isinstance(signal, AudioSignal), "'signal' must be of type AudioSignal."
@@ -261,9 +259,8 @@ def centroid(signal: AudioSignal) -> Union[float, np.floating[Any]]:
     Examples
     --------
         >>> np.random.seed(42)
-        >>> signal = np.random.randn(1024)
-        >>> sr = 44100
-        >>> centroid(signal, sr)
+        >>> signal = AudioSignal(data=np.random.randn(1024), srate=44100)
+        >>> centroid(signal)
         np.float64(11011.330381305264)
 
     References
@@ -298,8 +295,8 @@ def bandwidth(signal: AudioSignal) -> Union[float, np.floating[Any]]:
     Examples
     --------
         >>> import numpy as np
-        >>> signal = np.array([1.0, 2.0, 3.0, 4.0, 5.0])
-        >>> bandwidth(signal, sr=1)
+        >>> signal = AudioSignal(data=np.array([1.0, 2.0, 3.0, 4.0, 5.0]), srate=1)
+        >>> bandwidth(signal)
         np.float64(0.13942528646692923)
 
     References
@@ -393,8 +390,8 @@ def peak_frequency(signal: AudioSignal) -> Union[float, np.floating[Any]]:
         >>> import numpy as np
         >>> sampling_rate = 1000.0  # 1000 Hz
         >>> t = np.linspace(0, 1.0, int(sampling_rate), endpoint=False)
-        >>> signal = np.sin(2 * np.pi * 50 * t)  # 50 Hz sine wave
-        >>> freq = peak_frequency(signal, sampling_rate)
+        >>> signal = AudioSignal(data=np.sin(2 * np.pi * 50 * t), srate=sampling_rate)
+        >>> freq = peak_frequency(signal)
         >>> print(freq)
         50.0
 
