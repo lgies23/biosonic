@@ -2,7 +2,7 @@ import numpy as np
 import parselmouth
 import pytest
 
-from biosonic.compute.pitch import boersma
+from biosonic.compute.fundamental import boersma
 from biosonic.compute.utils import AudioSignal
 from biosonic.handle import read_wav
 
@@ -20,11 +20,11 @@ def test_boersma_matches_parselmouth(
     timestep: float,
 ):
     # Load audio
-    data, sr, _, _ = read_wav(wav_path)
+    audioSignal: AudioSignal = read_wav(wav_path)
     sound = parselmouth.Sound(wav_path)
 
     # Basic consistency check
-    assert sound.duration == pytest.approx(len(data) / sr)
+    assert sound.duration == pytest.approx(len(audioSignal.data) / audioSignal.srate)
 
     # Parselmouth pitch
     pm_pitch = sound.to_pitch(
@@ -36,9 +36,9 @@ def test_boersma_matches_parselmouth(
 
     # Biosonic pitch (unpack new return signature)
     result = boersma(
-        AudioSignal(data, sr),
-        min_pitch=min_pitch,
-        max_pitch=max_pitch,
+        audioSignal,
+        min_f0=min_pitch,
+        max_f0=max_pitch,
         timestep=timestep
     )
     py_times, py_f0, all_candidates, intensities = result

@@ -102,11 +102,11 @@ def test_read_wav(tmp_path):
     data = (np.sin(2 * np.pi * 440 * np.arange(44100) / sr) * 32767).astype(np.int16)
     wavfile.write(tmp_path / "test.wav", sr, data)
 
-    data, sr, n_channels, _ = read_wav(tmp_path / "test.wav", quantization="float32")
+    audioSignal = read_wav(tmp_path / "test.wav", quantization="float32")
 
-    assert sr == 44100
-    assert n_channels == 1
-    assert data.dtype == np.float32
+    assert audioSignal.srate == 44100
+    assert audioSignal.numchannels == 1
+    assert audioSignal.dtype == np.float32
 
 
 # @pytest.fixture
@@ -129,9 +129,9 @@ def test_batch_extract_features(mock_extract, mock_read, mock_glob, tmp_path):
     mock_file.__str__.return_value = "mocked.wav"
     mock_glob.return_value = [mock_file]
 
-    data = [0.1, 0.2, 0.3]
+    data = np.asarray([0.1, 0.2, 0.3], dtype=np.float32)
     sr = 44100
-    mock_read.return_value = data, sr, 1, "float32"
+    mock_read.return_value = AudioSignal(data, sr)
     mock_extract.return_value = {'feature1': 1.0, 'feature2': 2.0}
 
     df = batch_extract_features(str(tmp_path))
@@ -151,9 +151,9 @@ def test_batch_extract_features(mock_extract, mock_read, mock_glob, tmp_path):
     assert 'filename' in saved_df.columns
 
     # simulate exception in feature extraction
-    data = [0.1, 0.2]
+    data = np.asarray([0.1, 0.2], dtype=np.float32)
     sr = 44100
-    mock_read.return_value = data, sr, 1, "float32"
+    mock_read.return_value = AudioSignal(data, sr)
     mock_extract.side_effect = RuntimeError("Feature extraction failed")
 
     df = batch_extract_features(str(tmp_path))
@@ -177,9 +177,9 @@ def test_batch_read_files(mock_read, mock_glob, tmp_path):
     mock_file.__str__.return_value = "mocked.wav"
     mock_glob.return_value = [mock_file]
 
-    data = [0.1, 0.2, 0.3]
+    data = np.asarray([0.1, 0.2, 0.3], dtype=np.float32)
     sr = 44100
-    mock_read.return_value = data, sr, 1, "float32"
+    mock_read.return_value = AudioSignal(data, sr)
 
     df = batch_read_files_to_df(str(tmp_path))
 
@@ -218,7 +218,7 @@ def sample_data():
     duration = 2
     t = np.linspace(0, duration, sr * duration, endpoint=False)
     data = np.sin(2 * np.pi * 5 * t)  # 5 Hz sine wave
-    return data, sr
+    return AudioSignal(data, sr)
 
 
 def test_segments_from_signal(sample_data):
@@ -228,43 +228,40 @@ def test_segments_from_signal(sample_data):
         expected = data[int(np.floor(start_time * sr)):int(np.ceil(end_time * sr))]
         np.testing.assert_array_equal(segment, expected)
 
+    data, sr = sample_data.data, sample_data.srate
+
     # dict
-    data, sr = sample_data
     boundaries = {"begin": 0.5, "end": 1.0}
-    segments = segments_from_signal(data, sr, boundaries)
+    segments = segments_from_signal(sample_data, boundaries)
     assert len(segments) == 1
     assert_segment_correct(data, segments[0], sr, 0.5, 1.0)
 
     # tuple
-    data, sr = sample_data
     boundaries = (0.2, 0.6)
-    segments = segments_from_signal(data, sr, boundaries)
+    segments = segments_from_signal(sample_data, boundaries)
     assert len(segments) == 1
     assert_segment_correct(data, segments[0], sr, 0.2, 0.6)
 
     # list of dicts
-    data, sr = sample_data
     boundaries = [{"begin": 0.0, "end": 0.3}, {"begin": 1.0, "end": 1.5}]
-    segments = segments_from_signal(data, sr, boundaries)
+    segments = segments_from_signal(sample_data, boundaries)
     assert len(segments) == 2
     assert_segment_correct(data, segments[0], sr, 0.0, 0.3)
     assert_segment_correct(data, segments[1], sr, 1.0, 1.5)
 
     # ArrayLike
-    data, sr = sample_data
     boundaries = np.array([[0.1, 0.2], [0.8, 1.0]])
-    segments = segments_from_signal(data, sr, boundaries)
+    segments = segments_from_signal(sample_data, boundaries)
     assert len(segments) == 2
     assert_segment_correct(data, segments[0], sr, 0.1, 0.2)
     assert_segment_correct(data, segments[1], sr, 0.8, 1.0)
 
     # invalid input
-    data, sr = sample_data
     with pytest.raises(ValueError):
-        segments_from_signal(data, sr, "not a valid boundary")
+        segments_from_signal(sample_data, "not a valid boundary")
 
 
-from biosonic.handle import audio_segments_from_textgrid, boundaries_from_textgrid
+from biosonic.handle import AudioSignal, audio_segments_from_textgrid, boundaries_from_textgrid
 
 
 @pytest.fixture
@@ -278,11 +275,11 @@ def mock_selection_data():
 
 
 @pytest.fixture
-def sample_audio():
+def sample_audio_sine():
     sr = 1000
     duration = 2  # seconds
     data = np.random.randn(sr * duration)
-    return data, sr
+    return AudioSignal(data, sr)
 
 
 @patch("biosonic.praat._read_textgrid")
@@ -304,17 +301,15 @@ def test_boundaries_from_textgrid(mock_read_textgrid, mock_selection_data):
 @patch("biosonic.handle.boundaries_from_textgrid")
 @patch("biosonic.plot.plot_boundaries_on_spectrogram")  # mock plotting to avoid display
 def test_audio_segments_from_textgrid(
-    mock_plot, mock_boundaries_from_textgrid, sample_audio, mock_selection_data
+    mock_plot, mock_boundaries_from_textgrid, sample_audio_sine, mock_selection_data
 ):
-    data, sr = sample_audio
 
     # Only keep labeled intervals
     labeled = [seg for seg in mock_selection_data if seg["label"]]
     mock_boundaries_from_textgrid.return_value = labeled
 
     segments = audio_segments_from_textgrid(
-        data,
-        sr,
+        sample_audio_sine,
         "dummy_path.TextGrid",
         "words"
     )
@@ -348,7 +343,7 @@ def sample_audio():
     sr = 1000
     duration = 2  # seconds
     data = np.random.randn(sr * duration)
-    return data, sr
+    return AudioSignal(data, sr)
 
 
 def test_boundaries_from_raven(mock_selection_df):
@@ -369,7 +364,6 @@ def test_boundaries_from_raven(mock_selection_df):
 def test_audio_segments_from_raven(
     mock_plot, mock_boundaries, sample_audio, mock_selection_df
 ):
-    data, sr = sample_audio
 
     # Only keep labeled intervals
     labeled = mock_selection_df[mock_selection_df["Annotation"] != ""]
@@ -381,8 +375,7 @@ def test_audio_segments_from_raven(
     ]
 
     segments = audio_segments_from_raven(
-        data,
-        sr,
+        sample_audio,
         "dummy_path.txt"
     )
 

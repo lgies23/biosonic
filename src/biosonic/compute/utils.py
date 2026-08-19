@@ -1,6 +1,5 @@
 import logging
 import warnings
-from dataclasses import dataclass
 from typing import Any, Literal, Optional, Tuple, Union
 
 import numpy as np
@@ -8,50 +7,10 @@ from numpy.typing import ArrayLike, NDArray
 from scipy.ndimage import zoom
 from scipy.signal import windows
 
-
-@dataclass
-class AudioSignal:  # to avoid name conflict with scipy signal module
-    data: NDArray[np.float32]
-    srate: int
-
-    @property
-    def duration(self) -> float:
-        return len(self.data) / self.srate
-
-    @property
-    def numchannels(self) -> int:
-        return self.data.shape[0] if self.data.ndim > 1 else 1
-
-    def _normalize_data(self, data: ArrayLike) -> NDArray[np.float32]:
-        assert isinstance(data, (np.ndarray, list, tuple)), "'data' must be array-like"
-        assert len(data) > 0, "'data' must not be empty"
-        assert not np.all(np.array(data) == 0), "'data' contains no nonzero values"
-
-        max_abs = np.max(np.abs(data))
-        if max_abs > 1.0:
-            data = data / max_abs
-        return np.asarray(data, dtype=np.float32)
-
-    def _format_srate(self, sr: Union[int, float]) -> int:
-        try:
-            sr = int(sr)
-        except Exception as e:
-            raise TypeError(f"Sampling rate not transformable to integer: {e}")
-        return sr
-
-    def _validate(self) -> None:
-        if not isinstance(self.srate, int) or self.srate <= 0:
-            raise ValueError("Sampling rate must be a positive integer.")
-        if self.data.max() > 1.0 or self.data.min() < -1.0:
-            raise ValueError("Data values must be in the range [-1.0, 1.0].")
-
-    def __init__(self, data: ArrayLike, srate: int) -> None:
-        self.data = self._normalize_data(data)
-        self.srate = self._format_srate(srate)
-        self._validate()
+from ..handle import AudioSignal
 
 
-def exclude_trailing_and_leading_zeros(envelope: ArrayLike) -> NDArray[np.float32]:
+def exclude_trailing_and_leading_zeros(envelope: NDArray[np.float32]) -> NDArray[np.float32]:
     """
     Removes leading and trailing zeros from a NumPy array.
 
@@ -114,6 +73,7 @@ def cumulative_distribution_function(envelope: NDArray[np.float32]) -> NDArray[n
 
 def extract_all_features(
     signal: AudioSignal,
+    *,
     n_dominant_freqs: int = 1,
     plot: bool = False,
     plot_kwargs: dict[str, Any] = {},
@@ -149,6 +109,7 @@ def extract_all_features(
 
 def transform_spectrogram_for_nn(
         signal: Union[AudioSignal, Tuple[np.ndarray, np.ndarray, np.ndarray]],
+        *,
         values_type: str = 'float32',
         add_channel: bool = True,
         data_format: Literal['channels_last', 'channels_first'] = 'channels_first',
@@ -156,7 +117,7 @@ def transform_spectrogram_for_nn(
         f_max: Optional[float] = None,
         resize: Optional[Tuple[int, int]] = None,
         **kwargs: Any,
-    ) -> ArrayLike:
+    ) -> NDArray:
     """
     Prepares a spectrogram for input into a neural network by normalizing, casting type,
     and optionally adding a channel dimension.
@@ -229,7 +190,7 @@ def transform_spectrogram_for_nn(
     if resize is not None:
         target_height, target_width = resize
         zoom_factors = (target_height / spec.shape[0], target_width / spec.shape[1])
-        spec = zoom(spec, zoom_factors, order=1)  # bilinear interpolation
+        spec: NDArray = np.asarray(zoom(spec, zoom_factors, order=1), dtype=np.float32)  # bilinear interpolation
 
     # add channel dimension
     if add_channel:
@@ -243,7 +204,7 @@ def transform_spectrogram_for_nn(
 
 
 def shannon_entropy(
-        prob_dist: ArrayLike,
+        prob_dist: NDArray[np.float32],
         unit: Literal["bits", "nat", "dits", "bans", "hartleys"] = "bits",
         norm: bool = True
     ) -> Tuple[float, float]:
@@ -449,21 +410,21 @@ def frame_signal(
         window_length: int = 512,
         timestep: float = 0.01,
         normalize: bool = False
-    ) -> ArrayLike:
+    ) -> NDArray[np.float32]:
     assert type(signal) is AudioSignal, "'signal' must be an instance of AudioSignal."
 
     samples_step = int(timestep * signal.srate)
-    data = np.pad(signal.data, int(window_length / 2), mode='edge')
+    data: NDArray[np.float32] = np.pad(signal.data, int(window_length / 2), mode='edge')
 
-    frame_num = int((len(data) - window_length) / samples_step) + 1
-    frames = np.zeros((frame_num, window_length))
+    frame_num: int = int((len(data) - window_length) / samples_step) + 1
+    frames: NDArray[np.float32] = np.zeros((frame_num, window_length), dtype=np.float32)
 
     for n in range(frame_num):
         start = int(n * samples_step)
         frames[n] = data[start:start + window_length]
 
     if normalize:
-        frames = [frame / np.mean(frame) if frame.any() else frame for frame in frames]  # skip normalization for frames with all 0
+        frames = np.asarray([frame / np.mean(frame) if frame.any() else frame for frame in frames])  # skip normalization for frames with all 0
 
     return frames
 
@@ -471,22 +432,25 @@ def frame_signal(
 def window_signal(
         signal: AudioSignal,
         window_length: int = 512,
-        window: Union[str, ArrayLike] = "hann",
+        window: Union[str, NDArray[np.float32]] = "hann",
         timestep: float = 0.01,
         normalize: bool = False
-) -> ArrayLike:
-    assert type(signal) is AudioSignal, "'signal' must be an instance of AudioSignal."
+) -> NDArray[np.float32]:
+    assert isinstance(signal, AudioSignal), "'signal' must be an instance of AudioSignal."
     if isinstance(window, str):
         try:
             window = windows.get_window(window, window_length)
+            assert isinstance(window, np.ndarray)
+            window = np.asarray(window, dtype=np.float32)
         except ValueError as e:
             raise ValueError(f"Invalid window type: {window}") from e
     else:
-        window = np.asarray(window)
+        window = np.asarray(window, dtype=np.float32)
         if not isinstance(window, np.ndarray):
             raise TypeError("'window' must be either a string or a 1D NumPy array.")
 
     frames = frame_signal(signal, window_length, timestep, normalize)
+    assert isinstance(window[0], np.float32)
 
     return frames * window
 

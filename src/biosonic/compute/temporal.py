@@ -11,6 +11,7 @@ from .utils import AudioSignal, cumulative_distribution_function, rms, shannon_e
 
 def amplitude_envelope(
         signal: AudioSignal,
+        *,
         n_out: Optional[int] = None,
         avoid_zero_values: bool = False,
         silence_threshold: Optional[float] = None,
@@ -246,9 +247,9 @@ def temporal_kurtosis(
 
 def temporal_entropy(
         signal: AudioSignal,
+        *,
         unit: Literal["bits", "nat", "dits", "bans", "hartleys"] = "bits",
         norm: bool = False,
-        sr: Optional[int] = None,
         **envelope_kwargs: Any
     ) -> Tuple[float, float]:
     """
@@ -280,8 +281,9 @@ def temporal_entropy(
     Notes:
         Rounds
     """
-    assert type(signal) is AudioSignal, "'signal' must be an instance of AudioSignal."
+    assert isinstance(signal, AudioSignal), "'signal' must be an instance of AudioSignal."
     envelope = amplitude_envelope(signal, **envelope_kwargs)
+    assert isinstance(envelope, np.ndarray)
     hist, _ = np.histogram(envelope, bins="auto", density=False)
     hist = hist[hist > 0]
     norm_counts = hist / np.sum(hist)
@@ -323,7 +325,8 @@ def temporal_features(
 
     # times for the trimmed envelope in the context of the original signal
     times = np.linspace(start_sample / signal.srate, end_sample / signal.srate, len(envelope), endpoint=False)
-    t_q1, t_median, t_q3 = temporal_quartiles(signal[start_sample:end_sample], signal.srate, **envelope_kwargs)
+    signal = AudioSignal(signal.data[start_sample:end_sample], signal.srate)
+    t_q1, t_median, t_q3 = temporal_quartiles(signal, **envelope_kwargs)
 
     features = {
         "t_q1": t_q1,

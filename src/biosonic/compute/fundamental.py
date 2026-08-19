@@ -78,7 +78,7 @@ def yin(
     flim: Tuple[int, int],
     threshold: float = 0.1
 ) -> Tuple[ArrayLike, ArrayLike]:
-    """YIN pitch tracking over an entire signal. **Not yet finished**
+    """YIN f0 tracking over an entire signal. **Not yet finished**
 
     Returns
     -------
@@ -114,7 +114,7 @@ def yin(
     return np.array(times), np.array(frequencies)
 
 
-def _preprocess_for_pitch_(
+def _preprocess_for_f0_(
         data: ArrayLike,
         sr: int
     ) -> ArrayLike:
@@ -211,19 +211,19 @@ def _improve_sinc_maximum(y: ArrayLike, x: float, max_depth: int) -> Tuple[float
     return xmin, -fval
 
 
-def _find_pitch_candidates_(
+def _find_f0_candidates_(
         ac: ArrayLike,
         sr: int,
-        min_pitch: int,
-        max_pitch: int,
+        min_f0: int,
+        max_f0: int,
         num_candidates: int = 4,
         octave_cost: float = 0.01
         ) -> ArrayLike:
     """
-    Find pitch candidates based on autocorrelation peaks.
+    Find f0 candidates based on autocorrelation peaks.
     """
-    min_lag = int(sr / max_pitch)
-    max_lag = int(sr / min_pitch)
+    min_lag = int(sr / max_f0)
+    max_lag = int(sr / min_f0)
 
     candidates: list[Tuple[float, float]] = []
 
@@ -235,11 +235,11 @@ def _find_pitch_candidates_(
 
             # cost function (Boersma 1993, eq 26)
             r_tau = _sinc_interpolation(ac, refined_lag, max_depth)
-            strength = r_tau - octave_cost * 2 * np.log(min_pitch * refined_lag)
+            strength = r_tau - octave_cost * 2 * np.log(min_f0 * refined_lag)
 
-            # convert to pitch
-            pitch = sr / refined_lag if refined_lag != 0 else 0
-            candidates.append((pitch, strength))
+            # convert to f0
+            f0 = sr / refined_lag if refined_lag != 0 else 0
+            candidates.append((f0, strength))
 
     # Sort by strength and take top N-1
     candidates = sorted(candidates, key=lambda x: -x[1])[:num_candidates - 1]
@@ -268,24 +268,24 @@ def _transition_cost(
         return float(octave_jump_cost * abs(np.log2(F1 / F2)))
 
 
-def _viterbi_pitch_path(
+def _viterbi_f0_path(
         all_candidates: List[List[Tuple[float, float]]],
         voiced_unvoiced_cost: float = 0.2,
         octave_jump_cost: float = 0.2
     ) -> List[float]:
     """
-    Finds the globally optimal pitch path using dynamic programming.
+    Finds the globally optimal f0 path using dynamic programming.
 
     Parameters
     ----------
-    all_candidates: List of lists of (pitch in Hz, strength)
+    all_candidates: List of lists of (f0 in Hz, strength)
     voiced_unvoiced_cost: Cost of voiced/unvoiced transition
-    octave_jump_cost: Cost of pitch discontinuity in octaves
+    octave_jump_cost: Cost of f0 discontinuity in octaves
 
     Returns
     -------
     path
-        List of chosen pitch values, one per frame
+        List of chosen f0 values, one per frame
     """
     num_frames = len(all_candidates)
     path_costs = []
@@ -300,12 +300,12 @@ def _viterbi_pitch_path(
     for t in range(1, num_frames):
         frame_costs = []
         frame_back_ptrs = []
-        for j, (curr_pitch, curr_strength) in enumerate(all_candidates[t]):
+        for j, (curr_f0, curr_strength) in enumerate(all_candidates[t]):
             best_cost = float('inf')
             best_prev_idx = None
-            for i, (prev_pitch, _) in enumerate(all_candidates[t-1]):
+            for i, (prev_f0, _) in enumerate(all_candidates[t-1]):
                 trans_cost = _transition_cost(
-                    prev_pitch, curr_pitch,
+                    prev_f0, curr_f0,
                     voiced_unvoiced_cost, octave_jump_cost
                 )
                 total_cost = path_costs[t-1][i] + trans_cost - curr_strength
@@ -321,8 +321,8 @@ def _viterbi_pitch_path(
     path = [0.0] * num_frames
     idx = int(np.argmin(path_costs[-1]))
     for t in reversed(range(num_frames)):
-        pitch, _ = all_candidates[t][idx]
-        path[t] = pitch
+        f0, _ = all_candidates[t][idx]
+        path[t] = f0
         idx = back_pointers[t][idx] if back_pointers[t][idx] is not None else 0
 
     return path
@@ -358,8 +358,9 @@ def _autocorr(
 
 def boersma(
         signal: AudioSignal,
-        min_pitch: int = 75,
-        max_pitch: int = 600,
+        *,
+        min_f0: int = 75,
+        max_f0: int = 600,
         timestep: float = 0.01,
         silence_thresh: float = 0.03,
         voicing_thresh: float = 0.45,
@@ -379,18 +380,18 @@ def boersma(
         Input audio signal (mono, normalized to [-1, 1]).
     sr : int
         Sampling rate (Hz).
-    min_pitch : int, optional
-        Minimum pitch to search for (Hz). Default is 75.
-    max_pitch : int, optional
-        Maximum pitch to search for (Hz). Default is 600.
+    min_f0 : int, optional
+        Minimum f0 to search for (Hz). Default is 75.
+    max_f0 : int, optional
+        Maximum f0 to search for (Hz). Default is 600.
     timestep : float, optional
-        Time step between pitch frames (seconds). Default is 0.01.
+        Time step between f0 frames (seconds). Default is 0.01.
     silence_thresh : float, optional
         Silence threshold for voicing decision. Default is 0.03.
     voicing_thresh : float, optional
         Voicing threshold for candidate selection. Default is 0.45.
     max_candidates : int, optional
-        Maximum number of pitch candidates per frame. Default is 15.
+        Maximum number of f0 candidates per frame. Default is 15.
     octave_cost : float, optional
         Cost for octave errors in candidate selection. Default is 0.01.
     octave_jump_cost : float, optional
@@ -398,15 +399,15 @@ def boersma(
     voiced_unvoiced_cost : float, optional
         Cost for voiced/unvoiced transitions in dynamic programming. Default is 0.14.
     plot : bool, optional
-        If True, plot the pitch track on a spectrogram. Default is False.
+        If True, plot the f0 track on a spectrogram. Default is False.
     **kwargs : Any
         Additional keyword arguments for plotting.
 
     Returns
     -------
     time_points : np.ndarray
-        Array of time points (seconds) for each pitch frame.
-    pitch_track : np.ndarray
+        Array of time points (seconds) for each f0 frame.
+    f0_track : np.ndarray
         Array of estimated F0 values (Hz) for the best path.
     all_candidates : list of list of (float, float)
         List of candidate (frequency, strength) tuples for each frame.
@@ -421,17 +422,17 @@ def boersma(
     2. Anikin A. 2019. Soundgen: an open-source tool for synthesizing
        nonverbal vocalizations. Behavior Research Methods, 51(2), 778-792.
     """
-    assert isinstance(signal, AudioSignal), "'signal' must be an instance of AudioSignal."
+    assert isinstance(signal, AudioSignal), "'signal' must be of type AudioSignal."
 
-    if min_pitch >= max_pitch or max_pitch >= signal.srate / 2:
-        raise ValueError("max_pitch should be greater than min_pitch and below the nyquist frequency.")
+    if min_f0 >= max_f0 or max_f0 >= signal.srate / 2:
+        raise ValueError("max_f0 should be greater than min_f0 and below the nyquist frequency.")
 
     # not enough resolution above half the niquist frequency
-    # -> amend pitch ceiling if applicable. From Soundgen (see references)
-    # max_pitch = min(max_pitch, sr / 4)
+    # -> amend f0 ceiling if applicable. From Soundgen (see references)
+    # max_f0 = min(max_f0, sr / 4)
 
-    window_length = 3 * (1 / min_pitch)  # three periods of minimum frequency
-    data_preprocessed = signal.data  # _preprocess_for_pitch_(data, sr)
+    window_length = 3 * (1 / min_f0)  # three periods of minimum frequency
+    data_preprocessed = signal.data  # _preprocess_for_f0_(data, sr)
     global_peak: float = np.max(np.abs(data_preprocessed - np.mean(data_preprocessed)))
 
     # global_peak: float = np.max(np.abs(data_preprocessed))
@@ -473,11 +474,11 @@ def boersma(
         unvoiced_strength = voicing_thresh + max(0, 2 - ((local_peak / global_peak) /
                                                          (silence_thresh / (1 + voicing_thresh))))
 
-        voiced_candidates = _find_pitch_candidates_(
+        voiced_candidates = _find_f0_candidates_(
                 sampled_autocorr,
                 signal.srate,
-                min_pitch,
-                max_pitch,
+                min_f0,
+                max_f0,
                 max_candidates,
                 octave_cost
             )
@@ -497,18 +498,18 @@ def boersma(
     octave_jump_cost_scaled = octave_jump_cost * time_step_correction
     voiced_unvoiced_cost_scaled = voiced_unvoiced_cost * time_step_correction
 
-    pitch_track = _viterbi_pitch_path(
+    f0_track = _viterbi_f0_path(
         all_candidates,
         voiced_unvoiced_cost=voiced_unvoiced_cost_scaled,
         octave_jump_cost=octave_jump_cost_scaled
     )
 
     if plot:
-        from biosonic.plot import plot_pitch_on_spectrogram
-        plot_pitch_on_spectrogram(
+        from biosonic.plot import plot_f0_on_spectrogram
+        plot_f0_on_spectrogram(
             signal,
             time_points,
-            pitch_track,
+            f0_track,
             **kwargs)
 
-    return np.asarray(time_points), np.asarray(pitch_track), all_candidates, np.asarray(intensities)
+    return np.asarray(time_points), np.asarray(f0_track), all_candidates, np.asarray(intensities)

@@ -1,1 +1,1 @@
-from .compute import modulation, pitch, spectral, spectrotemporal, temporal, utils
+from .compute import fundamental, modulation, spectral, spectrotemporal, temporal, utils

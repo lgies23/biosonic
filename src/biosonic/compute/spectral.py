@@ -16,6 +16,7 @@ from .utils import (
 
 def spectrum(
     signal: AudioSignal,
+    *,
     mode: Union[str, int, float] = 'amplitude'
     ) -> Tuple[Optional[NDArray[np.float32]], NDArray[np.float32]]:
     """
@@ -44,7 +45,7 @@ def spectrum(
         TypeError
             If `mode` is not a string, int, or float.
     """
-    assert type(signal) is AudioSignal, "'signal' must be an instance of AudioSignal."
+    assert isinstance(signal, AudioSignal), "'signal' must be of type AudioSignal."
     freqs = None
 
     if len(signal.data) == 0:
@@ -115,7 +116,7 @@ def quartiles(signal: AudioSignal) -> Tuple[float, float, float]:
         >>> quartiles(x, sr)
         (np.float64(10.0), np.float64(10.0), np.float64(10.0))
     """
-    assert type(signal) is AudioSignal, "'signal' must be an instance of AudioSignal."
+    assert isinstance(signal, AudioSignal), "'signal' must be of type AudioSignal."
     if len(signal.data) == 0:
         raise ValueError("Input is empty")
 
@@ -157,7 +158,7 @@ def flatness(signal: AudioSignal) -> Union[float, np.floating[Any]]:
         Sueur, J. (2018). Sound Analysis and Synthesis with R*. Springer International Publishing, p. 299.
         https://doi.org/10.1007/978-3-319-77647-7
     """
-    assert type(signal) is AudioSignal, "'signal' must be an instance of AudioSignal."
+    assert isinstance(signal, AudioSignal), "'signal' must be of type AudioSignal."
 
     if len(signal.data) == 0:
         raise ValueError("Input signal is empty")
@@ -209,7 +210,7 @@ def spectral_moments(
         Klapuri A, Davy M. 2006 Signal processing methods for music transcription.
         New York: Springer. p.136
     """
-    assert type(signal) is AudioSignal, "'signal' must be an instance of AudioSignal."
+    assert isinstance(signal, AudioSignal), "'signal' must be of type AudioSignal."
     freqs, ms = spectrum(signal, mode="power")
     # normalize spectrum
     ms = ms / np.sum(ms)
@@ -268,7 +269,7 @@ def centroid(signal: AudioSignal) -> Union[float, np.floating[Any]]:
         Klapuri A, Davy M. 2006 Signal processing methods for music transcription.
         New York: Springer. p.136
     """
-    assert type(signal) is AudioSignal, "'signal' must be an instance of AudioSignal."
+    assert isinstance(signal, AudioSignal), "'signal' must be of type AudioSignal."
     centroid_, _, _, _ = spectral_moments(signal)
 
     return centroid_
@@ -304,7 +305,7 @@ def bandwidth(signal: AudioSignal) -> Union[float, np.floating[Any]]:
         Klapuri A, Davy M. 2006 Signal processing methods for music transcription.
         New York: Springer. p.136
     """
-    assert type(signal) is AudioSignal, "'signal' must be an instance of AudioSignal."
+    assert isinstance(signal, AudioSignal), "'signal' must be of type AudioSignal."
     _, bandwidth_, _, _ = spectral_moments(signal)
 
     return bandwidth_  # TODO change to variance and let people define bandwidth through percentiles
@@ -334,7 +335,7 @@ def skewness(signal: AudioSignal) -> Union[float, np.floating[Any]]:
         Klapuri A, Davy M. 2006 Signal processing methods for music transcription.
         New York: Springer. p.136
     """
-    assert type(signal) is AudioSignal, "'signal' must be an instance of AudioSignal."
+    assert isinstance(signal, AudioSignal), "'signal' must be of type AudioSignal."
     _, _, skew, _ = spectral_moments(signal)
     return skew
 
@@ -399,7 +400,7 @@ def peak_frequency(signal: AudioSignal) -> Union[float, np.floating[Any]]:
     -----
         - The function assumes the input signal is real-valued and uniformly sampled.
     """
-    assert type(signal) is AudioSignal, "'signal' must be an instance of AudioSignal."
+    assert isinstance(signal, AudioSignal), "'signal' must be of type AudioSignal."
     if len(signal.data) == 0:
         raise ValueError("Input signal is empty; could not determine peak frequency.")
 
@@ -436,7 +437,7 @@ def power_spectral_entropy(
         3. Shannon C. E. 1948 A mathematical theory of communication. The Bell System Technical Journal XXVII.
 
     """
-    assert type(signal) is AudioSignal, "'signal' must be an instance of AudioSignal."
+    assert isinstance(signal, AudioSignal), "'signal' must be of type AudioSignal."
     # _, psd = signal.welch(data, sr, nperseg=N_FFT, noverlap=N_FFT//HOP_OVERLAP) # would return psd - frequency spectrum squared and scaled by sum -
     _, psd = spectrum(signal, mode="power")
     psd = exclude_trailing_and_leading_zeros(psd)
@@ -470,7 +471,7 @@ def spectral_features(signal: AudioSignal) -> Dict[str, Union[float, np.floating
         "pse": float
         }
     """
-    assert type(signal) is AudioSignal, "'signal' must be an instance of AudioSignal."
+    assert isinstance(signal, AudioSignal), "'signal' must be of type AudioSignal."
     fq_q1_bin, fq_median_bin, fq_q3_bin = quartiles(signal)
     # freqs, ps = spectrum(signal, mode="power")
 
