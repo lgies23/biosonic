@@ -124,7 +124,9 @@ def quartiles(signal: AudioSignal) -> Tuple[float, float, float]:
     cdf = cumulative_distribution_function(envelope)
 
     if frequencies is None or len(frequencies) != len(envelope):
-        raise ValueError("Freuency bins don't match envelope")
+        raise ValueError("Frequency bins don't match envelope")
+    if np.all(signal.data == 0):
+        raise ValueError("Signal contains no nonzero values")
 
     return frequencies[np.searchsorted(cdf, 0.25)], frequencies[np.searchsorted(cdf, 0.5)], frequencies[np.searchsorted(cdf, 0.75)]
 

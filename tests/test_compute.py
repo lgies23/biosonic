@@ -62,7 +62,7 @@ def test_temporal_quartiles():
 
     # check all-zero signal
     arr = np.array([0, 0, 0, 0, 0], dtype=np.float64)
-    with pytest.raises(AssertionError, match="'data' contains no nonzero values"):
+    with pytest.raises(ValueError, match="Signal contains no nonzero values"):
         temporal_quartiles(AudioSignal(arr, 10))
 
     # check invalid sample rate
@@ -215,7 +215,7 @@ def test_spectral_quartiles(monkeypatch):
 
     # zero signal
     arr = np.zeros(1000, dtype=np.float64)
-    with pytest.raises(AssertionError, match="'data' contains no nonzero values"):
+    with pytest.raises(ValueError, match="Signal contains no nonzero values"):
         quartiles(AudioSignal(arr, sr))
 
     # mismatched frequencies
@@ -225,7 +225,7 @@ def test_spectral_quartiles(monkeypatch):
 
     arr = np.ones(100, dtype=np.float64)
     signal = AudioSignal(arr, sr)
-    with pytest.raises(ValueError, match="Freuency bins don't match envelope"):
+    with pytest.raises(ValueError, match="Frequency bins don't match envelope"):
         quartiles(signal)
 
 
@@ -246,11 +246,6 @@ def test_flatness():
     signal = AudioSignal(arr, sr)
     f_noise = flatness(signal)
     assert 0.5 < f_noise <= 1.0, f"Expected high flatness for noise, got {f_noise}"
-
-    # all zeros
-    arr = np.zeros(1000, dtype=np.float64)
-    with pytest.raises(AssertionError, match="'data' contains no nonzero values"):
-        flatness(AudioSignal(arr, sr))  # TODO remove (and similar) when covered in utils tests
 
     # empty input
     arr = np.array([], dtype=np.float64)

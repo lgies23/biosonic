@@ -106,7 +106,7 @@ def test_read_wav(tmp_path):
 
     assert audioSignal.srate == 44100
     assert audioSignal.numchannels == 1
-    assert audioSignal.dtype == np.float32
+    assert audioSignal.quantization == np.float64
 
 
 # @pytest.fixture
