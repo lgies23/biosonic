@@ -129,7 +129,6 @@ pythonpath = ["src"]
 addopts = ["--deselect", "src/biosonic/plot.py::biosonic.plot.plot_spectrogram_catalogue"]
 
 [tool.mypy]
-python_version = "3.9"
 ignore_missing_imports = true
 strict = true
 show_error_codes = true
