@@ -244,50 +244,45 @@ def _find_pitch_candidates_(
             r_tau = ac[lag]
             if r_tau > 1:  # TODO Not sure if this ever happens, but Praat does it?
                 r_tau = 1 / r_tau
-            strength = r_tau - octave_cost * np.log2(min_pitch * refined_lag)
+            pitch = sr / refined_lag
 
             # convert to pitch
-            pitch = sr / refined_lag if refined_lag != 0 else 0
-            candidates.append((pitch, strength))
+            candidates.append((pitch, r_tau))
 
     # Sort by strength and take top N-1
-    candidates = sorted(candidates, key=lambda x: -x[1])[:num_candidates - 1]
-
-    # normalize to [0,1]
-    max_strength = max(s for _, s in candidates) if candidates else 1.0
-    if max_strength > 0:
-        candidates = [(p, s / max_strength) for p, s in candidates]
-    else:
-        candidates = [(p, 0.0) for p, s in candidates]
+    candidates = sorted(candidates, key=lambda x: x[1] - octave_cost * np.log2(min_pitch / x[0]))[-num_candidates + 1::]
 
     return candidates
 
 
-def _transition_cost(
-        F1: float,
-        F2: float,
-        voiced_unvoiced_cost: float,
-        octave_jump_cost: float
-    ) -> float:
-    if F1 == 0.0 and F2 == 0.0:
-        return 0.0
-    elif F1 == 0.0 or F2 == 0.0:
-        return voiced_unvoiced_cost
-    else:
-        return float(octave_jump_cost * abs(np.log2(F1 / F2)))
+def _correct_candidate_strenghts(all_candidates, intensities, ceiling, silence_thresh, voicing_thresh, octave_cost):
+    def get_corrected_strength(pitch, strength, intensity):
+        if not 0.0 < pitch < ceiling:  # TODO Praat keeps candidates above ceiling, since ceiling can change (??)
+            return voicing_thresh + max(0.0, 0.0 if silence_thresh <= 0 else 2 - intensity / (silence_thresh / (1 + voicing_thresh)))
+        else:
+            return strength - octave_cost * np.log2(ceiling / pitch)
+
+    return [
+        [
+            (pitch, get_corrected_strength(pitch, strength, intensity))
+            for pitch, strength in candidates
+        ]
+        for candidates, intensity in zip(all_candidates, intensities)
+    ]
 
 
 def _viterbi_pitch_path(
         all_candidates: List[List[Tuple[float, float]]],
-        voiced_unvoiced_cost: float = 0.2,
-        octave_jump_cost: float = 0.2
+        ceiling: float,
+        voiced_unvoiced_cost: float,
+        octave_jump_cost: float
     ) -> List[float]:
     """
     Finds the globally optimal pitch path using dynamic programming.
 
     Parameters
     ----------
-    all_candidates: List of lists of (pitch in Hz, strength)
+    all_candidates: List of lists of (pitch in Hz, corrected strength)
     voiced_unvoiced_cost: Cost of voiced/unvoiced transition
     octave_jump_cost: Cost of pitch discontinuity in octaves
 
@@ -296,9 +291,23 @@ def _viterbi_pitch_path(
     path
         List of chosen pitch values, one per frame
     """
+    def _is_unvoiced(f):
+        return not 0.0 < f < ceiling
+
+    def _transition_cost(f1, f2) -> float:
+        if _is_unvoiced(f1) and _is_unvoiced(f2):
+            return 0.0
+        elif _is_unvoiced(f1) or _is_unvoiced(f2):
+            return voiced_unvoiced_cost
+        else:
+            return float(octave_jump_cost * abs(np.log2(f1 / f2)))
+
     num_frames = len(all_candidates)
     path_costs = []
     back_pointers: List[List[Any]] = []
+
+    # Praat maximizes total strength minus transition costs (potayto)
+    # This code minimizes transition costs minus total strength (potahto)
 
     # initialization
     prev_costs = [-strength for _, strength in all_candidates[0]]
@@ -306,33 +315,30 @@ def _viterbi_pitch_path(
     back_pointers.append([None] * len(all_candidates[0]))
 
     # dynamic programming
-    for t in range(1, num_frames):
+    for i in range(1, num_frames):
         frame_costs = []
         frame_back_ptrs = []
-        for j, (curr_pitch, curr_strength) in enumerate(all_candidates[t]):
-            best_cost = float('inf')
+        for curr_pitch, curr_strength in all_candidates[i]:
+            best_cost = np.inf
             best_prev_idx = None
-            for i, (prev_pitch, _) in enumerate(all_candidates[t-1]):
-                trans_cost = _transition_cost(
-                    prev_pitch, curr_pitch,
-                    voiced_unvoiced_cost, octave_jump_cost
-                )
-                total_cost = path_costs[t-1][i] + trans_cost - curr_strength
+            for j, (prev_pitch, _) in enumerate(all_candidates[i-1]):
+                total_cost = prev_costs[j] + _transition_cost(prev_pitch, curr_pitch) - curr_strength
                 if total_cost < best_cost:
                     best_cost = total_cost
-                    best_prev_idx = i
+                    best_prev_idx = j
             frame_costs.append(best_cost)
             frame_back_ptrs.append(best_prev_idx)
         path_costs.append(frame_costs)
         back_pointers.append(frame_back_ptrs)
+        prev_costs = frame_costs
 
     # backtrace
-    path = [0.0] * num_frames
+    path = [None] * num_frames
     idx = int(np.argmin(path_costs[-1]))
     for t in reversed(range(num_frames)):
         pitch, _ = all_candidates[t][idx]
         path[t] = pitch
-        idx = back_pointers[t][idx] if back_pointers[t][idx] is not None else 0
+        idx = back_pointers[t][idx]
 
     return path
 
@@ -564,30 +570,27 @@ def boersma(
         sampled_autocorr = sampled_autocorr[:(window_length_samples//2)]
 
         # 3.11 find places and heights of maxima
-        unvoiced_strength = voicing_thresh + max(0, 2 - ((local_peak / global_peak) /
-                                                         (silence_thresh / (1 + voicing_thresh))))
-
         voiced_candidates = _find_pitch_candidates_(
                 sampled_autocorr,
                 sr,
                 min_pitch,
                 max_pitch,
                 max_candidates,
+                voicing_thresh,
                 octave_cost
             )
 
-        candidates = [(0.0, unvoiced_strength)] + voiced_candidates
+        candidates = [(0.0, 0.0)] + voiced_candidates
         all_candidates.append(candidates)
         intensities.append(min(1.0, local_peak / global_peak))  # global_peak can't be 0; see above
 
-    # Praat-style: scale transition costs by time step as in Yannicks code
-    dt = timestep
-    time_step_correction = 0.01 / dt if dt else 1.0
+    time_step_correction = 0.01 / timestep
     octave_jump_cost_scaled = octave_jump_cost * time_step_correction
     voiced_unvoiced_cost_scaled = voiced_unvoiced_cost * time_step_correction
-
+    corrected_strength_candidates = _correct_candidate_strenghts(all_candidates, intensities, max_pitch, silence_thresh, voicing_thresh, octave_cost)
     pitch_track = _viterbi_pitch_path(
-        all_candidates,
+        corrected_strength_candidates,
+        max_pitch,
         voiced_unvoiced_cost=voiced_unvoiced_cost_scaled,
         octave_jump_cost=octave_jump_cost_scaled
     )
