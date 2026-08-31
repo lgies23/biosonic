@@ -382,7 +382,7 @@ def _frame_signal_praat(samples, sr, window_duration, time_step):
     n_frames = int(np.floor((duration - window_duration) / time_step)) + 1
     assert n_frames >= 1
 
-    first_time = 0.5 * (duration - (n_frames - 1) * time_step)
+    first_time = 0.5 * (duration - n_frames * time_step + time_step)
 
     return n_frames, first_time
 
