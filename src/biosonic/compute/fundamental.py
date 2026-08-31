@@ -217,20 +217,22 @@ def _find_f0_candidates_(
         sr: int,
         min_f0: int,
         max_f0: int,
-        num_candidates: int = 4,
-        octave_cost: float = 0.01
+        num_candidates: int,
+        voicing_thresh: float,
+        octave_cost: float
         ) -> ArrayLike:
     """
     Find f0 candidates based on autocorrelation peaks.
     """
+    # TODO Keep this or not?
     # min_lag = int(sr / max_f0)  # Described by Boersma (1993) but not used in Praat implementation
     max_lag = int(sr / min_f0)
 
     candidates: list[Tuple[float, float]] = []
 
-    max_depth = 8  # window for sinc interpolation, can be tuned
+    # max_depth = 8  # window for sinc interpolation, can be tuned
     for lag in range(2, max_lag - 1):
-        if ac[lag] > ac[lag - 1] and ac[lag] > ac[lag + 1]:
+        if ac[lag] > 0.5 * voicing_thresh and ac[lag] > ac[lag - 1] and ac[lag] > ac[lag + 1]:
             dr = 0.5 * (ac[lag + 1] - ac[lag - 1])
             d2r = 2 * ac[lag] - ac[lag - 1] - ac[lag + 1]
             refined_lag = lag + dr / d2r
@@ -239,7 +241,8 @@ def _find_f0_candidates_(
             # refined_lag, _ = _improve_sinc_maximum(ac, float(lag), max_depth)
 
             # cost function (Boersma 1993, eq 26)
-            r_tau = _sinc_interpolation(ac, refined_lag, max_depth)
+            # r_tau = _sinc_interpolation(ac, refined_lag, max_depth)
+            r_tau = ac[lag]
             if r_tau > 1:  # TODO Not sure if this ever happens, but Praat does it?
                 r_tau = 1 / r_tau
             strength = r_tau - octave_cost * np.log2(min_f0 * refined_lag)
