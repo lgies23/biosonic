@@ -115,7 +115,7 @@ def spectrogram(
 def cepstrum(
         signal: AudioSignal,
         mode: Literal["amplitude", "power"] = "amplitude",
-    ) -> Tuple[NDArray[np.float32], NDArray[np.float32]]:
+    ) -> Tuple[NDArray[np.float64], NDArray[np.float64]]:
     """
     Compute the cepstrum of a real-valued time-domain signal.
 
@@ -151,13 +151,13 @@ def cepstrum(
     if np.all(signal.data == signal.data[0]):
         raise ValueError("Cannot compute cepstrum of flat signal.")
 
-    quefrencies = np.asarray(range(len(signal.data)), dtype=np.float32) / signal.srate
+    quefrencies = np.asarray(range(len(signal.data)), dtype=np.float64) / signal.srate
 
     if mode == "power":
-        return np.asarray(np.abs(ifft(np.log(np.abs(fft(signal.data))**2)))**2, dtype=np.float32), quefrencies
+        return np.asarray(np.abs(ifft(np.log(np.abs(fft(signal.data))**2)))**2, dtype=np.float64), quefrencies
 
     elif mode == "amplitude":
-        return np.asarray(np.abs(ifft(np.log(np.abs(fft(signal.data))))), dtype=np.float32), quefrencies
+        return np.asarray(np.abs(ifft(np.log(np.abs(fft(signal.data))))), dtype=np.float64), quefrencies
 
     else:
         raise ValueError(f"Invalid mode for cepstrum calculation: {mode}")
@@ -318,7 +318,7 @@ def dominant_frequencies(
         min_prominence: float = 0.05,
         noise_threshold: float = 0.1,
         **kwargs: Any
-    ) -> NDArray[np.float32]:
+    ) -> NDArray[np.float64]:
     """
     Extracts the dominant frequency or frequencies from each time frame of a spectrogram
     based on the scipy.signal function find_peaks.
@@ -592,9 +592,31 @@ def tokuda_nlm(
 def calculate_dominant_frequency_features(
         signal: AudioSignal,
         **kwargs: Any
-    ) -> Dict[str, Union[float, NDArray[np.float32]]]:
+    ) -> Dict[str, Union[float, NDArray[np.float64]]]:
     """
     Calculate dominant frequency features.
+
+    Returns a dictionary containing the mean, minimum, maximum, range, and modulation of the dominant frequencies
+    extracted from the input signal.
+
+    Parameters
+    ----------
+    signal : AudioSignal
+        Input signal object containing data and sampling rate.
+    **kwargs : dict
+        Additional keyword arguments passed to the `dominant_frequencies` function.
+
+    Returns
+    -------
+    dict
+        A dictionary containing the following keys:
+        - "mean_dom": Mean of the detected dominant frequencies.
+        - "min_dom": Minimum of the detected dominant frequencies.
+        - "max_dom": Maximum of the detected dominant frequencies.
+        - "range_dom": Range (max - min) of the detected dominant frequencies.
+        - "mod_dom": Modulation of the detected dominant frequencies, calculated as the sum of
+        absolute differences between consecutive frequencies divided by the range.
+
     """
     assert type(signal) is AudioSignal, "'signal' must be an instance of AudioSignal."
     dominant_freqs = dominant_frequencies(signal, n_freqs=1, **kwargs)
@@ -621,7 +643,7 @@ def spectrotemporal_features(
         signal: AudioSignal,
         n_dominant_freqs: int = 1,
         **kwargs: Any
-    ) -> dict[str, Union[float, np.floating, NDArray[np.float32]]]:
+    ) -> dict[str, Union[float, np.floating, NDArray[np.float64]]]:
     """
     Extracts a set of spectrotemporal features from a signal.
 
@@ -639,7 +661,7 @@ def spectrotemporal_features(
         "dominant_frequencies": ArrayLike}
     """
     assert type(signal) is AudioSignal, "'signal' must be an instance of AudioSignal."
-    features = {
+    features: dict[str, Union[float, NDArray[np.float64]]] = {
         "spectrotemporal_entropy": spectrotemporal_entropy(signal),
         "dominant_freqs": dominant_frequencies(signal, n_freqs=n_dominant_freqs, **kwargs),
     }

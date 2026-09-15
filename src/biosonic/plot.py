@@ -14,11 +14,11 @@ import numpy as np
 from numpy.typing import ArrayLike
 from pandas import DataFrame
 
-from .handle import AudioSignal
 from .compute.spectral import spectrum
 from .compute.spectrotemporal import cepstral_coefficients, cepstrum, spectrogram
 from .compute.utils import extract_all_features
 from .filter import mel_filterbank
+from .handle import AudioSignal
 
 
 def plot_spectrogram(
@@ -122,7 +122,7 @@ def plot_spectrogram(
         fmax = flim[1] if flim and flim[1] else signal.srate / 2
 
         fb, f_centers = mel_filterbank(n_bands, window_length, signal.srate, fmin=fmin, fmax=fmax, corner_frequency=corner_frequency, after=after)
-        
+
         f = f_centers
         # Sx : np.ndarray = np.einsum("...ft,mf->...mt", Sx, fb, optimize=True)
         Sx = fb @ Sx

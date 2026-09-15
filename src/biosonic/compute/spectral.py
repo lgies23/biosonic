@@ -1,5 +1,5 @@
 import warnings
-from typing import Any, Dict, Literal, Optional, Tuple, Union
+from typing import Any, Literal, Optional, Tuple, Union
 
 import numpy as np
 from numpy.typing import NDArray
@@ -7,7 +7,6 @@ from scipy import fft
 from scipy.stats import gmean
 
 from ..handle import AudioSignal
-
 from .utils import (
     cumulative_distribution_function,
     exclude_trailing_and_leading_zeros,
@@ -435,15 +434,14 @@ def power_spectral_entropy(
     # _, psd = signal.welch(data, sr, nperseg=N_FFT, noverlap=N_FFT//HOP_OVERLAP) # would return psd - frequency spectrum squared and scaled by sum -
     _, psd = spectrum(signal, mode="power")
     psd = exclude_trailing_and_leading_zeros(psd)
-
-    psd_sum: float = np.sum(psd)
+    psd_sum: np.float32 = np.sum(psd)
     psd_norm = psd / psd_sum
     # Ensure no zero values in normalized power distribution because H is undefined with p=0
     psd_norm = psd_norm[psd_norm > 0]
     return shannon_entropy(psd_norm, unit, *args, **kwargs)
 
 
-def spectral_features(signal: AudioSignal) -> Dict[str, Union[float, np.floating, NDArray[np.float64]]]:
+def spectral_features(signal: AudioSignal) -> dict[str, float | np.floating[Any]]:
     """
     Extracts a set of spectral features from a signal.
 

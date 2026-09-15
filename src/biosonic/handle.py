@@ -103,8 +103,9 @@ def convert_dtype(data: NDArray[Any], target_dtype: QuantizationStr) -> NDArray[
     if target_dtype not in get_args(QuantizationStr):
         raise ValueError(f"Invalid quantization: {target_dtype}. Must be one of {get_args(QuantizationStr)}")
 
-    target_np_dtype: np.dtype[np.generic] = np.dtype(target_dtype)
-    current_dtype = data.dtype
+    target_np_dtype: np.dtype = np.dtype(target_dtype)
+    current_dtype: np.dtype = data.dtype
+    max_val: int
 
     if current_dtype == target_np_dtype:
         return data

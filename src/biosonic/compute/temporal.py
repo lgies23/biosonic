@@ -1,5 +1,5 @@
 import warnings
-from typing import Any, Dict, Literal, Optional, Tuple, Union
+from typing import Any, Literal, Optional, Tuple, Union
 
 import numpy as np
 from numpy.typing import NDArray
@@ -284,7 +284,7 @@ def temporal_features(
     signal: AudioSignal,
     return_trim_indices: bool = False,
     **envelope_kwargs: Any
-    ) -> Dict[str, Union[float, NDArray[np.float32], Tuple[int, int]]]:
+    ) -> dict[str, tuple[Any | float, Any | float] | tuple[Any | int, Any | int] | Any | float | np.ndarray[tuple[Any, ...], np.dtype[np.float32]] | None]:
     """
     Extracts a set of temporal features from the amplitude envelope of a signal.
 
@@ -300,7 +300,9 @@ def temporal_features(
         "temporal_kurtosis": float,
         "amplitude_envelope": NDArray[np.float64],
         "duration": float,
-        "temporal_entropy": float
+        "temporal_entropy": float,
+        "trim_indices": Tuple[int, int],
+        "trim_times": Tuple[float, float]
         }
     """
     assert type(signal) is AudioSignal, "'signal' must be an instance of AudioSignal."
