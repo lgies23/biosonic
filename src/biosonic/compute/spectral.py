@@ -1,33 +1,30 @@
 import warnings
-from typing import Any, Dict, Literal, Optional, Tuple, Union
+from typing import Any, Literal, Optional, Tuple, Union
 
 import numpy as np
-from numpy.typing import ArrayLike, NDArray
+from numpy.typing import NDArray
 from scipy import fft
 from scipy.stats import gmean
 
+from ..handle import AudioSignal
 from .utils import (
-    check_signal_format,
-    check_sr_format,
     cumulative_distribution_function,
     exclude_trailing_and_leading_zeros,
     shannon_entropy
 )
 
 
-def spectrum(data: ArrayLike,
-             sr: Optional[int] = None,
-             mode: Union[str, int, float] = 'amplitude') -> Tuple[Optional[NDArray[np.float32]], NDArray[np.float32]]:
+def spectrum(
+    signal: AudioSignal,
+    *,
+    mode: Union[str, int, float] = 'amplitude'
+    ) -> Tuple[Optional[NDArray[np.float32]], NDArray[np.float32]]:
     """
     Computes the magnitude spectrum of a signal, allowing for amplitude, power, or arbitrary exponentiation of the magnitude.
 
     Parameters
     ----------
-        data : ArrayLike
-            The input time-domain signal as a 1D array-like.
-        sr: Optional Integer, default=None
-            Sampling rate in Hz as an integer. If given, returns the frequency bins
-            of the magnitude spectrum. Defaults to None.
+        signal : AudioSignal
         mode : Union[str, int], default='amplitude'
             Specifies how to compute the spectrum:
             - 'amplitude': return the amplitude spectrum (|FFT|).
@@ -48,19 +45,16 @@ def spectrum(data: ArrayLike,
         TypeError
             If `mode` is not a string, int, or float.
     """
-    data = check_signal_format(data)
-
+    assert isinstance(signal, AudioSignal), "'signal' must be of type AudioSignal."
     freqs = None
 
-    if data.size == 0:
+    if len(signal.data) == 0:
         warnings.warn("Input signal is empty; returning an empty spectrum.", RuntimeWarning)
         return freqs, np.array([], dtype=np.float32)
 
-    if sr is not None:
-        sr = check_sr_format(sr)
-        freqs = fft.rfftfreq(len(data), d=1/sr)
-
-    magnitude_spectrum = np.abs(fft.rfft(data))
+    if signal.srate is not None:
+        freqs = fft.rfftfreq(len(signal.data), d=1/signal.srate)
+    magnitude_spectrum = np.abs(fft.rfft(signal.data))
 
     if isinstance(mode, str):
         mode = mode.lower()
@@ -76,16 +70,13 @@ def spectrum(data: ArrayLike,
         raise TypeError(f"'mode' must be a string, int or float, not {type(mode).__name__}.")
 
 
-def quartiles(data: ArrayLike, sr: int) -> Tuple[float, float, float]:
+def quartiles(signal: AudioSignal) -> Tuple[float, float, float]:
     """
     Compute the 1st, 2nd (median), and 3rd quartiles of the power spectrum of a signal.
 
     Parameters
     ----------
-        data : ArrayLike
-            Input signal as a 1D array-like.
-        sr : int
-            Sampling rate (in Hz).
+        signal : AudioSignal
 
     Returns
     -------
@@ -115,33 +106,23 @@ def quartiles(data: ArrayLike, sr: int) -> Tuple[float, float, float]:
     --------
         spectrum : Computes the spectral envelope of a signal.
         cumulative_distribution_function : Computes the normalized cumulative sum of a spectrum.
-
-    Examples
-    --------
-        >>> import numpy as np
-        >>> sr = 1000
-        >>> t = np.linspace(0, 1, sr, endpoint=False)
-        >>> x = np.sin(2 * np.pi * 10 * t) + 0.5 * np.sin(2 * np.pi * 30 * t)
-        >>> quartiles(x, sr)
-        (np.float64(10.0), np.float64(10.0), np.float64(10.0))
     """
-    data = check_signal_format(data)
-    sr = check_sr_format(sr)
-    if len(data) == 0:
+    assert isinstance(signal, AudioSignal), "'signal' must be of type AudioSignal."
+    if len(signal.data) == 0:
         raise ValueError("Input is empty")
-    if np.all(data == 0):
-        raise ValueError("Signal contains no nonzero values")
 
-    frequencies, envelope = spectrum(data, sr=sr, mode="power")
+    frequencies, envelope = spectrum(signal, mode="power")
     cdf = cumulative_distribution_function(envelope)
 
     if frequencies is None or len(frequencies) != len(envelope):
-        raise ValueError("Freuency bins don't match envelope")
+        raise ValueError("Frequency bins don't match envelope")
+    if np.all(signal.data == 0):
+        raise ValueError("Signal contains no nonzero values")
 
     return frequencies[np.searchsorted(cdf, 0.25)], frequencies[np.searchsorted(cdf, 0.5)], frequencies[np.searchsorted(cdf, 0.75)]
 
 
-def flatness(data: ArrayLike) -> Union[float, np.floating[Any]]:
+def flatness(signal: AudioSignal) -> Union[float, np.floating[Any]]:
     """
     Compute the spectral flatness (also known as Wiener entropy) of a signal.
 
@@ -151,7 +132,7 @@ def flatness(data: ArrayLike) -> Union[float, np.floating[Any]]:
 
     Parameters
     ----------
-        data : ArrayLike
+        signal : AudioSignal
             Time-domain input signal (1D array-like).
 
     Returns
@@ -170,12 +151,14 @@ def flatness(data: ArrayLike) -> Union[float, np.floating[Any]]:
         Sueur, J. (2018). Sound Analysis and Synthesis with R*. Springer International Publishing, p. 299.
         https://doi.org/10.1007/978-3-319-77647-7
     """
-    data = check_signal_format(data)
+    assert isinstance(signal, AudioSignal), "'signal' must be of type AudioSignal."
+
+    if len(signal.data) == 0:
+        raise ValueError("Input signal is empty")
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        _, envelope = spectrum(data, mode="power")
-
+        _, envelope = spectrum(signal, mode="power")
     ps_wo_zeros = exclude_trailing_and_leading_zeros(envelope)
     if len(ps_wo_zeros) == 0:
         raise ValueError("Input signal contained only zero values")
@@ -188,8 +171,7 @@ def flatness(data: ArrayLike) -> Union[float, np.floating[Any]]:
 
 
 def spectral_moments(
-        data: ArrayLike,
-        sr: int
+        signal: AudioSignal
         ) -> Tuple[
             Union[float, np.floating[Any]],
             Union[float, np.floating[Any]],
@@ -201,10 +183,8 @@ def spectral_moments(
 
     Parameters
     ----------
-    data : ArrayLike
-        1D array-like representing the input signal.
-    sampling_rate : float
-        Sampling rate of the signal in Hz.
+    signal : AudioSignal
+        Input signal.
 
     Returns
     -------
@@ -223,13 +203,9 @@ def spectral_moments(
         Klapuri A, Davy M. 2006 Signal processing methods for music transcription.
         New York: Springer. p.136
     """
-    data = check_signal_format(data)
-    sr = check_sr_format(sr)
-
-    if np.all(data == 0):
-        raise ValueError("Signal contains no nonzero values")
-
-    freqs, ms = spectrum(data, sr=sr)
+    assert isinstance(signal, AudioSignal), "'signal' must be of type AudioSignal."
+    freqs, ms = spectrum(signal, mode="power")
+    assert freqs.all() is not None, "Frequency bins are None"
     # normalize spectrum
     ms = ms / np.sum(ms)
     centroid_ = np.average(freqs, weights=ms)
@@ -243,7 +219,7 @@ def spectral_moments(
     return centroid_, bandwidth_, skewness_, kurtosis_
 
 
-def centroid(data: ArrayLike, sr: int) -> Union[float, np.floating[Any]]:
+def centroid(signal: AudioSignal) -> Union[float, np.floating[Any]]:
     r"""
     Compute the spectral centroid of a signal.
 
@@ -277,22 +253,22 @@ def centroid(data: ArrayLike, sr: int) -> Union[float, np.floating[Any]]:
     Examples
     --------
         >>> np.random.seed(42)
-        >>> signal = np.random.randn(1024)
-        >>> sr = 44100
-        >>> centroid(signal, sr)
-        np.float64(11011.330381305264)
+        >>> signal = AudioSignal(data=np.random.randn(1024), srate=44100)
+        >>> centroid(signal)
+        np.float64(11027.612111105851)
 
     References
     ----------
         Klapuri A, Davy M. 2006 Signal processing methods for music transcription.
         New York: Springer. p.136
     """
-    centroid_, _, _, _ = spectral_moments(data, sr)
+    assert isinstance(signal, AudioSignal), "'signal' must be of type AudioSignal."
+    centroid_, _, _, _ = spectral_moments(signal)
 
     return centroid_
 
 
-def bandwidth(data: ArrayLike, sr: int) -> Union[float, np.floating[Any]]:
+def bandwidth(signal: AudioSignal) -> Union[float, np.floating[Any]]:
     r"""
     Compute the mean spectral bandwidth (standard deviation or second spectral moment) of a signal.
     It is calculated as
@@ -302,10 +278,8 @@ def bandwidth(data: ArrayLike, sr: int) -> Union[float, np.floating[Any]]:
 
     Parameters
     ----------
-        data : ArrayLike
-            Input signal as a 1D array-like.
-        sr : int
-            Sampling rate of the signal, in Hz.
+        signal : AudioSignal
+            Input signal.
 
     Returns
     -------
@@ -315,21 +289,22 @@ def bandwidth(data: ArrayLike, sr: int) -> Union[float, np.floating[Any]]:
     Examples
     --------
         >>> import numpy as np
-        >>> signal = np.array([1.0, 2.0, 3.0, 4.0, 5.0])
-        >>> bandwidth(signal, sr=1)
-        np.float64(0.13942528646692923)
+        >>> signal = AudioSignal(data=np.array([1.0, 2.0, 3.0, 4.0, 5.0]), srate=1)
+        >>> bandwidth(signal)
+        np.float64(0.08163973655212409)
 
     References
     ----------
         Klapuri A, Davy M. 2006 Signal processing methods for music transcription.
         New York: Springer. p.136
     """
-    _, bandwidth_, _, _ = spectral_moments(data, sr)
+    assert isinstance(signal, AudioSignal), "'signal' must be of type AudioSignal."
+    _, bandwidth_, _, _ = spectral_moments(signal)
 
     return bandwidth_  # TODO change to variance and let people define bandwidth through percentiles
 
 
-def skewness(data: ArrayLike, sr: int) -> Union[float, np.floating[Any]]:
+def skewness(signal: AudioSignal) -> Union[float, np.floating[Any]]:
     r"""
     Compute the spectral skewness (third spectral moment) of a signal.
     The skewness describes the asymmetry of the spectrum
@@ -340,10 +315,8 @@ def skewness(data: ArrayLike, sr: int) -> Union[float, np.floating[Any]]:
 
     Parameters
     ----------
-    data : ArrayLike
-        Input signal as a 1D array-like.
-    sr : int
-        Sampling rate of the signal, in Hz.
+    signal : AudioSignal
+        Input signal.
 
     Returns
     -------
@@ -355,14 +328,12 @@ def skewness(data: ArrayLike, sr: int) -> Union[float, np.floating[Any]]:
         Klapuri A, Davy M. 2006 Signal processing methods for music transcription.
         New York: Springer. p.136
     """
-    data = check_signal_format(data)
-    sr = check_sr_format(sr)
-
-    _, _, skew, _ = spectral_moments(data, sr)
+    assert isinstance(signal, AudioSignal), "'signal' must be of type AudioSignal."
+    _, _, skew, _ = spectral_moments(signal)
     return skew
 
 
-def kurtosis(data: ArrayLike, sr: int) -> Union[float, np.floating[Any]]:
+def kurtosis(signal: AudioSignal) -> Union[float, np.floating[Any]]:
     r"""
     Compute the spectral kurtosis (fourth spectral moment) of a signal.
     The skewness describes the 'peakedness' of the spectrum
@@ -373,10 +344,8 @@ def kurtosis(data: ArrayLike, sr: int) -> Union[float, np.floating[Any]]:
 
     Parameters
     ----------
-    data : ArrayLike
-        Input signal as a 1D array-like.
-    sr : int
-        Sampling rate of the signal, in Hz.
+    signal : AudioSignal
+        Input signal.
 
     Returns
     -------
@@ -388,14 +357,12 @@ def kurtosis(data: ArrayLike, sr: int) -> Union[float, np.floating[Any]]:
         Klapuri A, Davy M. 2006 Signal processing methods for music transcription.
         New York: Springer. p.136
     """
-    data = check_signal_format(data)
-    sr = check_sr_format(sr)
-
-    _, _, _, kurt = spectral_moments(data, sr)
+    assert type(signal) is AudioSignal, "'signal' must be an instance of AudioSignal."
+    _, _, _, kurt = spectral_moments(signal)
     return kurt
 
 
-def peak_frequency(data: ArrayLike, sr: int) -> Union[float, np.floating[Any]]:
+def peak_frequency(signal: AudioSignal) -> Union[float, np.floating[Any]]:
     """
     Computes the peak frequency of a signal using the Fourier transform.
 
@@ -405,10 +372,7 @@ def peak_frequency(data: ArrayLike, sr: int) -> Union[float, np.floating[Any]]:
 
     Parameters
     ----------
-    data : ArrayLike
-        1D array-like representing the input signal.
-    sampling_rate : float
-        Sampling rate of the signal in Hz.
+        signal : AudioSignal
 
     Returns
     -------
@@ -420,8 +384,8 @@ def peak_frequency(data: ArrayLike, sr: int) -> Union[float, np.floating[Any]]:
         >>> import numpy as np
         >>> sampling_rate = 1000.0  # 1000 Hz
         >>> t = np.linspace(0, 1.0, int(sampling_rate), endpoint=False)
-        >>> signal = np.sin(2 * np.pi * 50 * t)  # 50 Hz sine wave
-        >>> freq = peak_frequency(signal, sampling_rate)
+        >>> signal = AudioSignal(data=np.sin(2 * np.pi * 50 * t), srate=sampling_rate)
+        >>> freq = peak_frequency(signal)
         >>> print(freq)
         50.0
 
@@ -429,20 +393,17 @@ def peak_frequency(data: ArrayLike, sr: int) -> Union[float, np.floating[Any]]:
     -----
         - The function assumes the input signal is real-valued and uniformly sampled.
     """
-    data = check_signal_format(data)
-    sr = check_sr_format(sr)
-
-    if data.size == 0:
+    assert isinstance(signal, AudioSignal), "'signal' must be of type AudioSignal."
+    if len(signal.data) == 0:
         raise ValueError("Input signal is empty; could not determine peak frequency.")
 
-    freqs, ps = spectrum(data, sr=sr, mode="power")
+    freqs, ps = spectrum(signal, mode="power")
     assert freqs is not None
     return float(freqs[np.argmax(ps)])
 
 
 def power_spectral_entropy(
-        data: ArrayLike,
-        sr: int,
+        signal: AudioSignal,
         unit: Literal["bits", "nat", "dits", "bans", "hartleys"] = "bits",
         *args: Any,
         **kwargs: Any
@@ -454,10 +415,7 @@ def power_spectral_entropy(
     3. Calculate Shannon-Wiener entropy of normalized PSD
 
     Args:
-        data : ArrayLike
-            Input signal as a 1D ArrayLike
-        sr : int
-            Sampling rate in Hz.
+        signal : AudioSignal
         unit : str, optional
             Desired unit of the entropy, determines the logarithmic base used for calculatein.
             Choose from "bits" (log2), "nat" (ln), or "dits"/"bans"/"hartleys" (log10).
@@ -472,33 +430,25 @@ def power_spectral_entropy(
         3. Shannon C. E. 1948 A mathematical theory of communication. The Bell System Technical Journal XXVII.
 
     """
-    data = check_signal_format(data)
-    sr = check_sr_format(sr)
-
+    assert isinstance(signal, AudioSignal), "'signal' must be of type AudioSignal."
     # _, psd = signal.welch(data, sr, nperseg=N_FFT, noverlap=N_FFT//HOP_OVERLAP) # would return psd - frequency spectrum squared and scaled by sum -
-    _, psd = spectrum(data, sr, mode="power")
+    _, psd = spectrum(signal, mode="power")
     psd = exclude_trailing_and_leading_zeros(psd)
-
-    psd_sum: float = np.sum(psd)
+    psd_sum: np.float32 = np.sum(psd)
     psd_norm = psd / psd_sum
     # Ensure no zero values in normalized power distribution because H is undefined with p=0
     psd_norm = psd_norm[psd_norm > 0]
     return shannon_entropy(psd_norm, unit, *args, **kwargs)
 
 
-def spectral_features(data: ArrayLike,
-                      sr: int,
-                      ) -> Dict[str, Union[float, np.floating, NDArray[np.float64]]]:
+def spectral_features(signal: AudioSignal) -> dict[str, float | np.floating[Any]]:
     """
     Extracts a set of spectral features from a signal.
 
     Args:
-        data : ArrayLike
-            The input signal as a 1D ArrayLike.
-        sr : int
-            Sampling rate of the signal in Hz.
+        signal : AudioSignal
 
-    Retuns:
+    Returns:
         dict
         {"mean_frequency" : float,
         "fq_q1": float,
@@ -513,24 +463,22 @@ def spectral_features(data: ArrayLike,
         "pse": float
         }
     """
-    data = check_signal_format(data)
-    check_sr_format(sr)
-
-    fq_q1_bin, fq_median_bin, fq_q3_bin = quartiles(data, sr)
-    freqs, ps = spectrum(data, sr, mode="power")
+    assert isinstance(signal, AudioSignal), "'signal' must be of type AudioSignal."
+    fq_q1_bin, fq_median_bin, fq_q3_bin = quartiles(signal)
+    # freqs, ps = spectrum(signal, mode="power")
 
     features = {
         # "mean_frequency" : np.average(freqs, weights=ps),  # because centroid is based on magnitude spectrum
         "fq_q1": fq_q1_bin,
         "fq_median": fq_median_bin,
         "fq_q3": fq_q3_bin,
-        "spectral_flatness": flatness(data),
-        "spectral_centroid": centroid(data, sr),
-        "spectral_sd": bandwidth(data, sr),
-        "spectral_skew": skewness(data, sr),
-        "spectral_kurtosis": kurtosis(data, sr),
-        "peak_frequency": peak_frequency(data, sr),
-        "pse": power_spectral_entropy(data, sr)[0]
+        "spectral_flatness": flatness(signal),
+        "spectral_centroid": centroid(signal),
+        "spectral_sd": bandwidth(signal),
+        "spectral_skew": skewness(signal),
+        "spectral_kurtosis": kurtosis(signal),
+        "peak_frequency": peak_frequency(signal),
+        "pse": power_spectral_entropy(signal)[0]
     }
 
     return features

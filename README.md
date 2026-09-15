@@ -6,7 +6,7 @@ A python package for bioacoustics
 
 ## Description
 
-biosonic is a python package for bioacoustics analysis. It's goal is to provide a solution for common workflows from normalization of files and basic acoustic feature extraction to extracting features commonly used in ML pipelines as well as pitch tracking with a user friendy function based structure and parametrization.
+biosonic is a python package for bioacoustics analysis. It's goal is to provide a solution for common workflows from normalization of files and basic acoustic feature extraction to extracting features commonly used in ML pipelines as well as fundamental frequency tracking with a user friendy function based structure and parametrization.
 
 
 ## Getting Started

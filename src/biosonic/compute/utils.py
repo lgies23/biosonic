@@ -7,30 +7,10 @@ from numpy.typing import ArrayLike, NDArray
 from scipy.ndimage import zoom
 from scipy.signal import windows
 
-
-def check_sr_format(sr: Union[int, float]) -> int:
-    try:
-        sr = int(sr)
-    except Exception as e:
-        raise TypeError(f"Sample rate not transformable to integer: {e}")
-    if sr <= 0:
-        raise ValueError("Sample rate must be greater than zero.")
-    return sr
+from ..handle import AudioSignal
 
 
-def check_signal_format(data: ArrayLike) -> NDArray[np.float32]:
-    data = np.asarray(data, dtype=np.float32)
-    if data.ndim != 1:
-        raise ValueError("Signal must be a 1D array.")
-    if not np.issubdtype(data.dtype, np.floating):
-        raise TypeError("Signal must be an array of type float.")
-    # if np.max(data) > 1:
-        # scale to -1 to 1
-        # TODO
-    return data
-
-
-def exclude_trailing_and_leading_zeros(envelope: ArrayLike) -> NDArray[np.float32]:
+def exclude_trailing_and_leading_zeros(envelope: NDArray[np.float32]) -> NDArray[np.float32]:
     """
     Removes leading and trailing zeros from a NumPy array.
 
@@ -92,8 +72,8 @@ def cumulative_distribution_function(envelope: NDArray[np.float32]) -> NDArray[n
 
 
 def extract_all_features(
-    data: ArrayLike,
-    sr: int,
+    signal: AudioSignal,
+    *,
     n_dominant_freqs: int = 1,
     plot: bool = False,
     plot_kwargs: dict[str, Any] = {},
@@ -117,22 +97,19 @@ def extract_all_features(
     from .spectrotemporal import spectrotemporal_features
     from .temporal import temporal_features
 
-    data = check_signal_format(data)
-    sr = check_sr_format(sr)
-
-    temporal_feats = temporal_features(data, sr, return_trim_indices=plot, **envelope_kwargs)
-    spectral_feats = spectral_features(data, sr)
-    spectrotemporal_feats = spectrotemporal_features(data, sr, n_dominant_freqs, **kwargs)
+    temporal_feats = temporal_features(signal, return_trim_indices=plot, **envelope_kwargs)
+    spectral_feats = spectral_features(signal)
+    spectrotemporal_feats = spectrotemporal_features(signal, n_dominant_freqs, **kwargs)
 
     if plot:
         from biosonic.plot import plot_features
-        plot_features(data, sr, {**temporal_feats, **spectral_feats, **spectrotemporal_feats}, spec_kwargs, **plot_kwargs)
+        plot_features(signal, {**temporal_feats, **spectral_feats, **spectrotemporal_feats}, spec_kwargs, **plot_kwargs)
     return {**temporal_feats, **spectral_feats, **spectrotemporal_feats}
 
 
 def transform_spectrogram_for_nn(
-        data: ArrayLike,
-        sr: Optional[int] = None,
+        signal: Union[AudioSignal, Tuple[np.ndarray, np.ndarray, np.ndarray]],
+        *,
         values_type: str = 'float32',
         add_channel: bool = True,
         data_format: Literal['channels_last', 'channels_first'] = 'channels_first',
@@ -140,16 +117,14 @@ def transform_spectrogram_for_nn(
         f_max: Optional[float] = None,
         resize: Optional[Tuple[int, int]] = None,
         **kwargs: Any,
-    ) -> ArrayLike:
+    ) -> NDArray[Any]:
     """
     Prepares a spectrogram for input into a neural network by normalizing, casting type,
     and optionally adding a channel dimension.
 
     Parameters:
-        data : Union[np.ndarray, Tuple[np.ndarray, np.ndarray, np.ndarray]],
-            Input signal. Either as precomputed spectrogram (S, t, f) or 1D signal array.
-        sr : Optional[int]
-            Sampling rate in Hz. Needed when passing signal as 1D array.
+        signal : Union[Signal, Tuple[np.ndarray, np.ndarray, np.ndarray]],
+            Either as precomputed spectrogram (S, t, f) or Signal.
         values_type : str
             Data type to cast the spectrogram to (e.g., 'float32', 'float64'). Defaults to 'float32'
         add_channel : bool
@@ -184,16 +159,15 @@ def transform_spectrogram_for_nn(
     from .spectrotemporal import spectrogram
 
     # precomputed spectrogram
-    if isinstance(data, tuple) and len(data) == 3:
-        spec, t, f = data
+    if not isinstance(signal, AudioSignal):
+        spec, t, f = signal
 
     # raw signal + sr
-    elif isinstance(data, np.ndarray):
-        if sr is None:
+    elif isinstance(signal, AudioSignal):
+        if signal.srate is None:
             raise ValueError("sr must be provided when passing a signal array.")
         spec, t, f = spectrogram(
-            data=data,
-            sr=sr,
+            signal,
             complex_output=False,
             **kwargs
         )
@@ -216,7 +190,7 @@ def transform_spectrogram_for_nn(
     if resize is not None:
         target_height, target_width = resize
         zoom_factors = (target_height / spec.shape[0], target_width / spec.shape[1])
-        spec = zoom(spec, zoom_factors, order=1)  # bilinear interpolation
+        spec = np.asarray(zoom(spec, zoom_factors, order=1), dtype=np.float32)  # bilinear interpolation
 
     # add channel dimension
     if add_channel:
@@ -230,7 +204,7 @@ def transform_spectrogram_for_nn(
 
 
 def shannon_entropy(
-        prob_dist: ArrayLike,
+        prob_dist: NDArray[np.float32],
         unit: Literal["bits", "nat", "dits", "bans", "hartleys"] = "bits",
         norm: bool = True
     ) -> Tuple[float, float]:
@@ -432,57 +406,57 @@ def mel_to_hz(
 
 
 def frame_signal(
-        data: ArrayLike,
-        sr: int,
+        signal: AudioSignal,
         window_length: int = 512,
         timestep: float = 0.01,
         normalize: bool = False
-    ) -> ArrayLike:
+    ) -> NDArray[np.float32]:
+    assert type(signal) is AudioSignal, "'signal' must be an instance of AudioSignal."
 
-    samples_step = int(timestep * sr)
+    samples_step = int(timestep * signal.srate)
+    data: NDArray[np.float32] = np.pad(signal.data, int(window_length / 2), mode='edge')
 
-    data = np.pad(data, int(window_length / 2), mode='edge')
-
-    frame_num = int((len(data) - window_length) / samples_step) + 1
-    frames = np.zeros((frame_num, window_length))
+    frame_num: int = int((len(data) - window_length) / samples_step) + 1
+    frames: NDArray[np.float32] = np.zeros((frame_num, window_length), dtype=np.float32)
 
     for n in range(frame_num):
         start = int(n * samples_step)
         frames[n] = data[start:start + window_length]
 
     if normalize:
-        frames = [frame / np.mean(frame) if frame.any() else frame for frame in frames]  # skip normalization for frames with all 0
+        frames = np.asarray([frame / np.mean(frame) if frame.any() else frame for frame in frames])  # skip normalization for frames with all 0
 
     return frames
 
 
 def window_signal(
-        data: ArrayLike,
-        sr: int,
+        signal: AudioSignal,
         window_length: int = 512,
-        window: Union[str, ArrayLike] = "hann",
+        window: Union[str, NDArray[np.float32]] = "hann",
         timestep: float = 0.01,
         normalize: bool = False
-) -> ArrayLike:
-
+) -> NDArray[np.float32]:
+    assert isinstance(signal, AudioSignal), "'signal' must be an instance of AudioSignal."
     if isinstance(window, str):
         try:
             window = windows.get_window(window, window_length)
+            assert isinstance(window, np.ndarray)
+            window = np.asarray(window, dtype=np.float32)
         except ValueError as e:
             raise ValueError(f"Invalid window type: {window}") from e
     else:
-        window = np.asarray(window)
+        window = np.asarray(window, dtype=np.float32)
         if not isinstance(window, np.ndarray):
             raise TypeError("'window' must be either a string or a 1D NumPy array.")
 
-    frames = frame_signal(data, sr, window_length, timestep, normalize)
+    frames = frame_signal(signal, window_length, timestep, normalize)
+    assert isinstance(window[0], np.float32)
 
     return frames * window
 
 
 def rms(
-        data: ArrayLike,
-        sr: int,
+        signal: AudioSignal,
         window_length: int = 512,
         timestep: float = 0.01
     ) -> Tuple[NDArray[np.float32], NDArray[np.float32]]:
@@ -506,7 +480,7 @@ def rms(
         RMS values per frame.
     """
 
-    frames = frame_signal(data, sr, window_length=window_length, timestep=timestep, normalize=False)
+    frames = frame_signal(signal, window_length=window_length, timestep=timestep, normalize=False)
     rms_vals = np.sqrt(np.mean(np.square(frames), axis=1))
     times_s = np.arange(len(rms_vals)) * timestep
     return rms_vals, times_s
