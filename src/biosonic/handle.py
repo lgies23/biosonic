@@ -245,12 +245,12 @@ def read_wav(
 
     Returns
     -------
-    A tuple containing:
+    An AudioSignal object containing:
         - data : np.ndarray
             Audio samples, shape (n_samples,) for mono or (n_samples, n_channels) otherwise.
-        - sr : int
+        - srate : int
             Sample rate in Hz.
-        - n_channels : int
+        - numchannels : int
             Number of audio channels.
         - quantization : str
             Data format of the signal.

@@ -412,14 +412,14 @@ def plot_f0_candidates(
         ax: Optional[Axes] = None
     ) -> Optional[Axes]:
     """
-    Plot pitch candidates over time.
+    Plot f0 candidates over time.
 
     Parameters
     ----------
     time_points : list of float
         Time stamps for each frame.
     all_candidates : list of list of tuple(float, float)
-        List containing, for each frame, a list of (pitch, strength) tuples.
+        List containing, for each frame, a list of (f0, strength) tuples.
     show_strongest : bool
         If True, highlight the strongest voiced candidate per frame.
     """
@@ -438,14 +438,14 @@ def plot_f0_candidates(
     for t, candidates in zip(time_points, all_candidates):
         if tlim and not (tlim[0] <= t <= tlim[1]):
             continue
-        for pitch, _ in candidates:
-            if pitch > 0:
-                ax.plot(t, pitch, 'k.', alpha=0.3)
+        for f0, _ in candidates:
+            if f0 > 0:
+                ax.plot(t, f0, 'k.', alpha=0.3)
 
     # Optionally plot the strongest voiced candidate
     if show_strongest:
         times = []
-        pitches = []
+        f0s = []
         for t, candidates in zip(time_points, all_candidates):
             if tlim and not (tlim[0] <= t <= tlim[1]):
                 continue
@@ -453,16 +453,16 @@ def plot_f0_candidates(
             if voiced:
                 best = max(voiced, key=lambda x: x[1])
                 times.append(t)
-                pitches.append(best[0])
-        ax.scatter(times, pitches, color=(0.7, 0.1, 0.1, 0.3), marker="o", label='Strongest pitch candidate')
+                f0s.append(best[0])
+        ax.scatter(times, f0s, color=(0.7, 0.1, 0.1, 0.3), marker="o", label='Strongest f0 candidate')
 
     if tlim:
         ax.set_xlim(tlim)
 
     if ax is None:
-        plt.title("Autocorrelation based pitch tracking")
+        plt.title("Autocorrelation based f0 tracking")
         plt.xlabel("Time [s]")
-        plt.ylabel("Pitch [Hz]")
+        plt.ylabel("f0 [Hz]")
         plt.grid(True)
         plt.legend()
         plt.tight_layout()
@@ -482,17 +482,17 @@ def plot_f0_on_spectrogram(
     db_scale: bool = True,
     flim: Optional[Tuple[float, float]] = None,
     tlim: Optional[Tuple[float, float]] = None,
-    title: str = "Spectrogram with Pitch Candidates",
+    title: str = "Spectrogram with fundamental frequency candidates",
     cmap: str = "binary",
     plot: Optional[Tuple[Figure, Axes]] = None,
     **kwargs: Any
 ) -> None:
     """
-    Plot a spectrogram of the input audio data and overlay pitch candidates.
+    Plot a spectrogram of the input audio data and overlay f0 candidates.
 
     This function computes and displays a spectrogram of the given audio data,
-    then overlays pitch candidates over time. It can optionally highlight the
-    strongest pitch candidate per time frame.
+    then overlays f0 candidates over time. It can optionally highlight the
+    strongest f0 candidate per time frame.
 
     Parameters
     ----------
@@ -501,15 +501,15 @@ def plot_f0_on_spectrogram(
     sr : int
         Sampling rate of the audio data in Hz.
     time_points : ArrayLike
-        Time stamps corresponding to each frame of pitch candidates.
+        Time stamps corresponding to each frame of f0 candidates.
     all_candidates : ArrayLike
-        List or array of pitch candidate tuples (pitch, strength) for each time frame.
+        List or array of f0 candidate tuples (f0, strength) for each time frame.
     window_length : int, optional
         Window length (in samples) for the spectrogram. Default is 512.
     overlap : int, optional
         Overlap between windows (in samples) for the spectrogram. Default is 50.
     show_strongest : bool, optional
-        If True, highlights the strongest voiced pitch candidate per frame. Default is True.
+        If True, highlights the strongest voiced f0 candidate per frame. Default is True.
     db_scale : bool, optional
         Whether to display the spectrogram in decibel scale. Default is True.
     flim : tuple of float, optional
@@ -517,7 +517,7 @@ def plot_f0_on_spectrogram(
     tlim : tuple of float, optional
         Time limits (start_time, end_time) for the plot. Default is None (full duration).
     title : str, optional
-        Title of the plot. Default is "Spectrogram with Pitch Candidates".
+        Title of the plot. Default is "Spectrogram with F0 Candidates".
     cmap : str, optional
         Colormap to use for the spectrogram. Default is 'binary'.
     plot : tuple of (Figure, Axes), optional

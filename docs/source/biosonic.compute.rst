@@ -12,10 +12,10 @@ biosonic.compute.modulation module
    :undoc-members:
    :show-inheritance:
 
-biosonic.compute.pitch module
+biosonic.compute.fundamental module
 -----------------------------
 
-.. automodule:: biosonic.compute.pitch
+.. automodule:: biosonic.compute.fundamental
    :members:
    :undoc-members:
    :show-inheritance:
