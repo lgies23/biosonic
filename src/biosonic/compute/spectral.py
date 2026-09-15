@@ -205,7 +205,7 @@ def spectral_moments(
     """
     assert isinstance(signal, AudioSignal), "'signal' must be of type AudioSignal."
     freqs, ms = spectrum(signal, mode="power")
-    assert freqs
+    assert freqs.all() is not None, "Frequency bins are None"
     # normalize spectrum
     ms = ms / np.sum(ms)
     centroid_ = np.average(freqs, weights=ms)

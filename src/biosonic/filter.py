@@ -148,8 +148,8 @@ def mel_filterbank(
     mel_min = hz_to_mel(fmin, **kwargs)
     mel_max = hz_to_mel(fmax, **kwargs)
 
-    assert isinstance(mel_min, float)
-    assert isinstance(mel_max, float)
+    assert isinstance(mel_min, (float, np.floating))
+    assert isinstance(mel_max, (float, np.floating))
 
     # mel filter center frequencies
     mel_points = np.linspace(mel_min, mel_max, n_filters + 2, dtype=np.float32)

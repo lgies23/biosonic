@@ -10,7 +10,7 @@ Features
 - Spectrogram and feature visualization
 - Cepstral and spectral analysis
 - Batch processing and normalization
-- Pitch tracking and segmentation
+- Fundamental frequency tracking and segmentation
 
 Quickstart
 ----------
