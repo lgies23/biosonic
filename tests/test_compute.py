@@ -259,29 +259,28 @@ def test_flatness():
     assert isinstance(y, float) or isinstance(y, np.floating), f"Expected float output, got {type(y)}"
 
 
-def test_bandwidth():
-    # TODO
-    from biosonic.compute.spectral import bandwidth
+def test_variance():
+    from biosonic.compute.spectral import variance
     from biosonic.compute.utils import AudioSignal
 
     # constant signal
     arr = np.array([3, 3, 3, 3], dtype=np.float64)
     signal = AudioSignal(arr, 1)
-    expected_std = 0.0
-    with pytest.warns(RuntimeWarning, match="Bandwidth of signal is 0, returning NaN for skewness and kurtosis"):
-        assert np.isclose(bandwidth(signal), expected_std)
+    expected_var = 0.0
+    with pytest.warns(RuntimeWarning, match="Variance of signal is 0, returning NaN for skewness and kurtosis"):
+        assert np.isclose(variance(signal), expected_var)
 
     # single sample
     arr = np.array([7], dtype=np.float64)
     signal = AudioSignal(arr, 1)
-    expected_std = 0.0
-    with pytest.warns(RuntimeWarning, match="Bandwidth of signal is 0, returning NaN for skewness and kurtosis"):
-        assert np.isclose(bandwidth(signal), expected_std)
+    expected_var = 0.0
+    with pytest.warns(RuntimeWarning, match="Variance of signal is 0, returning NaN for skewness and kurtosis"):
+        assert np.isclose(variance(signal), expected_var)
 
     # return type
     arr = np.array([1, 2, 3], dtype=np.float64)
     signal = AudioSignal(arr, 1)
-    assert isinstance(bandwidth(signal), float)
+    assert isinstance(variance(signal), float)
 
 
 def test_centroid():

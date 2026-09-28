@@ -274,9 +274,9 @@ def centroid(signal: AudioSignal) -> Union[float, np.floating[Any]]:
     return centroid_
 
 
-def bandwidth(signal: AudioSignal) -> Union[float, np.floating[Any]]:
+def variance(signal: AudioSignal) -> Union[float, np.floating[Any]]:
     r"""
-    Compute the mean spectral bandwidth (standard deviation or second spectral moment) of a signal.
+    Compute the mean spectral variance (second spectral moment) of a signal.
     It is calculated as
 
         .. math::
@@ -290,13 +290,13 @@ def bandwidth(signal: AudioSignal) -> Union[float, np.floating[Any]]:
     Returns
     -------
         float or np.floating
-            The standard deviation of the signal.
+            The variance of the signal.
 
     Examples
     --------
         >>> import numpy as np
         >>> signal = AudioSignal(data=np.array([1.0, 2.0, 3.0, 4.0, 5.0]), srate=1)
-        >>> bandwidth(signal)
+        >>> variance(signal)
         np.float64(0.08163973655212409)
 
     References
@@ -305,9 +305,9 @@ def bandwidth(signal: AudioSignal) -> Union[float, np.floating[Any]]:
         New York: Springer. p.136
     """
     assert isinstance(signal, AudioSignal), "'signal' must be of type AudioSignal."
-    _, bandwidth_, _, _ = spectral_moments(signal)
+    _, variance_, _, _ = spectral_moments(signal)
 
-    return bandwidth_  # TODO change to variance and let people define bandwidth through percentiles
+    return variance_  # TODO change to variance and let people define bandwidth through percentiles
 
 
 def skewness(signal: AudioSignal) -> Union[float, np.floating[Any]]:
@@ -488,7 +488,7 @@ def spectral_features(signal: AudioSignal) -> dict[str, float | np.floating[Any]
         "fq_q3": fq_q3_bin,
         "spectral_flatness": flatness(signal),
         "spectral_centroid": centroid(signal),
-        "spectral_sd": bandwidth(signal),
+        "spectral_sd": variance(signal),
         "spectral_skew": skewness(signal),
         "spectral_kurtosis": kurtosis(signal),
         "peak_frequency": peak_frequency(signal),
