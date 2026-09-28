@@ -64,7 +64,7 @@ def exclude_trailing_and_leading_zeros(envelope: NDArray[np.float32]) -> NDArray
 
 
 def probability_mass_function(envelope: NDArray[np.float32]) -> NDArray[np.float32]:
-    return envelope / np.sum(envelope)
+    return np.asarray(envelope / np.sum(envelope + np.finfo(float).eps), dtype=np.float32)
 
 
 def cumulative_distribution_function(envelope: NDArray[np.float32]) -> NDArray[np.float32]:
