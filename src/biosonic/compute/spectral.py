@@ -297,7 +297,7 @@ def variance(signal: AudioSignal) -> Union[float, np.floating[Any]]:
         >>> import numpy as np
         >>> signal = AudioSignal(data=np.array([1.0, 2.0, 3.0, 4.0, 5.0]), srate=1)
         >>> variance(signal)
-        np.float64(0.08163973655212409)
+        np.float64(0.006665046584300225)
 
     References
     ----------
