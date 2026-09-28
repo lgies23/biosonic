@@ -25,7 +25,7 @@ def spectrum(
 
     Parameters
     ----------
-        signal :
+        signal : AudioSignal
         nfft : int, optional
             Number of points in the FFT. If not provided, defaults to the length of the signal.
         mode : Union[str, int], default='amplitude'
