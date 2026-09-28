@@ -42,8 +42,8 @@ def amplitude_envelope(
             Additional keyword arguments passed to the `rms` function for silence trimming.
 
     Returns:
-        NDArray[np.float64]
-            A 1D NumPy array of float64 values representing the amplitude envelope of the signal.
+        NDArray[np.float32]
+            A 1D NumPy array of float32 values representing the amplitude envelope of the signal.
 
     Notes:
         - This function relies on `scipy.signal.envelope` to compute the amplitude envelope.
@@ -100,7 +100,7 @@ def duration(signal: AudioSignal, **envelope_kwargs: Any) -> float:
     Args:
         signal : AudioSignal
             The audio signal data.
-        percentile_silence : Optional[float]
+        silence_threshold : Optional[float]
             If None, leading and trailing silences (zeros) in the audio signal will be removed before calculating duration.
             If a float between 0 and 50, trims the given percentile from both ends based on amplitude envelope (e.g., 1.0 trims 1 percentile from each end).
             Defaults to None.
@@ -117,7 +117,7 @@ def duration(signal: AudioSignal, **envelope_kwargs: Any) -> float:
     return len(envelope) / signal.srate
 
 
-def temporal_quartiles(
+def quartiles(
         signal: AudioSignal,
         **envelope_kwargs: Any
         ) -> Tuple[float, float, float]:
@@ -154,7 +154,6 @@ def temporal_quartiles(
 
     cdf = cumulative_distribution_function(envelope)
 
-    # temporal quartiles (Q1, median, Q3)
     t_q1 = float(np.searchsorted(cdf, 0.25) / signal.srate)
     t_median = float(np.searchsorted(cdf, 0.5) / signal.srate)
     t_q3 = float(np.searchsorted(cdf, 0.75) / signal.srate)
@@ -266,9 +265,6 @@ def temporal_entropy(
         1. https://de.mathworks.com/help/signal/ref/spectralentropy.html accessed January 13th, 2025. 18:34 pm
         2. https://docs.scipy.org/doc/scipy-1.15.2/reference/generated/scipy.stats.entropy.html accessed May 20th 2025, 11:32 am
         3. Shannon C. E. 1948 A mathematical theory of communication. The Bell System Technical Journal XXVII.
-
-    Notes:
-        Rounds
     """
     assert isinstance(signal, AudioSignal), "'signal' must be an instance of AudioSignal."
     envelope = amplitude_envelope(signal, **envelope_kwargs)
@@ -317,7 +313,7 @@ def temporal_features(
     # times for the trimmed envelope in the context of the original signal
     times = np.linspace(start_sample / signal.srate, end_sample / signal.srate, len(envelope), endpoint=False)
     signal = AudioSignal(signal.data[start_sample:end_sample], signal.srate)
-    t_q1, t_median, t_q3 = temporal_quartiles(signal, **envelope_kwargs)
+    t_q1, t_median, t_q3 = quartiles(signal, **envelope_kwargs)
 
     features = {
         "t_q1": t_q1,

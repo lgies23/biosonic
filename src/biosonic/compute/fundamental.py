@@ -6,7 +6,8 @@ from numpy.typing import ArrayLike, NDArray
 from scipy.fft import irfft, rfft
 from scipy.signal import windows
 
-from biosonic.compute.utils import AudioSignal, frame_signal
+from biosonic.compute.utils import frame_signal
+from biosonic.handle import AudioSignal
 
 
 def _difference_function(x: ArrayLike, max_lag: int) -> ArrayLike:

@@ -40,30 +40,30 @@ def test_duration():
 
 
 def test_temporal_quartiles():
-    from biosonic.compute.temporal import temporal_quartiles
+    from biosonic.compute.temporal import quartiles
     # check basic case
     from biosonic.compute.utils import AudioSignal
     signal = AudioSignal(np.array([0, 1, 2, 3, 2, 1, 0], dtype=np.float64), 10)
-    q1, median, q3 = temporal_quartiles(signal)
+    q1, median, q3 = quartiles(signal)
     assert 0 <= q1 < median < q3 <= len(signal.data) / signal.srate
     # TODO check actual values
 
     # check with a longer signal
     arr = np.array([0] * 10 + [1] * 80 + [0] * 10, dtype=np.float64)  # 100 samples
     signal = AudioSignal(arr, 20)
-    q1, median, q3 = temporal_quartiles(signal)
+    q1, median, q3 = quartiles(signal)
     assert 0 <= q1 < median < q3 <= 5
     # TODO check actual values
 
     # check empty signal
     arr = np.array([], dtype=np.float64)
     with pytest.raises(AssertionError, match="'data' must not be empty"):
-        temporal_quartiles(AudioSignal(arr, 10))
+        quartiles(AudioSignal(arr, 10))
 
     # check all-zero signal
     arr = np.array([0, 0, 0, 0, 0], dtype=np.float64)
     with pytest.raises(ValueError, match="Signal contains no nonzero values"):
-        temporal_quartiles(AudioSignal(arr, 10))
+        quartiles(AudioSignal(arr, 10))
 
     # check invalid sample rate
     arr = np.array([0, 1, 2, 3, 2, 1, 0], dtype=np.float64)
@@ -259,29 +259,28 @@ def test_flatness():
     assert isinstance(y, float) or isinstance(y, np.floating), f"Expected float output, got {type(y)}"
 
 
-def test_bandwidth():
-    # TODO
-    from biosonic.compute.spectral import bandwidth
+def test_variance():
+    from biosonic.compute.spectral import variance
     from biosonic.compute.utils import AudioSignal
 
     # constant signal
     arr = np.array([3, 3, 3, 3], dtype=np.float64)
     signal = AudioSignal(arr, 1)
-    expected_std = 0.0
-    with pytest.warns(RuntimeWarning, match="Bandwidth of signal is 0, returning NaN for skewness and kurtosis"):
-        assert np.isclose(bandwidth(signal), expected_std)
+    expected_var = 0.0
+    with pytest.warns(RuntimeWarning, match="Variance of signal is 0, returning NaN for skewness and kurtosis"):
+        assert np.isclose(variance(signal), expected_var)
 
     # single sample
     arr = np.array([7], dtype=np.float64)
     signal = AudioSignal(arr, 1)
-    expected_std = 0.0
-    with pytest.warns(RuntimeWarning, match="Bandwidth of signal is 0, returning NaN for skewness and kurtosis"):
-        assert np.isclose(bandwidth(signal), expected_std)
+    expected_var = 0.0
+    with pytest.warns(RuntimeWarning, match="Variance of signal is 0, returning NaN for skewness and kurtosis"):
+        assert np.isclose(variance(signal), expected_var)
 
     # return type
     arr = np.array([1, 2, 3], dtype=np.float64)
     signal = AudioSignal(arr, 1)
-    assert isinstance(bandwidth(signal), float)
+    assert isinstance(variance(signal), float)
 
 
 def test_centroid():

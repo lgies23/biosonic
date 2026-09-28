@@ -16,6 +16,7 @@ from .utils import (
 
 def spectrum(
     signal: AudioSignal,
+    nfft: Optional[int] = None,
     *,
     mode: Union[str, int, float] = 'amplitude'
     ) -> Tuple[Optional[NDArray[np.float32]], NDArray[np.float32]]:
@@ -25,6 +26,8 @@ def spectrum(
     Parameters
     ----------
         signal : AudioSignal
+        nfft : int, optional
+            Number of points in the FFT. If not provided, defaults to the length of the signal.
         mode : Union[str, int], default='amplitude'
             Specifies how to compute the spectrum:
             - 'amplitude': return the amplitude spectrum (|FFT|).
@@ -33,7 +36,7 @@ def spectrum(
 
     Returns
     -------
-        Tuple[NDArray[np.float64], NDArray[np.float64]]
+        Tuple[NDArray[np.float32], NDArray[np.float32]]
             A tuple (frequencies, spectrum), where:
             - frequencies: If sr is provided. 1D array of frequency bins corresponding to the spectrum.
             - spectrum: 1D array of the transformed frequency-domain representation (magnitude raised to the specified power).
@@ -47,14 +50,16 @@ def spectrum(
     """
     assert isinstance(signal, AudioSignal), "'signal' must be of type AudioSignal."
     freqs = None
+    if nfft is None:
+        nfft = len(signal.data)
 
     if len(signal.data) == 0:
         warnings.warn("Input signal is empty; returning an empty spectrum.", RuntimeWarning)
         return freqs, np.array([], dtype=np.float32)
 
     if signal.srate is not None:
-        freqs = fft.rfftfreq(len(signal.data), d=1/signal.srate)
-    magnitude_spectrum = np.abs(fft.rfft(signal.data))
+        freqs = fft.rfftfreq(nfft, d=1/signal.srate)
+    magnitude_spectrum = np.abs(fft.rfft(signal.data, n=nfft))
 
     if isinstance(mode, str):
         mode = mode.lower()
@@ -179,7 +184,7 @@ def spectral_moments(
             Union[float, np.floating[Any]]
             ]:
     """
-    Calculate the first four spectral moments.
+    Calculate the first four spectral moments (centroid, variance, skewness, kurtosis) of a signal.
 
     Parameters
     ----------
@@ -191,7 +196,7 @@ def spectral_moments(
         float or np.floating
             Spectral centroid in Hz
         float or np.floating
-            Spectral bandwidth in Hz
+            Spectral variance in Hz^2
         float or np.floating
             Spectral skewness
         float or np.floating
@@ -205,18 +210,19 @@ def spectral_moments(
     """
     assert isinstance(signal, AudioSignal), "'signal' must be of type AudioSignal."
     freqs, ms = spectrum(signal, mode="power")
+    assert isinstance(freqs, np.ndarray) and isinstance(ms, np.ndarray), "Spectrum output is not a NumPy array"
     assert freqs.all() is not None, "Frequency bins are None"
     # normalize spectrum
     ms = ms / np.sum(ms)
     centroid_ = np.average(freqs, weights=ms)
-    bandwidth_ = np.sqrt(np.sum(ms * (freqs-centroid_)**2))
-    if bandwidth_ == 0:
-        warnings.warn("Bandwidth of signal is 0, returning NaN for skewness and kurtosis", RuntimeWarning)
-        return centroid_, bandwidth_, np.nan, np.nan
-    skewness_ = (np.sum(ms * (freqs-centroid_)**3))/(bandwidth_**3)
-    kurtosis_ = (np.sum(ms * (freqs-centroid_)**4))/(bandwidth_**4)
+    variance_ = np.sum((freqs-centroid_)**2 * ms)
+    if variance_ == 0:
+        warnings.warn("Variance of signal is 0, returning NaN for skewness and kurtosis", RuntimeWarning)
+        return centroid_, variance_, np.nan, np.nan
+    skewness_ = (np.sum(ms * (freqs-centroid_)**3))/(variance_**3)
+    kurtosis_ = (np.sum(ms * (freqs-centroid_)**4))/(variance_**4)
 
-    return centroid_, bandwidth_, skewness_, kurtosis_
+    return centroid_, variance_, skewness_, kurtosis_
 
 
 def centroid(signal: AudioSignal) -> Union[float, np.floating[Any]]:
@@ -268,9 +274,9 @@ def centroid(signal: AudioSignal) -> Union[float, np.floating[Any]]:
     return centroid_
 
 
-def bandwidth(signal: AudioSignal) -> Union[float, np.floating[Any]]:
+def variance(signal: AudioSignal) -> Union[float, np.floating[Any]]:
     r"""
-    Compute the mean spectral bandwidth (standard deviation or second spectral moment) of a signal.
+    Compute the mean spectral variance (second spectral moment) of a signal.
     It is calculated as
 
         .. math::
@@ -284,14 +290,14 @@ def bandwidth(signal: AudioSignal) -> Union[float, np.floating[Any]]:
     Returns
     -------
         float or np.floating
-            The standard deviation of the signal.
+            The variance of the signal.
 
     Examples
     --------
         >>> import numpy as np
         >>> signal = AudioSignal(data=np.array([1.0, 2.0, 3.0, 4.0, 5.0]), srate=1)
-        >>> bandwidth(signal)
-        np.float64(0.08163973655212409)
+        >>> variance(signal)
+        np.float64(0.006665046584300225)
 
     References
     ----------
@@ -299,9 +305,9 @@ def bandwidth(signal: AudioSignal) -> Union[float, np.floating[Any]]:
         New York: Springer. p.136
     """
     assert isinstance(signal, AudioSignal), "'signal' must be of type AudioSignal."
-    _, bandwidth_, _, _ = spectral_moments(signal)
+    _, variance_, _, _ = spectral_moments(signal)
 
-    return bandwidth_  # TODO change to variance and let people define bandwidth through percentiles
+    return variance_  # TODO change to variance and let people define bandwidth through percentiles
 
 
 def skewness(signal: AudioSignal) -> Union[float, np.floating[Any]]:
@@ -404,18 +410,22 @@ def peak_frequency(signal: AudioSignal) -> Union[float, np.floating[Any]]:
 
 def power_spectral_entropy(
         signal: AudioSignal,
+        nfft: Optional[int] = None,
+        hop_overlap: int = 50,
         unit: Literal["bits", "nat", "dits", "bans", "hartleys"] = "bits",
         *args: Any,
         **kwargs: Any
         ) -> Tuple[float, float]:
     """
     Calculates the power spectral entropy as follows:
-    1. Compute power spectral density (PSD)
-    2. Normalize PSD (interpreted as a probability distribution)
-    3. Calculate Shannon-Wiener entropy of normalized PSD
+    1. Compute power spectrum
+    2. Normalize to have a PMF (probability mass function)
+    3. Calculate Shannon-Wiener entropy of PMF
 
     Args:
         signal : AudioSignal
+        nfft : int, optional
+            Number of points in the FFT. If not provided, defaults to the length of the signal.
         unit : str, optional
             Desired unit of the entropy, determines the logarithmic base used for calculatein.
             Choose from "bits" (log2), "nat" (ln), or "dits"/"bans"/"hartleys" (log10).
@@ -431,8 +441,12 @@ def power_spectral_entropy(
 
     """
     assert isinstance(signal, AudioSignal), "'signal' must be of type AudioSignal."
-    # _, psd = signal.welch(data, sr, nperseg=N_FFT, noverlap=N_FFT//HOP_OVERLAP) # would return psd - frequency spectrum squared and scaled by sum -
-    _, psd = spectrum(signal, mode="power")
+    assert isinstance(hop_overlap, int) and 0 <= hop_overlap < 100, "'hop_overlap' must be an integer between 0 and 100."
+    if nfft is None:
+        nfft = len(signal.data)
+    # _, psd = signal.welch(signal.data, signal.srate, nperseg=nfft, noverlap=nfft//hop_overlap)
+    # # returns psd - frequency spectrum squared and scaled by sum - unit is Pa^2/Hz
+    _, psd = spectrum(signal, nfft=nfft, mode="power")
     psd = exclude_trailing_and_leading_zeros(psd)
     psd_sum: np.float32 = np.sum(psd)
     psd_norm = psd / psd_sum
@@ -474,7 +488,7 @@ def spectral_features(signal: AudioSignal) -> dict[str, float | np.floating[Any]
         "fq_q3": fq_q3_bin,
         "spectral_flatness": flatness(signal),
         "spectral_centroid": centroid(signal),
-        "spectral_sd": bandwidth(signal),
+        "spectral_sd": variance(signal),
         "spectral_skew": skewness(signal),
         "spectral_kurtosis": kurtosis(signal),
         "peak_frequency": peak_frequency(signal),
