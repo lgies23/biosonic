@@ -311,8 +311,8 @@ def plot_features(
     ----------
     signal : Signal
         Audio signal object containing data and sampling rate.
-     **kwargs : dict[str, Any]
-            Optional parameters for dominant frequency estimation.
+    **kwargs : dict[str, Any]
+        Optional parameters for dominant frequency estimation.
     """
     if plt is None:
         raise ImportError("matplotlib is required for plotting. Install it with: pip install biosonic[plot]")
