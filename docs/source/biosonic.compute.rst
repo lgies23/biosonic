@@ -13,7 +13,7 @@ biosonic.compute.modulation module
    :show-inheritance:
 
 biosonic.compute.fundamental module
------------------------------
+-----------------------------------
 
 .. automodule:: biosonic.compute.fundamental
    :members:

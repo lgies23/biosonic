@@ -48,7 +48,7 @@ def amplitude_envelope(
     Notes:
         - This function relies on `scipy.signal.envelope` to compute the amplitude envelope.
         - The optional `silence_threshold` parameter allows for trimming of leading and trailing silences based on a
-        relative RMS threshold as in librosa and soundgen (see references).
+            relative RMS threshold as in librosa and soundgen (see references).
 
     References:
         1. https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.envelope.html accessed January 5th, 2026. 2:49 pm
@@ -281,26 +281,28 @@ def temporal_features(
     return_trim_indices: bool = False,
     **envelope_kwargs: Any
     ) -> dict[str, tuple[Any | float, Any | float] | tuple[Any | int, Any | int] | Any | float | np.ndarray[tuple[Any, ...], np.dtype[np.float32]] | None]:
-    """
+    r"""
     Extracts a set of temporal features from the amplitude envelope of a signal.
 
     Returns
     -------
         dict
-        {
-        "t_q1": float,
-        "t_median": float,
-        "t_q3": float,
-        "temporal_sd": float,
-        "temporal_skew": float,
-        "temporal_kurtosis": float,
-        "amplitude_envelope": NDArray[np.float64],
-        "duration": float,
-        "temporal_entropy": float,
-        "trim_indices": Tuple[int, int],
-        "trim_times": Tuple[float, float]
-        }
+            A dictionary containing the following temporal features:
+            {
+            "t_q1": float,
+            "t_median": float,
+            "t_q3": float,
+            "temporal_sd": float,
+            "temporal_skew": float,
+            "temporal_kurtosis": float,
+            "amplitude_envelope": NDArray[np.float64],
+            "duration": float,
+            "temporal_entropy": float,
+            "trim_indices": Tuple[int, int],
+            "trim_times": Tuple[float, float]
+            }
     """
+
     assert type(signal) is AudioSignal, "'signal' must be an instance of AudioSignal."
 
     # Get envelope and optionally trim indices

@@ -30,9 +30,9 @@ def spectrum(
             Number of points in the FFT. If not provided, defaults to the length of the signal.
         mode : Union[str, int], default='amplitude'
             Specifies how to compute the spectrum:
-            - 'amplitude': return the amplitude spectrum (|FFT|).
-            - 'power': return the power spectrum (|FFT|^2).
-            - int or float: raise the magnitude to the given power (e.g., 3 for |FFT|^3).
+            - 'amplitude': return the amplitude spectrum (\\|FFT|).
+            - 'power': return the power spectrum (\\|FFT|^2).
+            - int or float: raise the magnitude to the given power (e.g., 3 for \\|FFT|^3).
 
     Returns
     -------
@@ -47,6 +47,7 @@ def spectrum(
             If `mode` is a string but not one of the supported options.
         TypeError
             If `mode` is not a string, int, or float.
+
     """
     assert isinstance(signal, AudioSignal), "'signal' must be of type AudioSignal."
     freqs = None
@@ -333,6 +334,7 @@ def skewness(signal: AudioSignal) -> Union[float, np.floating[Any]]:
     ----------
         Klapuri A, Davy M. 2006 Signal processing methods for music transcription.
         New York: Springer. p.136
+
     """
     assert isinstance(signal, AudioSignal), "'signal' must be of type AudioSignal."
     _, _, skew, _ = spectral_moments(signal)
