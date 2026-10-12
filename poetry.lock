@@ -4676,4 +4676,4 @@ praat = ["praat-textgrids"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10"
-content-hash = "09798fc8f2c093042b9d6201a6e949400a72350e67308bc8fc0a0103440c1fd7"
+content-hash = "37243de399d5f1dfac9cf3908b4a3c06a133eed247dad8c8ce4d8e7b32cf173e"
