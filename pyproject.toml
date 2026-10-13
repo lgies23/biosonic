@@ -81,6 +81,7 @@ ipykernel = "*"
 
 [tool.poetry-dynamic-versioning]
 enable = true
+dirty = true
 pattern = "default"
 bump = true
 strict = true
