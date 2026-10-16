@@ -54,7 +54,6 @@ exclude = [
   "docs/build/"
 ]
 include = [
-  { path = "src/biosonic/_version.py", format = ["sdist", "wheel"] },
   "poetry.lock",
   "docs/make.bat",
   "docs/Makefile",
@@ -87,23 +86,14 @@ bump = true
 strict = true
 
 [tool.poetry-dynamic-versioning.substitution]
-files = ["src/biosonic/_version.py"]
-
-[tool.poetry-dynamic-versioning.files."src/biosonic/_version.py"]
-persistent-substitution = true
-initial-content = """
-  __version__ = "0.0.0"
-  __version_tuple__ = (0, 0, 0)
-"""
-
+files = ["src/biosonic/version.py"]
 
 [tool.check-manifest]
 ignore = [
   ".pre-commit-config.yaml",
   "readthedocs.yaml",
   "check-types.sh",
-  "poetry.lock",
-  "src/biosonic/_version.py"
+  "poetry.lock"
 ]
 
 [tool.flake8]
