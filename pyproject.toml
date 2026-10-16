@@ -54,7 +54,6 @@ exclude = [
   "docs/build/"
 ]
 include = [
-  "poetry.lock",
   "docs/make.bat",
   "docs/Makefile",
   "docs/requirements.txt",
