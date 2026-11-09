@@ -27,7 +27,7 @@ For full functionality, the current dependencies are:
 - matplotlib
 - praat-textgrids
 
-Python 3.10 and above are supported.
+Python 3.11 and above are supported.
 
 ### Installing
 
