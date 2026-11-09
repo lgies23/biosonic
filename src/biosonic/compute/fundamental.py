@@ -212,74 +212,74 @@ def _improve_sinc_maximum(y: ArrayLike, x: float, max_depth: int) -> Tuple[float
     return xmin, -fval
 
 
-def _find_f0_candidates_(
+def _find_f0_candidates(
         ac: ArrayLike,
         sr: int,
-        min_f0: int,
-        max_f0: int,
-        num_candidates: int = 4,
-        octave_cost: float = 0.01
+        min_f0: float,
+        max_lag: int,
+        num_candidates: int,
+        voicing_thresh: float,
+        octave_cost: float
         ) -> ArrayLike:
     """
     Find f0 candidates based on autocorrelation peaks.
     """
-    min_lag = int(sr / max_f0)
-    max_lag = int(sr / min_f0)
-
     candidates: list[Tuple[float, float]] = []
 
-    max_depth = 8  # window for sinc interpolation, can be tuned
-    for lag in range(min_lag + 1, max_lag - 1):
-        if ac[lag] > ac[lag - 1] and ac[lag] > ac[lag + 1]:
-            # Use sinc interpolation for sub-sample lag refinement
-            refined_lag, _ = _improve_sinc_maximum(ac, float(lag), max_depth)
+    # max_depth = 8  # window for sinc interpolation, can be tuned
+    for lag in range(2, max_lag):
+        if ac[lag] > 0.5 * voicing_thresh and ac[lag] > ac[lag - 1] and ac[lag] >= ac[lag + 1]:
+            dr = 0.5 * (ac[lag + 1] - ac[lag - 1])
+            d2r = 2 * ac[lag] - ac[lag - 1] - ac[lag + 1]
+            refined_lag = lag + dr / d2r
+            # TODO Reenable?
+            # # Use sinc interpolation for sub-sample lag refinement
+            # refined_lag, _ = _improve_sinc_maximum(ac, float(lag), max_depth)
 
             # cost function (Boersma 1993, eq 26)
-            r_tau = _sinc_interpolation(ac, refined_lag, max_depth)
-            strength = r_tau - octave_cost * 2 * np.log(min_f0 * refined_lag)
+            # r_tau = _sinc_interpolation(ac, refined_lag, max_depth)
+            r_tau = ac[lag]
+            if r_tau > 1:  # TODO Not sure if this ever happens, but Praat does it?
+                r_tau = 1 / r_tau
+            f0 = sr / refined_lag
 
             # convert to f0
-            f0 = sr / refined_lag if refined_lag != 0 else 0
-            candidates.append((f0, strength))
+            candidates.append((f0, r_tau))
 
     # Sort by strength and take top N-1
-    candidates = sorted(candidates, key=lambda x: -x[1])[:num_candidates - 1]
-
-    # normalize to [0,1]
-    max_strength = max(s for _, s in candidates) if candidates else 1.0
-    if max_strength > 0:
-        candidates = [(p, s / max_strength) for p, s in candidates]
-    else:
-        candidates = [(p, 0.0) for p, s in candidates]
+    candidates = sorted(candidates, key=lambda x: x[1] - octave_cost * np.log2(min_f0 / x[0]))[-num_candidates + 1::]
 
     return candidates
 
 
-def _transition_cost(
-        F1: float,
-        F2: float,
-        voiced_unvoiced_cost: float,
-        octave_jump_cost: float
-    ) -> float:
-    if F1 == 0.0 and F2 == 0.0:
-        return 0.0
-    elif F1 == 0.0 or F2 == 0.0:
-        return voiced_unvoiced_cost
-    else:
-        return float(octave_jump_cost * abs(np.log2(F1 / F2)))
+def _correct_candidate_strenghts(all_candidates, intensities, ceiling, silence_thresh, voicing_thresh, octave_cost):
+    def get_corrected_strength(f0, strength, intensity):
+        if not 0.0 < f0 < ceiling:  # TODO Praat keeps candidates above ceiling, since ceiling can change (??)
+            return voicing_thresh + max(0.0, 0.0 if silence_thresh <= 0 else 2 - intensity / (silence_thresh / (1 + voicing_thresh)))
+        else:
+            return strength - octave_cost * np.log2(ceiling / f0)
+
+    return [
+        [
+            (f0, get_corrected_strength(f0, strength, intensity))
+            for f0, strength in candidates
+        ]
+        for candidates, intensity in zip(all_candidates, intensities)
+    ]
 
 
 def _viterbi_f0_path(
         all_candidates: List[List[Tuple[float, float]]],
-        voiced_unvoiced_cost: float = 0.2,
-        octave_jump_cost: float = 0.2
+        ceiling: float,
+        voiced_unvoiced_cost: float,
+        octave_jump_cost: float
     ) -> List[float]:
     """
     Finds the globally optimal f0 path using dynamic programming.
 
     Parameters
     ----------
-    all_candidates: List of lists of (f0 in Hz, strength)
+    all_candidates: List of lists of (f0 in Hz, corrected strength)
     voiced_unvoiced_cost: Cost of voiced/unvoiced transition
     octave_jump_cost: Cost of f0 discontinuity in octaves
 
@@ -288,9 +288,23 @@ def _viterbi_f0_path(
     path
         List of chosen f0 values, one per frame
     """
+    def _is_unvoiced(f):
+        return not 0.0 < f < ceiling
+
+    def _transition_cost(f1, f2) -> float:
+        if _is_unvoiced(f1) and _is_unvoiced(f2):
+            return 0.0
+        elif _is_unvoiced(f1) or _is_unvoiced(f2):
+            return voiced_unvoiced_cost
+        else:
+            return float(octave_jump_cost * abs(np.log2(f1 / f2)))
+
     num_frames = len(all_candidates)
     path_costs = []
     back_pointers: List[List[Any]] = []
+
+    # Praat maximizes total strength minus transition costs (potayto)
+    # This code minimizes transition costs minus total strength (potahto)
 
     # initialization
     prev_costs = [-strength for _, strength in all_candidates[0]]
@@ -298,33 +312,30 @@ def _viterbi_f0_path(
     back_pointers.append([None] * len(all_candidates[0]))
 
     # dynamic programming
-    for t in range(1, num_frames):
+    for i in range(1, num_frames):
         frame_costs = []
         frame_back_ptrs = []
-        for j, (curr_f0, curr_strength) in enumerate(all_candidates[t]):
-            best_cost = float('inf')
+        for curr_f0, curr_strength in all_candidates[i]:
+            best_cost = np.inf
             best_prev_idx = None
-            for i, (prev_f0, _) in enumerate(all_candidates[t-1]):
-                trans_cost = _transition_cost(
-                    prev_f0, curr_f0,
-                    voiced_unvoiced_cost, octave_jump_cost
-                )
-                total_cost = path_costs[t-1][i] + trans_cost - curr_strength
+            for j, (prev_f0, _) in enumerate(all_candidates[i-1]):
+                total_cost = prev_costs[j] + _transition_cost(prev_f0, curr_f0) - curr_strength
                 if total_cost < best_cost:
                     best_cost = total_cost
-                    best_prev_idx = i
+                    best_prev_idx = j
             frame_costs.append(best_cost)
             frame_back_ptrs.append(best_prev_idx)
         path_costs.append(frame_costs)
         back_pointers.append(frame_back_ptrs)
+        prev_costs = frame_costs
 
     # backtrace
-    path = [0.0] * num_frames
+    path = [None] * num_frames
     idx = int(np.argmin(path_costs[-1]))
     for t in reversed(range(num_frames)):
         f0, _ = all_candidates[t][idx]
         path[t] = f0
-        idx = back_pointers[t][idx] if back_pointers[t][idx] is not None else 0
+        idx = back_pointers[t][idx]
 
     return path
 
@@ -343,10 +354,10 @@ def _autocorr(
     ) -> NDArray[Any]:
     # 3.5 and 3.6 append half a window length of zeroes
     # plus enough until the length is a power of two
-    frame = np.pad(frame, (0, pad_width_for_pow2), mode='constant', constant_values=0)
+    padded_frame = np.pad(frame, (0, pad_width_for_pow2), mode='constant', constant_values=0)
 
     # 3.7 perform fft
-    spec = rfft(frame)
+    spec = rfft(padded_frame)
 
     # 3.8 square samples in frequency domain
     power_spec = spec * np.conj(spec)
@@ -354,7 +365,23 @@ def _autocorr(
     # 3.9 ifft of power spectrum
     lag_domain = irfft(power_spec)
 
-    return lag_domain[: len(frame) // 2]
+    return lag_domain[:len(frame)]
+
+
+def _frame_signal_praat(samples, sr, window_duration, time_step):
+    assert window_duration > 0
+    assert time_step > 0
+    duration = len(samples) / sr
+
+    if window_duration > duration:
+        raise ValueError("Duration shorter than window length")
+
+    n_frames = int(np.floor((duration - window_duration) / time_step)) + 1
+    assert n_frames >= 1
+
+    first_time = 0.5 * (duration - n_frames * time_step + time_step)
+
+    return n_frames, first_time
 
 
 def boersma(
@@ -369,6 +396,8 @@ def boersma(
         octave_cost: float = 0.01,
         octave_jump_cost: float = 0.35,
         voiced_unvoiced_cost: float = 0.14,
+        match_praat: bool = True,     # TODO Document
+        very_accurate: bool = False,  # TODO Document
         plot: bool = False,
         **kwargs: Any
     ) -> Tuple[ArrayLike, ArrayLike, List[List[Tuple[float, float]]], ArrayLike]:
@@ -377,10 +406,8 @@ def boersma(
 
     Parameters
     ----------
-    data : ArrayLike
+    signal : AudioSignal
         Input audio signal (mono, normalized to [-1, 1]).
-    sr : int
-        Sampling rate (Hz).
     min_f0 : int, optional
         Minimum f0 to search for (Hz). Default is 75.
     max_f0 : int, optional
@@ -402,7 +429,7 @@ def boersma(
     plot : bool, optional
         If True, plot the f0 track on a spectrogram. Default is False.
     **kwargs : Any
-        Additional keyword arguments for plotting.
+        Additional keyword arguments for plotting.   # TODO This hides any errors! Any better way?
 
     Returns
     -------
@@ -424,83 +451,137 @@ def boersma(
        nonverbal vocalizations. Behavior Research Methods, 51(2), 778-792.
     """
     assert isinstance(signal, AudioSignal), "'signal' must be of type AudioSignal."
+    assert not very_accurate, "very_accurate not yet implemented"  # TODO ?
 
-    if min_f0 >= max_f0 or max_f0 >= signal.srate / 2:
-        raise ValueError("max_f0 should be greater than min_f0 and below the nyquist frequency.")
+    # Constants for AC (not "very exact") method:
+    periods_per_window = 3  # three periods of minimum frequency
+    brent_depth = 70  # 70 samples of sinc interpolation  # TODO: Use  # noqa: F841
+    interpolation_depth = 0.5  # TODO: Forgot what this is  # noqa: F841
+
+    assert signal.data.ndim == 1
+
+    if min_f0 >= max_f0 or max_f0 > signal.srate / 2:
+        raise ValueError("max_f0 should be greater than min_f0 and not greater than the nyquist frequency.")
+
+    if max_candidates <= 1:
+        raise ValueError("max_candidates should be greater than 1.")
+
+    assert timestep > 0
+    # TODO Auto time-step, as in Praat?
+
+    duration = (1 / signal.srate) * len(signal.data)
+    if min_f0 < periods_per_window / duration:
+        raise ValueError(f"min_f0 must not be less than {periods_per_window / duration} Hz.")
 
     # not enough resolution above half the niquist frequency
     # -> amend f0 ceiling if applicable. From Soundgen (see references)
-    # max_f0 = min(max_f0, sr / 4)
+    # max_f0 = min(max_f0, signal.srate / 4)
+    # Praat actually just enforces Nyquist frequency, but that's already hard enforced above
 
-    window_length = 3 * (1 / min_f0)  # three periods of minimum frequency
-    data_preprocessed = signal.data  # _preprocess_for_f0_(data, sr)
+    data_preprocessed = signal.data  # _preprocess_for_f0_(signal.data, signal.srate)
     global_peak: float = np.max(np.abs(data_preprocessed - np.mean(data_preprocessed)))
+    assert global_peak > 0  # TODO: What to do for a constant signal? Praat returns early.
 
-    # global_peak: float = np.max(np.abs(data_preprocessed))
-    window_length_samples = int(window_length * signal.srate)
+    window_length = periods_per_window * (1 / min_f0)
+    window_length_samples = int(window_length * signal.srate)  # window_length * signal.srate is positive, so `int()` floors
+    if match_praat:
+        nsamp_period = int(signal.srate / min_f0)  # Positive, so truncting is flooring
+        halfnsamp_period = nsamp_period // 2 + 1
+
+        halfnsamp_window = window_length_samples // 2 - 1
+        if halfnsamp_window < 2:
+            raise ValueError("Analysis window too short")  # TODO: Can this happen?
+        window_length_samples = halfnsamp_window * 2
+
+    # TODO Keep this or not?
+    # min_lag = int(sr / max_f0)  # Described by Boersma (1993) but not used in Praat implementation
+    max_lag = min(window_length_samples, int(np.floor(window_length_samples / periods_per_window)) + 2)  # Boersma (1993): int(sr / min_f0)
+
     # precalculate for padding to power of two (step 3.6)
     # - I do this here to save computation time despite it being a bit less readable
-    n = window_length_samples + np.floor(window_length_samples/2)
+    n = (1 + interpolation_depth) * window_length_samples
     next_pow2 = 2 ** np.ceil(np.log2(n)).astype(int)
     pad_width_for_pow2 = next_pow2 - window_length_samples  # full pad length needed including half a window size
 
     # 1. windowing
-    framed_signal = frame_signal(AudioSignal(data_preprocessed, signal.srate), window_length_samples, timestep, normalize=False)
-    window = windows.get_window("hann", window_length_samples)
+    if match_praat:
+        n_frames, t1 = _frame_signal_praat(data_preprocessed, signal.srate, window_length, timestep)
+        times = t1 + np.arange(n_frames) * timestep
+        left_idx = np.floor((times - 0.5 / signal.srate) * signal.srate).astype(int)  # TODO Check again. Some off by one?
+        framed_signal = [data_preprocessed[i + 1 - halfnsamp_window:i + halfnsamp_window + 1] for i in left_idx]
+    else:
+        framed_signal = frame_signal(AudioSignal(data_preprocessed, signal.srate), window_length_samples, timestep, normalize=False)
+        times = 0.5 * (window_length_samples / signal.srate) + np.arange(len(framed_signal)) * timestep
+    if match_praat:
+        # To match Praat, we need to:
+        # - Have a symmetric window (probably good to have anyway)
+        # - Exclude the first and last sample of the window, which are 0 in SciPy
+        #   (0.5 - 0.5 * cos(2 pi n / (M - 1)), for 0 <= n <= M-1)
+        # This probably also explains the `halfnsamp_window = window_length_samples // 2 - 1` line above,
+        # which has - instead of +, and seems to lose 2 samples.
+        window = windows.get_window("hann", window_length_samples + 2, fftbins=False)[1:-1]
+    else:
+        window = windows.get_window("hann", window_length_samples, fftbins=False)
     autocorr_hann = _autocorr(window, pad_width_for_pow2)
-    autocorr_hann /= np.max(autocorr_hann)
+    autocorr_hann /= autocorr_hann[0]  # Or np.max(autocorr_hann), but that's should be the same
+    # TODO: brent_imax?
+
     all_candidates = []
     intensities = []
 
     for frame in framed_signal:
         # 3.2 subtract local average
-        frame = frame - np.mean(frame)
-        local_peak: float = np.max(np.abs(frame))
+        if match_praat:
+            assert halfnsamp_window >= nsamp_period  # Only AC: periods_per_window == 3
+            local_mean = np.mean(frame[halfnsamp_window - nsamp_period:halfnsamp_window + nsamp_period])
+        else:
+            local_mean = np.mean(frame)
+
+        frame = (frame - local_mean) * window  # Frame are views of the array! Don't modify in-place!
+
+        if match_praat:
+            assert halfnsamp_window >= halfnsamp_period  # Only AC: periods_per_window == 3
+            local_peak = np.max(np.abs(frame[halfnsamp_window - halfnsamp_period:halfnsamp_window + halfnsamp_period]))
+        else:
+            local_peak = np.max(np.abs(frame))
 
         # 3.3 see 3.11
 
         # 3.4 multiply by window function
-        windowed_frame = frame * window
+        # windowed_frame = frame * window  # TODO Window before or after local_peak??
+        windowed_frame = frame
 
         # 3.5-3.9
         lag_domain = _autocorr(windowed_frame, pad_width_for_pow2)
 
         # 3.10 divide by autocorrelation of window
-        sampled_autocorr = lag_domain / autocorr_hann
+        sampled_autocorr = lag_domain / (lag_domain[0] * autocorr_hann)
 
         # only include up to half the window length because unreliable above (p. 100, fig)
         sampled_autocorr = sampled_autocorr[:(window_length_samples//2)]
 
         # 3.11 find places and heights of maxima
-        unvoiced_strength = voicing_thresh + max(0, 2 - ((local_peak / global_peak) /
-                                                         (silence_thresh / (1 + voicing_thresh))))
-
-        voiced_candidates = _find_f0_candidates_(
+        voiced_candidates = _find_f0_candidates(
                 sampled_autocorr,
                 signal.srate,
                 min_f0,
-                max_f0,
+                max_lag,
                 max_candidates,
+                voicing_thresh,
                 octave_cost
             )
 
-        candidates = [(0.0, unvoiced_strength)] + voiced_candidates
+        candidates = [(0.0, 0.0)] + voiced_candidates
         all_candidates.append(candidates)
-        intensities.append(local_peak / global_peak if global_peak > 0 else 0.0)
+        intensities.append(min(1.0, local_peak / global_peak))  # global_peak can't be 0; see above
 
-    # frame timing: match Yannicks code (centered on window)
-    n_frames = len(framed_signal)
-    t0 = 0.5 * (len(signal.data) / signal.srate - n_frames * timestep + timestep)
-    time_points = t0 + np.arange(n_frames) * timestep
-
-    # Praat-style: scale transition costs by time step as in Yannicks code
-    dt = timestep
-    time_step_correction = 0.01 / dt if dt else 1.0
+    time_step_correction = 0.01 / timestep
     octave_jump_cost_scaled = octave_jump_cost * time_step_correction
     voiced_unvoiced_cost_scaled = voiced_unvoiced_cost * time_step_correction
-
+    corrected_strength_candidates = _correct_candidate_strenghts(all_candidates, intensities, max_f0, silence_thresh, voicing_thresh, octave_cost)
     f0_track = _viterbi_f0_path(
-        all_candidates,
+        corrected_strength_candidates,
+        max_f0,
         voiced_unvoiced_cost=voiced_unvoiced_cost_scaled,
         octave_jump_cost=octave_jump_cost_scaled
     )
@@ -509,8 +590,8 @@ def boersma(
         from biosonic.plot import plot_f0_on_spectrogram
         plot_f0_on_spectrogram(
             signal,
-            time_points,
+            times,
             f0_track,
             **kwargs)
 
-    return np.asarray(time_points), np.asarray(f0_track), all_candidates, np.asarray(intensities)
+    return times, np.asarray(f0_track), all_candidates, np.asarray(intensities)
