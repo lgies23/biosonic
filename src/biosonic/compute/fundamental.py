@@ -212,11 +212,11 @@ def _improve_sinc_maximum(y: ArrayLike, x: float, max_depth: int) -> Tuple[float
     return xmin, -fval
 
 
-def _find_f0_candidates_(
+def _find_f0_candidates(
         ac: ArrayLike,
         sr: int,
-        min_f0: int,
-        max_f0: int,
+        min_f0: float,
+        max_lag: int,
         num_candidates: int,
         voicing_thresh: float,
         octave_cost: float
@@ -224,15 +224,11 @@ def _find_f0_candidates_(
     """
     Find f0 candidates based on autocorrelation peaks.
     """
-    # TODO Keep this or not?
-    # min_lag = int(sr / max_f0)  # Described by Boersma (1993) but not used in Praat implementation
-    max_lag = int(sr / min_f0)
-
     candidates: list[Tuple[float, float]] = []
 
     # max_depth = 8  # window for sinc interpolation, can be tuned
-    for lag in range(2, max_lag - 1):
-        if ac[lag] > 0.5 * voicing_thresh and ac[lag] > ac[lag - 1] and ac[lag] > ac[lag + 1]:
+    for lag in range(2, max_lag):
+        if ac[lag] > 0.5 * voicing_thresh and ac[lag] > ac[lag - 1] and ac[lag] >= ac[lag + 1]:
             dr = 0.5 * (ac[lag + 1] - ac[lag - 1])
             d2r = 2 * ac[lag] - ac[lag - 1] - ac[lag + 1]
             refined_lag = lag + dr / d2r
@@ -433,7 +429,7 @@ def boersma(
     plot : bool, optional
         If True, plot the f0 track on a spectrogram. Default is False.
     **kwargs : Any
-        Additional keyword arguments for plotting.
+        Additional keyword arguments for plotting.   # TODO This hides any errors! Any better way?
 
     Returns
     -------
@@ -497,7 +493,9 @@ def boersma(
             raise ValueError("Analysis window too short")  # TODO: Can this happen?
         window_length_samples = halfnsamp_window * 2
 
-    # TODO: min_lag and max_lag?
+    # TODO Keep this or not?
+    # min_lag = int(sr / max_f0)  # Described by Boersma (1993) but not used in Praat implementation
+    max_lag = min(window_length_samples, int(np.floor(window_length_samples / periods_per_window)) + 2)  # Boersma (1993): int(sr / min_f0)
 
     # precalculate for padding to power of two (step 3.6)
     # - I do this here to save computation time despite it being a bit less readable
@@ -563,11 +561,11 @@ def boersma(
         sampled_autocorr = sampled_autocorr[:(window_length_samples//2)]
 
         # 3.11 find places and heights of maxima
-        voiced_candidates = _find_f0_candidates_(
+        voiced_candidates = _find_f0_candidates(
                 sampled_autocorr,
                 signal.srate,
                 min_f0,
-                max_f0,
+                max_lag,
                 max_candidates,
                 voicing_thresh,
                 octave_cost
