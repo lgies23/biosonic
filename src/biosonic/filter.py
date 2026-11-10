@@ -2,9 +2,10 @@ from typing import Any, Literal, Optional, Tuple, Union
 
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
-from scipy.signal import butter, filtfilt
+from scipy.signal import butter, filtfilt, lfilter
 
 from biosonic.compute.utils import hz_to_mel, mel_to_hz
+from biosonic.handle import AudioSignal
 
 
 def _check_filterbank_parameters(
@@ -254,12 +255,13 @@ def log_filterbank(
 
 
 # TODO weighted filter (seewave), rolloff like in audacity f-filter (tuneR)
-def filter(
-        data: ArrayLike,
-        sr: int,
+def butterworth_filter(
+        signal: AudioSignal,
         f_cutoff: Union[int, Tuple[int, int]],
         type: Literal["lowpass", "highpass", "bandpass", "bandstop"] = "lowpass",
         order: int = 2,
+        fbf: bool = True,
+        **kwargs: Any
 ) -> NDArray[np.float32]:
     """
     Apply a zero-phase Butterworth filter to a 1D signal using SciPy.
@@ -267,24 +269,28 @@ def filter(
     This function is a wrapper around `scipy.signal.butter` and `scipy.signal.filtfilt`.
     It designs a digital Butterworth filter of the specified type and order,
     then applies it using forward-backward filtering for zero phase distortion.
+    This introduces a time delay. If you are interested in signal onset or time-domain features
+    more than phase, set forward-backward filtering to False.
 
     Parameters
     ----------
-    signal : np.ndarray
-        1D input signal to filter.
-    sr : int
-        Sampling rate of the signal in Hz.
+    signal : AudioSignal
     type : {'lowpass', 'highpass', 'bandpass', 'bandstop'}
         Type of filter to apply. Defaults to 'lowpass'.
     f_cutoff : float or tuple of float
         Cutoff frequency/frequencies in Hz:
         - Single int for 'lowpass' or 'highpass'
         - Tuple of two floats for 'bandpass' or 'bandstop'
-        Values must be within (0, Nyquist), where Nyquist = sr / 2.
+        Values must be within (0, Nyquist), where Nyquist = signal.srate / 2.
     order : int
         Filter order. Higher values result in a steeper frequency cutoff,
-        but can introduce more edge artifacts and potential instability.
-        Defaults to 2, resulting in a slope of 40 dB per decade (i.e. ten-fold change in frequency).
+        but can introduce more edge artifacts. For forward-backward filtering, the effective order is doubled.
+        Defaults to 2, resulting in a slope of 6 dB per octave (or 12 dB per octave after forward-backward filtering).
+    fbf : bool
+        If True, applies the filter forward and backward to eliminate phase distortion.
+        Defaults to True. If False, applies the filter only once, which may introduce phase distortion but reduces time delay.
+    kwargs : dict
+        Additional keyword arguments passed to `scipy.signal.filtfilt` or `scipy.signal.lfilter`.
 
     Returns
     -------
@@ -309,6 +315,9 @@ def filter(
         if isinstance(f_cutoff, (list, tuple)):
             raise ValueError("f_cutoff must be a scalar for lowpass/highpass filters.")
 
-    b, a = butter(order, f_cutoff, btype=type, analog=False, fs=sr)
-    filtered_signal = np.asarray(filtfilt(b, a, data), dtype=np.float32)
+    b, a = butter(order, f_cutoff, btype=type, analog=False, fs=signal.srate)
+    if fbf:
+        filtered_signal = np.asarray(filtfilt(b, a, signal.data, **kwargs), dtype=np.float32)
+    else:
+        filtered_signal = np.asarray(lfilter(b, a, signal.data, **kwargs), dtype=np.float32)
     return filtered_signal
